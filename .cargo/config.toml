@@ -1,0 +1,9 @@
+# Windows MSVC targets link the C runtime statically, so the plugin's
+# release binaries (`cargo build --profile dist`) need no Visual C++
+# redistributable. Linux release binaries use the musl targets, which are
+# static without a flag.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

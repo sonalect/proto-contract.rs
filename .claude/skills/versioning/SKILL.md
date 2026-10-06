@@ -3,8 +3,8 @@ name: versioning
 description: >-
   Bump the Contract crates and Bazel module versions in lockstep
   (Rust-style 0.x or SemVer after 1.0.0), update CHANGELOG.md, create the
-  matching GitHub tag, and publish the GitHub Release with the plugin
-  binaries. Use when releasing, tagging, publishing a GitHub release,
+  matching GitHub tag, whose CI workflow tests six platforms and publishes
+  the GitHub Release with the plugin binaries. Use when releasing, tagging, publishing a GitHub release,
   bumping version, editing MODULE.bazel or workspace package version, or
   adding a CHANGELOG section.
 ---
@@ -59,45 +59,37 @@ Refresh `MODULE.bazel.lock` if it changes.
 
 ## Release
 
-After the version commit is on the default branch, create an annotated tag,
-push it, and **publish a GitHub Release for that tag** (only when the owner
-asked to release). A tag without a published Release is incomplete. Do not
-leave the Release as a draft. Do not mark it prerelease unless the owner
-asked. Do not backfill older tags.
+After the version commit is on the default branch, create an annotated tag
+and push it (only when the owner asked to release). Do not backfill older
+tags.
 
 ```bash
 git tag -a "vMAJOR.MINOR.PATCH" -m "vMAJOR.MINOR.PATCH"
 git push origin "vMAJOR.MINOR.PATCH"
 ```
 
-Release notes are the Keep a Changelog body for `## [MAJOR.MINOR.PATCH]` in
-`CHANGELOG.md` (after that heading, until the next `## [`). Fail if that
-heading is missing. Do not use `--generate-notes` or `--notes-from-tag`.
+The tag starts `.github/workflows/release.yml`; nothing else does. It:
 
-```bash
-notes="$(mktemp)"
-# The skill loader substitutes positional placeholders, so this block
-# avoids them; escape each `.` of the version in the pattern.
-sed -n '/^## \[MAJOR\.MINOR\.PATCH\]/,/^## \[/{/^## \[/d;p;}' CHANGELOG.md \
-  | sed '/./,$!d' > "$notes"
-test -s "$notes"
+1. fails at once unless the tag is `v` plus the version in `Cargo.toml`
+   and `MODULE.bazel`, and `CHANGELOG.md` has `## [MAJOR.MINOR.PATCH]`;
+2. runs `bazel build //...` and `bazel test //...` on six platforms
+   (`linux_amd64`, `linux_arm64`, `darwin_amd64`, `darwin_arm64`,
+   `windows_amd64`, `windows_arm64`), and on each builds the plugin's
+   static release binary with Cargo (`--profile dist`);
+3. when all six pass, publishes the GitHub Release for the tag: the six
+   binaries, named `protoc-gen-contract-rust-{tag}-{file}` (`DESIGN.md`
+   §9), a `SHA256SUMS` file, and as notes the `CHANGELOG.md` body of the
+   version. Not a draft, not a prerelease.
 
-gh release create "vMAJOR.MINOR.PATCH" \
-  --title "vMAJOR.MINOR.PATCH" \
-  --notes-file "$notes" \
-  --verify-tag
-rm -f "$notes"
-```
+Do not run `gh release create` by hand. A tag whose workflow failed has no
+Release: fix the cause on the default branch, delete the tag locally and
+on `origin`, and tag the fixed commit. Before a release, the owner may run
+the workflow by hand (`workflow_dispatch`): the same six platforms and
+binaries, no Release.
 
-The Release carries the plugin binaries for `linux_amd64`, `linux_arm64`,
-`darwin_amd64`, `darwin_arm64`, and `windows_amd64`, named
-`protoc-gen-contract-rust-{version}-{file}` (`DESIGN.md` §9). Without
-them the `bazel_utils` catalog cannot fetch the version, so a Release
-missing one is incomplete. The `registry.bzl` entry in `bazel_utils`
-(URL template and sha256 per platform) is a change in that repository:
-prepare it only when the owner asks.
-
-Run `git` / `gh` from the clone root with unrestricted permissions. Return
-the Release URL when it succeeds.
+Watch the run with `gh run watch` and return the Release URL when it
+succeeds. The `registry.bzl` entry in `bazel_utils` (URL template and the
+sha256 of each platform, from `SHA256SUMS`) is a change in that
+repository: prepare it only when the owner asks.
 
 Examples: `v0.0.1`, `v0.0.2`, `v0.1.0`.

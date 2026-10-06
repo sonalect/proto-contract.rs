@@ -38,3 +38,13 @@ codegen-units = 1
 lto = "thin"
 opt-level = 3
 strip = "symbols"
+
+# Release binaries of the plugin:
+#   cargo build --locked --profile dist --target <triple> -p protoc-gen-contract-rust
+# The binaries are static per target: the Linux musl targets link
+# statically by themselves, the Windows MSVC targets get a static C runtime
+# from .cargo/config.toml, and macOS links only the system libraries
+# (Apple supports no fully static binary).
+[profile.dist]
+inherits = "release"
+lto = "fat"

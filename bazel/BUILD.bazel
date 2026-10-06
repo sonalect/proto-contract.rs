@@ -22,3 +22,12 @@ markdownlint_test(
     name = "markdown",
     target_compatible_with = NOT_WINDOWS,
 )
+
+config_setting(
+    name = "windows_arm64",
+    constraint_values = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:windows",
+    ],
+    visibility = ["//visibility:public"],
+)

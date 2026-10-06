@@ -490,11 +490,31 @@ Layout as `serde_markdown`: a Cargo workspace and a Bazel module
 output and runs the behaviour tests against it. Edition 2024, `rust-version = "1.99.0"`,
 Apache-2.0, English docs.
 
-Release: GitHub release binaries for `linux_amd64`, `linux_arm64`,
-`darwin_amd64`, `darwin_arm64`, and `windows_amd64`, named
-`protoc-gen-contract-rust-{version}-{file}`. That is the shape the `kind: file`
-catalog of `bazel_utils/protoc/plugins` expects. Then add a `registry.bzl`
-for it there. The runtime crate is published by git tag. Knowqore adds it to
+Release: a version tag, and nothing else, starts
+`.github/workflows/release.yml` (decided by the owner, 6 October 2026). It
+checks the tag against `Cargo.toml`, `MODULE.bazel`, and `CHANGELOG.md`;
+runs `bazel build //...` and `bazel test //...` on `linux_amd64`,
+`linux_arm64`, `darwin_amd64`, `darwin_arm64`, `windows_amd64`, and
+`windows_arm64`; builds the plugin on each with Cargo
+(`--profile dist`); and, when all six pass, publishes the GitHub Release
+with the six binaries, a `SHA256SUMS` file, and the version's `CHANGELOG.md`
+body as notes. A manual run is the dry run: the same work, no Release.
+
+The binaries are named `protoc-gen-contract-rust-{tag}-{file}`, `file`
+being `linux-x86_64`, `linux-aarch64`, `darwin-x86_64`, `darwin-aarch64`,
+`windows-x86_64.exe`, or `windows-aarch64.exe`, the shape the `kind: file`
+catalog of `bazel_utils/protoc/plugins` expects. They are static: Linux on
+the musl targets, Windows with a static C runtime (`.cargo/config.toml`).
+macOS links only the system libraries, since Apple supports no fully
+static binary. The workflow checks each and runs it on an empty request.
+
+On `windows_arm64`, `bazel test //...` skips the golden generate and its
+diff test (`//proto:golden`, `//proto:generate`): protoc-gen-buffa,
+protoc-gen-buffa-packaging, and protoc-gen-connect-rust publish no binary
+for it. The golden crate still compiles and tests the checked-in output
+there.
+
+Then add a `registry.bzl` for the plugin to `bazel_utils`. The runtime crate is published by git tag. Knowqore adds it to
 the named exceptions of its dependency quarantine, next to `scheda` and
 `serde_markdown`.
 
@@ -536,7 +556,7 @@ the named exceptions of its dependency quarantine, next to `scheda` and
 | C2 | Bridges `Inline`, `Offload`, `Blocking`, for all four kinds of methods | T2 complete; O1, O5 answered. Done 6 October 2026: `//rust/golden:bridges_test`; plus connect-rust's output and Contract's mounted in one module per package (`//rust/golden`) and a `buf generate` with the release binary into a fresh crate outside Bazel |
 | C3 | Connect adapters | T3, T7 |
 | C4 | Validation wrapper | T4 |
-| C5 | Release binaries and the `bazel_utils` catalog entry | Knowqore generates through `protoc.plugin` |
+| C5 | Release workflow for six platforms and static binaries; the `bazel_utils` catalog entry | Knowqore generates through `protoc.plugin`. Workflow and `dist` profile written 6 October 2026, run on GitHub not yet |
 
 C1, C2, and C5 are enough for Knowqore's first consumer, the format axis,
 which is sync and stays in process. That pilot is planned in Knowqore.

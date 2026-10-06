@@ -40,6 +40,10 @@ crate `contract`, plugin `protoc-gen-contract-rust`, generated files
   associated functions, so an RPC named `Call` or `Feed` stays reachable
   with method syntax, and every bridge ends a stream after its first `Err`.
 - `Dyn<Service>Async` implements `Debug`.
+- Release binaries of the plugin for Linux, macOS, and Windows on amd64
+  and arm64, static where the platform allows (macOS links only system
+  libraries), with `SHA256SUMS`; a version tag builds, tests, and
+  publishes them.
 - Plugin parameters `buffa_module=`, `extern_path=`, `file_per_package`,
   and `element_memory_limit=`, as `protoc-gen-connect-rust` reads them, plus
   `runtime=` for the path of the runtime crate and `gate_tokio_feature`.

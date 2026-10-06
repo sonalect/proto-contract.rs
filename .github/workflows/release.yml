@@ -1,0 +1,263 @@
+name: Release
+
+# Runs only for a version tag, never for a plain commit:
+#   1. the tag must match the version in Cargo.toml, MODULE.bazel, and
+#      CHANGELOG.md;
+#   2. on six platforms: the full `bazel build //...` and `bazel test //...`,
+#      then the plugin's static release binary built by Cargo;
+#   3. when all six pass, the GitHub Release for the tag, with the six
+#      binaries and their SHA256SUMS, notes taken from CHANGELOG.md.
+# A manual run (workflow_dispatch) does steps 2 without step 3: a dry run
+# before tagging.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  BAZELISK_VERSION: 1.29.0
+  PLUGIN: protoc-gen-contract-rust
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Tag matches the version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -euo pipefail
+          cargo_version="$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)"
+          module_version="$(sed -n 's/^    version = "\(.*\)",$/\1/p' MODULE.bazel | head -n 1)"
+          echo "tag ${GITHUB_REF_NAME}, Cargo.toml ${cargo_version}, MODULE.bazel ${module_version}"
+          test "${GITHUB_REF_NAME}" = "v${cargo_version}"
+          test "${module_version}" = "${cargo_version}"
+          grep -q "^## \[${cargo_version}\]" CHANGELOG.md
+
+  platform:
+    name: ${{ matrix.platform }}
+    needs: version
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-amd64
+            runner: ubuntu-24.04
+            bazelisk: bazelisk-linux-amd64
+            bazelisk_sha256: 5a408715e932c0250d28bd84555f12edbf70117de42f9181691c736eacc4a992
+            target: x86_64-unknown-linux-musl
+            file: linux-x86_64
+          - platform: linux-arm64
+            runner: ubuntu-24.04-arm
+            bazelisk: bazelisk-linux-arm64
+            bazelisk_sha256: e20e8b0f4f240091b7a55bf17b9398bd4f40ee70ae0208dff95dd4c445fb4010
+            target: aarch64-unknown-linux-musl
+            file: linux-aarch64
+          - platform: macos-amd64
+            runner: macos-26-intel
+            bazelisk: bazelisk-darwin-amd64
+            bazelisk_sha256: 16c3d7aa15323a9fb69f56c7ec5733ed18bedb786680d0ba13bb12a3c8083007
+            target: x86_64-apple-darwin
+            file: darwin-x86_64
+          - platform: macos-arm64
+            runner: macos-26
+            bazelisk: bazelisk-darwin-arm64
+            bazelisk_sha256: cee851f726789227d5561004e9904a52be45c3efb56f8b38b6993d6adbaa0409
+            target: aarch64-apple-darwin
+            file: darwin-aarch64
+          - platform: windows-amd64
+            runner: windows-2025
+            bazelisk: bazelisk-windows-amd64.exe
+            bazelisk_sha256: 092a8738d5b41aae7a85c42cc961b1034e3389aba43ffc20c0fabda7b43e095b
+            target: x86_64-pc-windows-msvc
+            file: windows-x86_64.exe
+            exe: .exe
+          - platform: windows-arm64
+            runner: windows-11-arm
+            bazelisk: bazelisk-windows-arm64.exe
+            bazelisk_sha256: 8bc42bd5d7857f18a21440b906469bb6c7cf91a7c72364d4b1e5ec56a76fe94f
+            target: aarch64-pc-windows-msvc
+            file: windows-aarch64.exe
+            exe: .exe
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Bazelisk
+        run: |
+          set -euo pipefail
+          bin="${RUNNER_TEMP}/bin"
+          mkdir -p "${bin}"
+          curl -fsSL -o "${bin}/bazel${{ matrix.exe }}" \
+            "https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/${{ matrix.bazelisk }}"
+          if command -v sha256sum >/dev/null; then
+            echo "${{ matrix.bazelisk_sha256 }}  ${bin}/bazel${{ matrix.exe }}" | sha256sum -c
+          else
+            echo "${{ matrix.bazelisk_sha256 }}  ${bin}/bazel${{ matrix.exe }}" | shasum -a 256 -c
+          fi
+          chmod +x "${bin}/bazel${{ matrix.exe }}"
+          if [[ "${RUNNER_OS}" == "Windows" ]]; then
+            cygpath -w "${bin}" >> "${GITHUB_PATH}"
+          else
+            echo "${bin}" >> "${GITHUB_PATH}"
+          fi
+
+      - name: Configure Bazel for Windows
+        if: runner.os == 'Windows'
+        run: |
+          set -euo pipefail
+          mkdir -p /c/b
+          # Git for Windows bash, for Bazel's shell actions.
+          echo "BAZEL_SH=C:/Program Files/Git/bin/bash.exe" >> "${GITHUB_ENV}"
+          {
+            # Short output root: external repository paths hit MAX_PATH
+            # under the runner's work directory.
+            echo "startup --output_user_root=C:/b"
+            echo "startup --windows_enable_symlinks"
+            echo "build --symlink_prefix=/"
+          } >> "${HOME}/.bazelrc"
+
+      - name: Bazel build
+        run: bazel build //... --keep_going
+
+      - name: Bazel test
+        run: bazel test //... --keep_going --test_output=errors
+
+      - name: Stop Bazel
+        if: always()
+        continue-on-error: true
+        run: bazel shutdown || true
+
+      - name: Install Rust
+        run: |
+          set -euo pipefail
+          if ! command -v rustup >/dev/null; then
+            if [[ "${RUNNER_OS}" == "Windows" ]]; then
+              arch="$([[ "${{ matrix.platform }}" == windows-arm64 ]] && echo aarch64 || echo x86_64)"
+              curl -fsSL -o "${RUNNER_TEMP}/rustup-init.exe" \
+                "https://static.rust-lang.org/rustup/dist/${arch}-pc-windows-msvc/rustup-init.exe"
+              "${RUNNER_TEMP}/rustup-init.exe" -y --profile minimal --default-toolchain none
+              cygpath -w "${USERPROFILE}/.cargo/bin" >> "${GITHUB_PATH}"
+            else
+              curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
+              echo "${HOME}/.cargo/bin" >> "${GITHUB_PATH}"
+            fi
+          fi
+
+      # rust-toolchain.toml selects the toolchain; the target and, on
+      # Windows, llvm-tools (for the static check) are added to it.
+      - name: Build the release binary
+        run: |
+          set -euo pipefail
+          rustup toolchain install
+          rustup target add "${{ matrix.target }}"
+          if [[ "${RUNNER_OS}" == "Windows" ]]; then
+            rustup component add llvm-tools
+          fi
+          cargo build --locked --profile dist --target "${{ matrix.target }}" -p "${PLUGIN}"
+
+      - name: Check the binary is static and answers protoc
+        run: |
+          set -euo pipefail
+          binary="target/${{ matrix.target }}/dist/${PLUGIN}${{ matrix.exe }}"
+          case "${RUNNER_OS}" in
+            Linux)
+              file "${binary}"
+              file "${binary}" | grep -Eq "statically linked|static-pie linked"
+              ;;
+            macOS)
+              # Only system libraries: Apple supports no fully static binary.
+              otool -L "${binary}"
+              if otool -L "${binary}" | tail -n +2 | awk '{print $1}' | grep -vE '^(/usr/lib/|/System/Library/)'; then
+                echo "links a library outside the system" >&2
+                exit 1
+              fi
+              ;;
+            Windows)
+              host="$(rustc -vV | sed -n 's/^host: //p')"
+              objdump="$(rustc --print sysroot)/lib/rustlib/${host}/bin/llvm-objdump.exe"
+              "${objdump}" -p "${binary}" | grep "DLL Name"
+              if "${objdump}" -p "${binary}" | grep -iE "DLL Name: (vcruntime|msvcp|ucrtbase|api-ms-win-crt)"; then
+                echo "links the C runtime dynamically" >&2
+                exit 1
+              fi
+              ;;
+          esac
+          # An empty CodeGeneratorRequest: the plugin must answer and exit 0.
+          "${binary}" < /dev/null > "${RUNNER_TEMP}/response.bin"
+          test -s "${RUNNER_TEMP}/response.bin"
+
+      - name: Name the binary for the release
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then
+            version="dev"
+          fi
+          mkdir -p dist
+          cp "target/${{ matrix.target }}/dist/${PLUGIN}${{ matrix.exe }}" \
+            "dist/${PLUGIN}-${version}-${{ matrix.file }}"
+
+      - name: Upload the binary
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: binary-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: platform
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download the binaries
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: binary-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(find dist -type f | wc -l)" -eq 6
+          (cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS)
+          version="${GITHUB_REF_NAME#v}"
+          # The notes are the CHANGELOG section of this version.
+          awk -v heading="## [${version}]" '
+            index($0, heading) == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md | sed '/./,$!d' > "${RUNNER_TEMP}/notes.md"
+          test -s "${RUNNER_TEMP}/notes.md"
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file "${RUNNER_TEMP}/notes.md" \
+            --verify-tag
