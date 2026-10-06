@@ -87,7 +87,8 @@ The tag starts `.github/workflows/release.yml`; nothing else does. It:
    static release binary with Cargo (`--profile dist`);
 3. when all six pass, publishes the GitHub Release for the tag: the six
    binaries, named `protoc-gen-contract-rust-{tag}-{file}` (`DESIGN.md`
-   §9), and a `SHA256SUMS` file; the tag message's subject is the title,
+   §9), a `<binary>.sha256` next to each, and a `SHA256SUMS` file for all
+   six; the tag message's subject is the title,
    its body the notes. Not a draft, not a prerelease.
 
 Do not run `gh release create` by hand. A tag whose workflow failed has no

@@ -147,7 +147,14 @@ let sync = Blocking::new(service.clone(), handle);
 Get the plugin from the
 [Releases](https://github.com/sonalect/protoc-gen-contract-rust/releases)
 (from v0.1.0 on): static binaries for Linux, macOS, and Windows on amd64
-and arm64, with `SHA256SUMS`. Or build it:
+and arm64. Each comes with `<binary>.sha256`, and `SHA256SUMS` lists all
+six:
+
+```bash
+sha256sum -c protoc-gen-contract-rust-v0.1.0-linux-x86_64.sha256
+```
+
+Or build it:
 
 ```bash
 cargo install --locked --git https://github.com/sonalect/protoc-gen-contract-rust protoc-gen-contract-rust
@@ -244,7 +251,8 @@ env -u RUSTFLAGS cargo build --locked --profile dist --target x86_64-unknown-lin
 An annotated version tag `vX.Y.Z` on `main` runs the release workflow:
 Bazel build and tests on Linux, macOS, and Windows, each on amd64 and
 arm64, then a GitHub Release with the static plugin binary for each
-platform and their `SHA256SUMS`; the tag's message is the release notes.
+platform, a `.sha256` file per binary, and `SHA256SUMS`; the tag's message
+is the release notes.
 
 ## License
 

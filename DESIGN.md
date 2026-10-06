@@ -498,7 +498,8 @@ message body, and matches `Cargo.toml`, `MODULE.bazel`, and
 `linux_amd64`, `linux_arm64`, `darwin_amd64`, `darwin_arm64`,
 `windows_amd64`, and `windows_arm64`; builds the plugin on each with Cargo
 (`--profile dist`); and, when all six pass, publishes the GitHub Release
-with the six binaries and a `SHA256SUMS` file. The tag message is the
+with the six binaries, a `<binary>.sha256` next to each, and a
+`SHA256SUMS` file for all six. The tag message is the
 release: its subject the title, its body the notes
 (`.claude/rules/release-tag.md`). A manual run is the dry run: the same
 work, no Release.

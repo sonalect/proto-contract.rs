@@ -6,8 +6,8 @@ name: Release
 #      version in Cargo.toml, MODULE.bazel, and CHANGELOG.md;
 #   2. on six platforms: the full `bazel build //...` and `bazel test //...`,
 #      then the plugin's static release binary built by Cargo;
-#   3. when all six pass, the GitHub Release for the tag: the six binaries
-#      and their SHA256SUMS, titled with the tag message's subject, the
+#   3. when all six pass, the GitHub Release for the tag: the six binaries,
+#      a `<binary>.sha256` next to each, and SHA256SUMS for all six, titled with the tag message's subject, the
 #      message's body as notes.
 # A manual run (workflow_dispatch) does step 2 without step 3: a dry run
 # before tagging. Run on main, it also saves the Bazel caches.
@@ -317,8 +317,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$(find dist -type f | wc -l)" -eq 6
-          (cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS)
+          # SHA256SUMS for all six, and one `<binary>.sha256` per binary,
+          # each checkable with `sha256sum -c`.
+          (
+            cd dist
+            binaries=("${PLUGIN}"-*)
+            test "${#binaries[@]}" -eq 6
+            sha256sum -- "${binaries[@]}" > SHA256SUMS
+            for binary in "${binaries[@]}"; do
+              sha256sum -- "${binary}" > "${binary}.sha256"
+              sha256sum -c "${binary}.sha256"
+            done
+            cat SHA256SUMS
+          )
+          test "$(find dist -type f | wc -l)" -eq 13
           tag="${GITHUB_REF_NAME}"
           git fetch --force origin "+refs/tags/${tag}:refs/tags/${tag}"
           # The tag message: its subject is the title, its body the notes.
