@@ -1,0 +1,25 @@
+load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_test")
+
+exports_files(["Cargo.toml"])
+
+rust_library(
+    name = "contratto",
+    srcs = glob(["src/**/*.rs"]),
+    crate_name = "contratto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@contratto_cargo//:buffa-types",
+        "@contratto_cargo//:futures-core",
+    ],
+)
+
+rust_test(
+    name = "contratto_test",
+    crate = ":contratto",
+    visibility = ["//rust:__pkg__"],
+)
+
+rust_doc_test(
+    name = "contratto_doc_test",
+    crate = ":contratto",
+)

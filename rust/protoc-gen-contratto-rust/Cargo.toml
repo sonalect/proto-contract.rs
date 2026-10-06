@@ -1,0 +1,29 @@
+[package]
+name = "protoc-gen-contratto-rust"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "protoc plugin: plain Rust sync and async traits for protobuf services, over buffa message types"
+readme = "../../README.md"
+
+[lib]
+name = "protoc_gen_contratto_rust"
+path = "src/lib.rs"
+
+[[bin]]
+name = "protoc-gen-contratto-rust"
+path = "src/main.rs"
+
+[dependencies]
+buffa = { workspace = true }
+buffa-codegen = { workspace = true }
+heck = { workspace = true }
+prettyplease = { workspace = true }
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package example.v1;
+
+// Moves items in every direction a method can stream.
+service FeedService {
+  // Stream the first `count` items of the feed, one reply per item.
+  rpc Watch(WatchRequest) returns (stream Item);
+
+  // Collect a stream of items into one summary.
+  rpc Collect(stream Item) returns (Summary);
+
+  // Echo each item back as it arrives.
+  rpc Echo(stream Item) returns (stream Item);
+}
+
+// How many items to stream.
+message WatchRequest {
+  // The number of items.
+  int32 count = 1;
+}
+
+// One item of a feed.
+message Item {
+  // The item text.
+  string text = 1;
+}
+
+// What a stream of items held.
+message Summary {
+  // The number of items.
+  int32 count = 1;
+  // The item texts, joined with spaces.
+  string joined = 2;
+}

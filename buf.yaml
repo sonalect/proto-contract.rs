@@ -1,0 +1,18 @@
+# Workspace buf config (Buf LSP, lint, and the golden generate).
+# `proto/` holds the test protos the plugin is checked against.
+version: v2
+modules:
+  - path: proto
+lint:
+  use:
+    - STANDARD
+  except:
+    # The test protos exercise shapes a real contract may have: a reply
+    # named `...Reply`, a well-known type or a message of another package
+    # as request or response, one message used by several methods.
+    - RPC_REQUEST_RESPONSE_UNIQUE
+    - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME
+breaking:
+  use:
+    - FILE

@@ -1,0 +1,32 @@
+# Golden generate for the test protos (`bazel run //proto:generate`).
+# buffa writes the messages; Contratto writes both layouts of its traits.
+# `extern_path` maps one package away from `buffa_module` so the golden
+# output also covers a path that does not follow the proto package.
+version: v2
+inputs:
+  - directory: proto
+plugins:
+  - local: protoc-gen-buffa
+    out: rust/golden/src/generated/buffa
+    strategy: all
+  - local: protoc-gen-buffa-packaging
+    out: rust/golden/src/generated/buffa
+    strategy: all
+  - local: protoc-gen-contratto-rust
+    out: rust/golden/src/generated/contratto
+    strategy: all
+    opt:
+      - buffa_module=crate::proto
+      - extern_path=.example.shared=crate::shared
+  - local: protoc-gen-buffa-packaging
+    out: rust/golden/src/generated/contratto
+    strategy: all
+    opt:
+      - filter=services
+  - local: protoc-gen-contratto-rust
+    out: rust/golden/src/generated/per_package
+    strategy: all
+    opt:
+      - buffa_module=crate::proto
+      - extern_path=.example.shared=crate::shared
+      - file_per_package

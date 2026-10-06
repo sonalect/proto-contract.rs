@@ -1,0 +1,44 @@
+edition = "2024";
+
+package example.v1;
+
+import "example/common/v1/name.proto";
+import "example/shared/v1/label.proto";
+import "google/protobuf/empty.proto";
+
+// Greets people by name.
+service GreeterService {
+  // Greet a person by name.
+  rpc Greet(GreetRequest) returns (GreetReply);
+
+  // Greet a person given only a name from another package.
+  rpc GreetName(example.common.v1.Name) returns (GreetReply);
+
+  // Report the options the greeter uses by default.
+  rpc GetOptions(google.protobuf.Empty) returns (GreetRequest.Options);
+
+  // Echo a label of a package that `extern_path` maps elsewhere.
+  rpc EchoLabel(example.shared.v1.Label) returns (example.shared.v1.Label);
+
+  rpc Reset(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+
+// Who to greet, and how.
+message GreetRequest {
+  // How the greeting is formed.
+  message Options {
+    // Upper-case the greeting.
+    bool shout = 1;
+  }
+
+  // The person to greet.
+  example.common.v1.Name name = 1;
+  // How to greet.
+  Options options = 2;
+}
+
+// The greeting.
+message GreetReply {
+  // The text of the greeting.
+  string text = 1;
+}

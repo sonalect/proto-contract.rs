@@ -1,0 +1,40 @@
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+
+exports_files([
+    "Cargo.toml",
+    # Destination of //proto:generate.
+    "src/generated",
+])
+
+rust_library(
+    name = "golden",
+    srcs = glob(["src/**/*.rs"]),
+    crate_name = "contratto_golden",
+    visibility = ["//rust:__pkg__"],
+    deps = [
+        "//rust/contratto",
+        "@contratto_cargo//:buffa",
+        "@contratto_cargo//:buffa-types",
+    ],
+)
+
+rust_test(
+    name = "direct_test",
+    srcs = ["tests/direct.rs"],
+    visibility = ["//rust:__pkg__"],
+    deps = [
+        ":golden",
+        "//rust/contratto",
+        "@contratto_cargo//:buffa-types",
+    ],
+)
+
+rust_test(
+    name = "streaming_test",
+    srcs = ["tests/streaming.rs"],
+    visibility = ["//rust:__pkg__"],
+    deps = [
+        ":golden",
+        "//rust/contratto",
+    ],
+)

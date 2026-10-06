@@ -1,0 +1,24 @@
+load("@bazel_utils_rust//:rust.bzl", "cargo_audit_test")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("//bazel:compat.bzl", "NOT_WINDOWS")
+
+rust_clippy_test(
+    name = "lint",
+    size = "small",
+    targets = [
+        "//rust/contratto",
+        "//rust/contratto:contratto_test",
+        "//rust/golden",
+        "//rust/golden:direct_test",
+        "//rust/golden:streaming_test",
+        "//rust/protoc-gen-contratto-rust",
+        "//rust/protoc-gen-contratto-rust:lib",
+        "//rust/protoc-gen-contratto-rust:lib_test",
+    ],
+)
+
+cargo_audit_test(
+    name = "vuln",
+    size = "small",
+    target_compatible_with = NOT_WINDOWS,
+)

@@ -1,0 +1,17 @@
+[package]
+name = "contratto-golden"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+description = "The golden output of protoc-gen-contratto-rust for proto/, compiled and exercised."
+
+[dependencies]
+buffa = { workspace = true }
+buffa-types = { workspace = true }
+contratto = { workspace = true }
+
+[lints]
+workspace = true

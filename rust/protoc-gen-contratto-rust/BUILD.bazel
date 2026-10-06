@@ -1,0 +1,39 @@
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library", "rust_test")
+
+exports_files(["Cargo.toml"])
+
+rust_library(
+    name = "lib",
+    srcs = glob(
+        ["src/**/*.rs"],
+        exclude = ["src/main.rs"],
+    ),
+    crate_name = "protoc_gen_contratto_rust",
+    visibility = ["//rust:__pkg__"],
+    deps = [
+        "@contratto_cargo//:buffa",
+        "@contratto_cargo//:buffa-codegen",
+        "@contratto_cargo//:heck",
+        "@contratto_cargo//:prettyplease",
+        "@contratto_cargo//:proc-macro2",
+        "@contratto_cargo//:quote",
+        "@contratto_cargo//:syn",
+    ],
+)
+
+rust_test(
+    name = "lib_test",
+    crate = ":lib",
+    visibility = ["//rust:__pkg__"],
+)
+
+# The target name is the name `buf generate` looks up on PATH.
+rust_binary(
+    name = "protoc-gen-contratto-rust",
+    srcs = ["src/main.rs"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":lib",
+        "@contratto_cargo//:buffa",
+    ],
+)

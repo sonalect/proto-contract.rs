@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package example.common.v1;
+
+// A person's name.
+message Name {
+  // The given name.
+  string first = 1;
+}

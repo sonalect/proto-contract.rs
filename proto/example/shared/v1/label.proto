@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package example.shared.v1;
+
+// A free-form label. The golden run maps this package with `extern_path`.
+message Label {
+  // The label text.
+  string text = 1;
+}
