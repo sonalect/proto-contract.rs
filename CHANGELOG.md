@@ -32,10 +32,14 @@ changes to the generated code or the runtime bump the minor.
   and `Blocking` come with the runtime's `tokio` feature; the plugin
   parameter `gate_tokio_feature[=<name>]` puts their impls behind a Cargo
   feature. `Blocking` inside a current-thread runtime fails with
-  `FAILED_PRECONDITION` instead of panicking.
+  `FAILED_PRECONDITION` instead of panicking. The bridges' helpers are
+  associated functions, so an RPC named `Call` or `Feed` stays reachable
+  with method syntax, and every bridge ends a stream after its first `Err`.
+- `Dyn<Service>Async` implements `Debug`.
 - Plugin parameters `buffa_module=`, `extern_path=`, `file_per_package`,
   and `element_memory_limit=`, as `protoc-gen-connect-rust` reads them, plus
-  `runtime=` for the path of the runtime crate and `gate_tokio_feature`. Message paths are absolute
+  `runtime=` for the path of the runtime crate and `gate_tokio_feature`.
+  `buffa_module=crate` maps the buffa output to the crate root. Message paths are absolute
   and match `protoc-gen-buffa` 0.9.2. Output is a `<stem>.__contratto.rs`
   per proto and a `<pkg>.mod.rs` stitcher per package for
   `protoc-gen-buffa-packaging` (`filter=services`), or one

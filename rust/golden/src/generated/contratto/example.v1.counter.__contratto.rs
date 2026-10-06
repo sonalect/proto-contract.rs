@@ -6,6 +6,7 @@
 /// Blocking form of `example.v1.CounterService`: each method returns when the call is done. Streams are iterators.
 ///
 /// Implement it for work that computes; implement `CounterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn CounterServiceSync>` to choose it at run time. `Blocking` gives an `CounterServiceAsync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait CounterServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Add a number to the total and return the new total.
     fn add(
@@ -21,6 +22,7 @@ pub trait CounterServiceSync: ::core::marker::Send + ::core::marker::Sync {
 /// Async form of `example.v1.CounterService`: each method returns a future of the result. Streams are `Stream`s.
 ///
 /// Implement it with plain `async fn` for work that waits on I/O; implement `CounterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl CounterServiceAsync`) call it without boxing; `DynCounterServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `CounterServiceSync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait CounterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Add a number to the total and return the new total.
     fn add(
@@ -39,6 +41,11 @@ pub trait CounterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
 #[derive(Clone)]
 pub struct DynCounterServiceAsync {
     inner: ::std::sync::Arc<dyn __dyn_counter_service_async::Erased>,
+}
+impl ::core::fmt::Debug for DynCounterServiceAsync {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("DynCounterServiceAsync").finish_non_exhaustive()
+    }
 }
 impl DynCounterServiceAsync {
     /// Put `service` behind dynamic dispatch.
@@ -69,7 +76,7 @@ impl CounterServiceAsync for DynCounterServiceAsync {
 }
 /// The dyn-compatible face behind the handle: every future and reply
 /// stream boxed.
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::wrong_self_convention)]
 mod __dyn_counter_service_async {
     pub trait Erased: ::core::marker::Send + ::core::marker::Sync {
         fn add(
@@ -106,7 +113,7 @@ impl<T: CounterServiceSync> CounterServiceAsync for ::contratto::Inline<T> {
         crate::proto::example::v1::AddReply,
         ::contratto::Status,
     > {
-        <T as CounterServiceSync>::add(self.get_ref(), request)
+        <T as CounterServiceSync>::add(Self::get_ref(self), request)
     }
 }
 impl<T: CounterServiceSync + 'static> CounterServiceAsync for ::contratto::Offload<T> {
@@ -119,7 +126,7 @@ impl<T: CounterServiceSync + 'static> CounterServiceAsync for ::contratto::Offlo
             ::contratto::Status,
         >,
     > + ::core::marker::Send {
-        self.call(move |service| <T as CounterServiceSync>::add(service, request))
+        Self::call(self, move |service| <T as CounterServiceSync>::add(service, request))
     }
 }
 impl<T: CounterServiceAsync + 'static> CounterServiceSync for ::contratto::Blocking<T> {
@@ -130,6 +137,9 @@ impl<T: CounterServiceAsync + 'static> CounterServiceSync for ::contratto::Block
         crate::proto::example::v1::AddReply,
         ::contratto::Status,
     > {
-        self.block_on(<T as CounterServiceAsync>::add(self.get_ref(), request))
+        Self::block_on(
+            self,
+            <T as CounterServiceAsync>::add(Self::get_ref(self), request),
+        )
     }
 }

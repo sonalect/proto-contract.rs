@@ -7,21 +7,20 @@
 /// Blocking form of `example.v1.CounterService`: each method returns when the call is done. Streams are iterators.
 ///
 /// Implement it for work that computes; implement `CounterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn CounterServiceSync>` to choose it at run time. `Blocking` gives an `CounterServiceAsync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait CounterServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Add a number to the total and return the new total.
     fn add(
         &self,
         request: crate::proto::example::v1::AddRequest,
-    ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contratto::Status,
-    >;
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status>;
 }
 /// Keeps a running total.
 ///
 /// Async form of `example.v1.CounterService`: each method returns a future of the result. Streams are `Stream`s.
 ///
 /// Implement it with plain `async fn` for work that waits on I/O; implement `CounterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl CounterServiceAsync`) call it without boxing; `DynCounterServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `CounterServiceSync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait CounterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Add a number to the total and return the new total.
     fn add(
@@ -30,7 +29,7 @@ pub trait CounterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::AddReply,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send;
 }
@@ -40,6 +39,11 @@ pub trait CounterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
 #[derive(Clone)]
 pub struct DynCounterServiceAsync {
     inner: ::std::sync::Arc<dyn __dyn_counter_service_async::Erased>,
+}
+impl ::core::fmt::Debug for DynCounterServiceAsync {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("DynCounterServiceAsync").finish_non_exhaustive()
+    }
 }
 impl DynCounterServiceAsync {
     /// Put `service` behind dynamic dispatch.
@@ -62,7 +66,7 @@ impl CounterServiceAsync for DynCounterServiceAsync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::AddReply,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
         self.inner.add(request)
@@ -70,17 +74,17 @@ impl CounterServiceAsync for DynCounterServiceAsync {
 }
 /// The dyn-compatible face behind the handle: every future and reply
 /// stream boxed.
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::wrong_self_convention)]
 mod __dyn_counter_service_async {
     pub trait Erased: ::core::marker::Send + ::core::marker::Sync {
         fn add(
             &self,
             request: crate::proto::example::v1::AddRequest,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
                 crate::proto::example::v1::AddReply,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         >;
     }
@@ -88,52 +92,49 @@ mod __dyn_counter_service_async {
         fn add(
             &self,
             request: crate::proto::example::v1::AddRequest,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
                 crate::proto::example::v1::AddReply,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         > {
             ::std::boxed::Box::pin(<T as super::CounterServiceAsync>::add(self, request))
         }
     }
 }
-impl<T: CounterServiceSync> CounterServiceAsync for ::contratto::Inline<T> {
+impl<T: CounterServiceSync> CounterServiceAsync for crate::rt::Inline<T> {
     async fn add(
         &self,
         request: crate::proto::example::v1::AddRequest,
-    ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contratto::Status,
-    > {
-        <T as CounterServiceSync>::add(self.get_ref(), request)
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        <T as CounterServiceSync>::add(Self::get_ref(self), request)
     }
 }
 #[cfg(feature = "tokio")]
-impl<T: CounterServiceSync + 'static> CounterServiceAsync for ::contratto::Offload<T> {
+impl<T: CounterServiceSync + 'static> CounterServiceAsync for crate::rt::Offload<T> {
     fn add(
         &self,
         request: crate::proto::example::v1::AddRequest,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::AddReply,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
-        self.call(move |service| <T as CounterServiceSync>::add(service, request))
+        Self::call(self, move |service| <T as CounterServiceSync>::add(service, request))
     }
 }
 #[cfg(feature = "tokio")]
-impl<T: CounterServiceAsync + 'static> CounterServiceSync for ::contratto::Blocking<T> {
+impl<T: CounterServiceAsync + 'static> CounterServiceSync for crate::rt::Blocking<T> {
     fn add(
         &self,
         request: crate::proto::example::v1::AddRequest,
-    ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contratto::Status,
-    > {
-        self.block_on(<T as CounterServiceAsync>::add(self.get_ref(), request))
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        Self::block_on(
+            self,
+            <T as CounterServiceAsync>::add(Self::get_ref(self), request),
+        )
     }
 }
 
@@ -144,39 +145,40 @@ impl<T: CounterServiceAsync + 'static> CounterServiceSync for ::contratto::Block
 /// Blocking form of `example.v1.FeedService`: each method returns when the call is done. Streams are iterators.
 ///
 /// Implement it for work that computes; implement `FeedServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn FeedServiceSync>` to choose it at run time. `Blocking` gives an `FeedServiceAsync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait FeedServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Stream the first `count` items of the feed, one reply per item.
     fn watch(
         &self,
         request: crate::proto::example::v1::WatchRequest,
     ) -> ::core::result::Result<
-        ::contratto::BoxIter<
+        crate::rt::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+            ::core::result::Result<crate::proto::example::v1::Item, crate::rt::Status>,
         >,
-        ::contratto::Status,
+        crate::rt::Status,
     >;
     /// Collect a stream of items into one summary.
     fn collect(
         &self,
-        requests: ::contratto::BoxIter<
+        requests: crate::rt::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+            ::core::result::Result<crate::proto::example::v1::Item, crate::rt::Status>,
         >,
-    ) -> ::core::result::Result<crate::proto::example::v1::Summary, ::contratto::Status>;
+    ) -> ::core::result::Result<crate::proto::example::v1::Summary, crate::rt::Status>;
     /// Echo each item back as it arrives.
     fn echo(
         &self,
-        requests: ::contratto::BoxIter<
+        requests: crate::rt::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+            ::core::result::Result<crate::proto::example::v1::Item, crate::rt::Status>,
         >,
     ) -> ::core::result::Result<
-        ::contratto::BoxIter<
+        crate::rt::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+            ::core::result::Result<crate::proto::example::v1::Item, crate::rt::Status>,
         >,
-        ::contratto::Status,
+        crate::rt::Status,
     >;
 }
 /// Moves items in every direction a method can stream.
@@ -184,6 +186,7 @@ pub trait FeedServiceSync: ::core::marker::Send + ::core::marker::Sync {
 /// Async form of `example.v1.FeedService`: each method returns a future of the result. Streams are `Stream`s.
 ///
 /// Implement it with plain `async fn` for work that waits on I/O; implement `FeedServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl FeedServiceAsync`) call it without boxing; `DynFeedServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `FeedServiceSync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait FeedServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Stream the first `count` items of the feed, one reply per item.
     fn watch(
@@ -191,13 +194,13 @@ pub trait FeedServiceAsync: ::core::marker::Send + ::core::marker::Sync {
         request: crate::proto::example::v1::WatchRequest,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contratto::Stream<
+            impl crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + use<Self>,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send;
     /// Collect a stream of items into one summary.
@@ -207,14 +210,14 @@ pub trait FeedServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::Summary,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send
     where
-        R: ::contratto::Stream<
+        R: crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + 'static;
     /// Echo each item back as it arrives.
@@ -223,20 +226,20 @@ pub trait FeedServiceAsync: ::core::marker::Send + ::core::marker::Sync {
         requests: R,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contratto::Stream<
+            impl crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + use<Self, R>,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send
     where
-        R: ::contratto::Stream<
+        R: crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + 'static;
 }
@@ -246,6 +249,11 @@ pub trait FeedServiceAsync: ::core::marker::Send + ::core::marker::Sync {
 #[derive(Clone)]
 pub struct DynFeedServiceAsync {
     inner: ::std::sync::Arc<dyn __dyn_feed_service_async::Erased>,
+}
+impl ::core::fmt::Debug for DynFeedServiceAsync {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("DynFeedServiceAsync").finish_non_exhaustive()
+    }
 }
 impl DynFeedServiceAsync {
     /// Put `service` behind dynamic dispatch.
@@ -267,13 +275,13 @@ impl FeedServiceAsync for DynFeedServiceAsync {
         request: crate::proto::example::v1::WatchRequest,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contratto::Stream<
+            impl crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + use<>,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
         self.inner.watch(request)
@@ -284,14 +292,14 @@ impl FeedServiceAsync for DynFeedServiceAsync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::Summary,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send
     where
-        R: ::contratto::Stream<
+        R: crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + 'static,
     {
@@ -302,20 +310,20 @@ impl FeedServiceAsync for DynFeedServiceAsync {
         requests: R,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contratto::Stream<
+            impl crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + use<R>,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send
     where
-        R: ::contratto::Stream<
+        R: crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + 'static,
     {
@@ -324,61 +332,58 @@ impl FeedServiceAsync for DynFeedServiceAsync {
 }
 /// The dyn-compatible face behind the handle: every future and reply
 /// stream boxed.
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::wrong_self_convention)]
 mod __dyn_feed_service_async {
     pub trait Erased: ::core::marker::Send + ::core::marker::Sync {
         fn watch(
             &self,
             request: crate::proto::example::v1::WatchRequest,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
-                ::contratto::BoxStream<
+                crate::rt::BoxStream<
                     'static,
                     ::core::result::Result<
                         crate::proto::example::v1::Item,
-                        ::contratto::Status,
+                        crate::rt::Status,
                     >,
                 >,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         >;
         fn collect(
             &self,
-            requests: ::contratto::BoxStream<
+            requests: crate::rt::BoxStream<
                 'static,
                 ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             >,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
-            ::core::result::Result<
-                crate::proto::example::v1::Summary,
-                ::contratto::Status,
-            >,
+            ::core::result::Result<crate::proto::example::v1::Summary, crate::rt::Status>,
         >;
         fn echo(
             &self,
-            requests: ::contratto::BoxStream<
+            requests: crate::rt::BoxStream<
                 'static,
                 ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             >,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
-                ::contratto::BoxStream<
+                crate::rt::BoxStream<
                     'static,
                     ::core::result::Result<
                         crate::proto::example::v1::Item,
-                        ::contratto::Status,
+                        crate::rt::Status,
                     >,
                 >,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         >;
     }
@@ -386,28 +391,28 @@ mod __dyn_feed_service_async {
         fn watch(
             &self,
             request: crate::proto::example::v1::WatchRequest,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
-                ::contratto::BoxStream<
+                crate::rt::BoxStream<
                     'static,
                     ::core::result::Result<
                         crate::proto::example::v1::Item,
-                        ::contratto::Status,
+                        crate::rt::Status,
                     >,
                 >,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         > {
             ::std::boxed::Box::pin(async move {
                 let stream = <T as super::FeedServiceAsync>::watch(self, request).await?;
                 ::core::result::Result::Ok(
                     ::std::boxed::Box::pin(stream)
-                        as ::contratto::BoxStream<
+                        as crate::rt::BoxStream<
                             'static,
                             ::core::result::Result<
                                 crate::proto::example::v1::Item,
-                                ::contratto::Status,
+                                crate::rt::Status,
                             >,
                         >,
                 )
@@ -415,19 +420,16 @@ mod __dyn_feed_service_async {
         }
         fn collect(
             &self,
-            requests: ::contratto::BoxStream<
+            requests: crate::rt::BoxStream<
                 'static,
                 ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             >,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
-            ::core::result::Result<
-                crate::proto::example::v1::Summary,
-                ::contratto::Status,
-            >,
+            ::core::result::Result<crate::proto::example::v1::Summary, crate::rt::Status>,
         > {
             ::std::boxed::Box::pin(
                 <T as super::FeedServiceAsync>::collect(self, requests),
@@ -435,35 +437,35 @@ mod __dyn_feed_service_async {
         }
         fn echo(
             &self,
-            requests: ::contratto::BoxStream<
+            requests: crate::rt::BoxStream<
                 'static,
                 ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             >,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
-                ::contratto::BoxStream<
+                crate::rt::BoxStream<
                     'static,
                     ::core::result::Result<
                         crate::proto::example::v1::Item,
-                        ::contratto::Status,
+                        crate::rt::Status,
                     >,
                 >,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         > {
             ::std::boxed::Box::pin(async move {
                 let stream = <T as super::FeedServiceAsync>::echo(self, requests).await?;
                 ::core::result::Result::Ok(
                     ::std::boxed::Box::pin(stream)
-                        as ::contratto::BoxStream<
+                        as crate::rt::BoxStream<
                             'static,
                             ::core::result::Result<
                                 crate::proto::example::v1::Item,
-                                ::contratto::Status,
+                                crate::rt::Status,
                             >,
                         >,
                 )
@@ -471,82 +473,82 @@ mod __dyn_feed_service_async {
         }
     }
 }
-impl<T: FeedServiceSync> FeedServiceAsync for ::contratto::Inline<T> {
+impl<T: FeedServiceSync> FeedServiceAsync for crate::rt::Inline<T> {
     async fn watch(
         &self,
         request: crate::proto::example::v1::WatchRequest,
     ) -> ::core::result::Result<
-        impl ::contratto::Stream<
+        impl crate::rt::Stream<
             Item = ::core::result::Result<
                 crate::proto::example::v1::Item,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         > + ::core::marker::Send + use<T>,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        <T as FeedServiceSync>::watch(self.get_ref(), request)
-            .map(::contratto::IterStream::new)
+        <T as FeedServiceSync>::watch(Self::get_ref(self), request)
+            .map(Self::reply_stream)
     }
     async fn collect<R>(
         &self,
         requests: R,
-    ) -> ::core::result::Result<crate::proto::example::v1::Summary, ::contratto::Status>
+    ) -> ::core::result::Result<crate::proto::example::v1::Summary, crate::rt::Status>
     where
-        R: ::contratto::Stream<
+        R: crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + 'static,
     {
         let requests = Self::buffer(requests).await;
-        <T as FeedServiceSync>::collect(self.get_ref(), requests)
+        <T as FeedServiceSync>::collect(Self::get_ref(self), requests)
     }
     async fn echo<R>(
         &self,
         requests: R,
     ) -> ::core::result::Result<
-        impl ::contratto::Stream<
+        impl crate::rt::Stream<
             Item = ::core::result::Result<
                 crate::proto::example::v1::Item,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         > + ::core::marker::Send + use<T, R>,
-        ::contratto::Status,
+        crate::rt::Status,
     >
     where
-        R: ::contratto::Stream<
+        R: crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + 'static,
     {
         let requests = Self::buffer(requests).await;
-        <T as FeedServiceSync>::echo(self.get_ref(), requests)
-            .map(::contratto::IterStream::new)
+        <T as FeedServiceSync>::echo(Self::get_ref(self), requests)
+            .map(Self::reply_stream)
     }
 }
 #[cfg(feature = "tokio")]
-impl<T: FeedServiceSync + 'static> FeedServiceAsync for ::contratto::Offload<T> {
+impl<T: FeedServiceSync + 'static> FeedServiceAsync for crate::rt::Offload<T> {
     fn watch(
         &self,
         request: crate::proto::example::v1::WatchRequest,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contratto::Stream<
+            impl crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + use<T>,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
-        self.server_streaming(move |service| <T as FeedServiceSync>::watch(
-            service,
-            request,
-        ))
+        Self::server_streaming(
+            self,
+            move |service| <T as FeedServiceSync>::watch(service, request),
+        )
     }
     fn collect<R>(
         &self,
@@ -554,86 +556,92 @@ impl<T: FeedServiceSync + 'static> FeedServiceAsync for ::contratto::Offload<T> 
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::Summary,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send
     where
-        R: ::contratto::Stream<
+        R: crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + 'static,
     {
-        self.client_streaming(requests, <T as FeedServiceSync>::collect)
+        Self::client_streaming(self, requests, <T as FeedServiceSync>::collect)
     }
     fn echo<R>(
         &self,
         requests: R,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contratto::Stream<
+            impl crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + use<T, R>,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send
     where
-        R: ::contratto::Stream<
+        R: crate::rt::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contratto::Status,
+                    crate::rt::Status,
                 >,
             > + ::core::marker::Send + 'static,
     {
-        self.bidirectional(requests, <T as FeedServiceSync>::echo)
+        Self::bidirectional(self, requests, <T as FeedServiceSync>::echo)
     }
 }
 #[cfg(feature = "tokio")]
-impl<T: FeedServiceAsync + 'static> FeedServiceSync for ::contratto::Blocking<T> {
+impl<T: FeedServiceAsync + 'static> FeedServiceSync for crate::rt::Blocking<T> {
     fn watch(
         &self,
         request: crate::proto::example::v1::WatchRequest,
     ) -> ::core::result::Result<
-        ::contratto::BoxIter<
+        crate::rt::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+            ::core::result::Result<crate::proto::example::v1::Item, crate::rt::Status>,
         >,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        self.block_on_stream(<T as FeedServiceAsync>::watch(self.get_ref(), request))
+        Self::block_on_stream(
+            self,
+            <T as FeedServiceAsync>::watch(Self::get_ref(self), request),
+        )
     }
     fn collect(
         &self,
-        requests: ::contratto::BoxIter<
+        requests: crate::rt::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+            ::core::result::Result<crate::proto::example::v1::Item, crate::rt::Status>,
         >,
-    ) -> ::core::result::Result<
-        crate::proto::example::v1::Summary,
-        ::contratto::Status,
-    > {
-        let requests = self.feed(requests);
-        self.block_on(<T as FeedServiceAsync>::collect(self.get_ref(), requests))
+    ) -> ::core::result::Result<crate::proto::example::v1::Summary, crate::rt::Status> {
+        let requests = Self::feed(self, requests);
+        Self::block_on(
+            self,
+            <T as FeedServiceAsync>::collect(Self::get_ref(self), requests),
+        )
     }
     fn echo(
         &self,
-        requests: ::contratto::BoxIter<
+        requests: crate::rt::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+            ::core::result::Result<crate::proto::example::v1::Item, crate::rt::Status>,
         >,
     ) -> ::core::result::Result<
-        ::contratto::BoxIter<
+        crate::rt::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+            ::core::result::Result<crate::proto::example::v1::Item, crate::rt::Status>,
         >,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        let requests = self.feed(requests);
-        self.block_on_stream(<T as FeedServiceAsync>::echo(self.get_ref(), requests))
+        let requests = Self::feed(self, requests);
+        Self::block_on_stream(
+            self,
+            <T as FeedServiceAsync>::echo(Self::get_ref(self), requests),
+        )
     }
 }
 
@@ -644,6 +652,7 @@ impl<T: FeedServiceAsync + 'static> FeedServiceSync for ::contratto::Blocking<T>
 /// Blocking form of `example.v1.GreeterService`: each method returns when the call is done. Streams are iterators.
 ///
 /// Implement it for work that computes; implement `GreeterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn GreeterServiceSync>` to choose it at run time. `Blocking` gives an `GreeterServiceAsync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait GreeterServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Greet a person by name.
     fn greet(
@@ -651,7 +660,7 @@ pub trait GreeterServiceSync: ::core::marker::Send + ::core::marker::Sync {
         request: crate::proto::example::v1::GreetRequest,
     ) -> ::core::result::Result<
         crate::proto::example::v1::GreetReply,
-        ::contratto::Status,
+        crate::rt::Status,
     >;
     /// Greet a person given only a name from another package.
     fn greet_name(
@@ -659,7 +668,7 @@ pub trait GreeterServiceSync: ::core::marker::Send + ::core::marker::Sync {
         request: crate::proto::example::common::v1::Name,
     ) -> ::core::result::Result<
         crate::proto::example::v1::GreetReply,
-        ::contratto::Status,
+        crate::rt::Status,
     >;
     /// Report the options the greeter uses by default.
     fn get_options(
@@ -667,20 +676,20 @@ pub trait GreeterServiceSync: ::core::marker::Send + ::core::marker::Sync {
         request: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
         crate::proto::example::v1::greet_request::Options,
-        ::contratto::Status,
+        crate::rt::Status,
     >;
     /// Echo a label of a package that `extern_path` maps elsewhere.
     fn echo_label(
         &self,
         request: crate::shared::v1::Label,
-    ) -> ::core::result::Result<crate::shared::v1::Label, ::contratto::Status>;
+    ) -> ::core::result::Result<crate::shared::v1::Label, crate::rt::Status>;
     /// Call `example.v1.GreeterService.Reset`.
     fn reset(
         &self,
         request: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
         ::buffa_types::google::protobuf::Empty,
-        ::contratto::Status,
+        crate::rt::Status,
     >;
 }
 /// Greets people by name.
@@ -688,6 +697,7 @@ pub trait GreeterServiceSync: ::core::marker::Send + ::core::marker::Sync {
 /// Async form of `example.v1.GreeterService`: each method returns a future of the result. Streams are `Stream`s.
 ///
 /// Implement it with plain `async fn` for work that waits on I/O; implement `GreeterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl GreeterServiceAsync`) call it without boxing; `DynGreeterServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `GreeterServiceSync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Greet a person by name.
     fn greet(
@@ -696,7 +706,7 @@ pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::GreetReply,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send;
     /// Greet a person given only a name from another package.
@@ -706,7 +716,7 @@ pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::GreetReply,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send;
     /// Report the options the greeter uses by default.
@@ -716,7 +726,7 @@ pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::greet_request::Options,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send;
     /// Echo a label of a package that `extern_path` maps elsewhere.
@@ -724,7 +734,7 @@ pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
         &self,
         request: crate::shared::v1::Label,
     ) -> impl ::core::future::Future<
-        Output = ::core::result::Result<crate::shared::v1::Label, ::contratto::Status>,
+        Output = ::core::result::Result<crate::shared::v1::Label, crate::rt::Status>,
     > + ::core::marker::Send;
     /// Call `example.v1.GreeterService.Reset`.
     fn reset(
@@ -733,7 +743,7 @@ pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             ::buffa_types::google::protobuf::Empty,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send;
 }
@@ -743,6 +753,11 @@ pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
 #[derive(Clone)]
 pub struct DynGreeterServiceAsync {
     inner: ::std::sync::Arc<dyn __dyn_greeter_service_async::Erased>,
+}
+impl ::core::fmt::Debug for DynGreeterServiceAsync {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("DynGreeterServiceAsync").finish_non_exhaustive()
+    }
 }
 impl DynGreeterServiceAsync {
     /// Put `service` behind dynamic dispatch.
@@ -765,7 +780,7 @@ impl GreeterServiceAsync for DynGreeterServiceAsync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::GreetReply,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
         self.inner.greet(request)
@@ -776,7 +791,7 @@ impl GreeterServiceAsync for DynGreeterServiceAsync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::GreetReply,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
         self.inner.greet_name(request)
@@ -787,7 +802,7 @@ impl GreeterServiceAsync for DynGreeterServiceAsync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::greet_request::Options,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
         self.inner.get_options(request)
@@ -796,7 +811,7 @@ impl GreeterServiceAsync for DynGreeterServiceAsync {
         &self,
         request: crate::shared::v1::Label,
     ) -> impl ::core::future::Future<
-        Output = ::core::result::Result<crate::shared::v1::Label, ::contratto::Status>,
+        Output = ::core::result::Result<crate::shared::v1::Label, crate::rt::Status>,
     > + ::core::marker::Send {
         self.inner.echo_label(request)
     }
@@ -806,7 +821,7 @@ impl GreeterServiceAsync for DynGreeterServiceAsync {
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             ::buffa_types::google::protobuf::Empty,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
         self.inner.reset(request)
@@ -814,54 +829,54 @@ impl GreeterServiceAsync for DynGreeterServiceAsync {
 }
 /// The dyn-compatible face behind the handle: every future and reply
 /// stream boxed.
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::wrong_self_convention)]
 mod __dyn_greeter_service_async {
     pub trait Erased: ::core::marker::Send + ::core::marker::Sync {
         fn greet(
             &self,
             request: crate::proto::example::v1::GreetRequest,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
                 crate::proto::example::v1::GreetReply,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         >;
         fn greet_name(
             &self,
             request: crate::proto::example::common::v1::Name,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
                 crate::proto::example::v1::GreetReply,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         >;
         fn get_options(
             &self,
             request: ::buffa_types::google::protobuf::Empty,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
                 crate::proto::example::v1::greet_request::Options,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         >;
         fn echo_label(
             &self,
             request: crate::shared::v1::Label,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
-            ::core::result::Result<crate::shared::v1::Label, ::contratto::Status>,
+            ::core::result::Result<crate::shared::v1::Label, crate::rt::Status>,
         >;
         fn reset(
             &self,
             request: ::buffa_types::google::protobuf::Empty,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
                 ::buffa_types::google::protobuf::Empty,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         >;
     }
@@ -869,11 +884,11 @@ mod __dyn_greeter_service_async {
         fn greet(
             &self,
             request: crate::proto::example::v1::GreetRequest,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
                 crate::proto::example::v1::GreetReply,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         > {
             ::std::boxed::Box::pin(
@@ -883,11 +898,11 @@ mod __dyn_greeter_service_async {
         fn greet_name(
             &self,
             request: crate::proto::example::common::v1::Name,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
                 crate::proto::example::v1::GreetReply,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         > {
             ::std::boxed::Box::pin(
@@ -897,11 +912,11 @@ mod __dyn_greeter_service_async {
         fn get_options(
             &self,
             request: ::buffa_types::google::protobuf::Empty,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
                 crate::proto::example::v1::greet_request::Options,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         > {
             ::std::boxed::Box::pin(
@@ -911,9 +926,9 @@ mod __dyn_greeter_service_async {
         fn echo_label(
             &self,
             request: crate::shared::v1::Label,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
-            ::core::result::Result<crate::shared::v1::Label, ::contratto::Status>,
+            ::core::result::Result<crate::shared::v1::Label, crate::rt::Status>,
         > {
             ::std::boxed::Box::pin(
                 <T as super::GreeterServiceAsync>::echo_label(self, request),
@@ -922,11 +937,11 @@ mod __dyn_greeter_service_async {
         fn reset(
             &self,
             request: ::buffa_types::google::protobuf::Empty,
-        ) -> ::contratto::BoxFuture<
+        ) -> crate::rt::BoxFuture<
             '_,
             ::core::result::Result<
                 ::buffa_types::google::protobuf::Empty,
-                ::contratto::Status,
+                crate::rt::Status,
             >,
         > {
             ::std::boxed::Box::pin(
@@ -935,62 +950,65 @@ mod __dyn_greeter_service_async {
         }
     }
 }
-impl<T: GreeterServiceSync> GreeterServiceAsync for ::contratto::Inline<T> {
+impl<T: GreeterServiceSync> GreeterServiceAsync for crate::rt::Inline<T> {
     async fn greet(
         &self,
         request: crate::proto::example::v1::GreetRequest,
     ) -> ::core::result::Result<
         crate::proto::example::v1::GreetReply,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        <T as GreeterServiceSync>::greet(self.get_ref(), request)
+        <T as GreeterServiceSync>::greet(Self::get_ref(self), request)
     }
     async fn greet_name(
         &self,
         request: crate::proto::example::common::v1::Name,
     ) -> ::core::result::Result<
         crate::proto::example::v1::GreetReply,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        <T as GreeterServiceSync>::greet_name(self.get_ref(), request)
+        <T as GreeterServiceSync>::greet_name(Self::get_ref(self), request)
     }
     async fn get_options(
         &self,
         request: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
         crate::proto::example::v1::greet_request::Options,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        <T as GreeterServiceSync>::get_options(self.get_ref(), request)
+        <T as GreeterServiceSync>::get_options(Self::get_ref(self), request)
     }
     async fn echo_label(
         &self,
         request: crate::shared::v1::Label,
-    ) -> ::core::result::Result<crate::shared::v1::Label, ::contratto::Status> {
-        <T as GreeterServiceSync>::echo_label(self.get_ref(), request)
+    ) -> ::core::result::Result<crate::shared::v1::Label, crate::rt::Status> {
+        <T as GreeterServiceSync>::echo_label(Self::get_ref(self), request)
     }
     async fn reset(
         &self,
         request: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
         ::buffa_types::google::protobuf::Empty,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        <T as GreeterServiceSync>::reset(self.get_ref(), request)
+        <T as GreeterServiceSync>::reset(Self::get_ref(self), request)
     }
 }
 #[cfg(feature = "tokio")]
-impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offload<T> {
+impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for crate::rt::Offload<T> {
     fn greet(
         &self,
         request: crate::proto::example::v1::GreetRequest,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::GreetReply,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
-        self.call(move |service| <T as GreeterServiceSync>::greet(service, request))
+        Self::call(
+            self,
+            move |service| <T as GreeterServiceSync>::greet(service, request),
+        )
     }
     fn greet_name(
         &self,
@@ -998,10 +1016,13 @@ impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offlo
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::GreetReply,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
-        self.call(move |service| <T as GreeterServiceSync>::greet_name(service, request))
+        Self::call(
+            self,
+            move |service| <T as GreeterServiceSync>::greet_name(service, request),
+        )
     }
     fn get_options(
         &self,
@@ -1009,21 +1030,24 @@ impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offlo
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::greet_request::Options,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
-        self.call(move |service| <T as GreeterServiceSync>::get_options(
-            service,
-            request,
-        ))
+        Self::call(
+            self,
+            move |service| <T as GreeterServiceSync>::get_options(service, request),
+        )
     }
     fn echo_label(
         &self,
         request: crate::shared::v1::Label,
     ) -> impl ::core::future::Future<
-        Output = ::core::result::Result<crate::shared::v1::Label, ::contratto::Status>,
+        Output = ::core::result::Result<crate::shared::v1::Label, crate::rt::Status>,
     > + ::core::marker::Send {
-        self.call(move |service| <T as GreeterServiceSync>::echo_label(service, request))
+        Self::call(
+            self,
+            move |service| <T as GreeterServiceSync>::echo_label(service, request),
+        )
     }
     fn reset(
         &self,
@@ -1031,54 +1055,670 @@ impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offlo
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             ::buffa_types::google::protobuf::Empty,
-            ::contratto::Status,
+            crate::rt::Status,
         >,
     > + ::core::marker::Send {
-        self.call(move |service| <T as GreeterServiceSync>::reset(service, request))
+        Self::call(
+            self,
+            move |service| <T as GreeterServiceSync>::reset(service, request),
+        )
     }
 }
 #[cfg(feature = "tokio")]
-impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for ::contratto::Blocking<T> {
+impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for crate::rt::Blocking<T> {
     fn greet(
         &self,
         request: crate::proto::example::v1::GreetRequest,
     ) -> ::core::result::Result<
         crate::proto::example::v1::GreetReply,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        self.block_on(<T as GreeterServiceAsync>::greet(self.get_ref(), request))
+        Self::block_on(
+            self,
+            <T as GreeterServiceAsync>::greet(Self::get_ref(self), request),
+        )
     }
     fn greet_name(
         &self,
         request: crate::proto::example::common::v1::Name,
     ) -> ::core::result::Result<
         crate::proto::example::v1::GreetReply,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        self.block_on(<T as GreeterServiceAsync>::greet_name(self.get_ref(), request))
+        Self::block_on(
+            self,
+            <T as GreeterServiceAsync>::greet_name(Self::get_ref(self), request),
+        )
     }
     fn get_options(
         &self,
         request: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
         crate::proto::example::v1::greet_request::Options,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        self.block_on(<T as GreeterServiceAsync>::get_options(self.get_ref(), request))
+        Self::block_on(
+            self,
+            <T as GreeterServiceAsync>::get_options(Self::get_ref(self), request),
+        )
     }
     fn echo_label(
         &self,
         request: crate::shared::v1::Label,
-    ) -> ::core::result::Result<crate::shared::v1::Label, ::contratto::Status> {
-        self.block_on(<T as GreeterServiceAsync>::echo_label(self.get_ref(), request))
+    ) -> ::core::result::Result<crate::shared::v1::Label, crate::rt::Status> {
+        Self::block_on(
+            self,
+            <T as GreeterServiceAsync>::echo_label(Self::get_ref(self), request),
+        )
     }
     fn reset(
         &self,
         request: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
         ::buffa_types::google::protobuf::Empty,
-        ::contratto::Status,
+        crate::rt::Status,
     > {
-        self.block_on(<T as GreeterServiceAsync>::reset(self.get_ref(), request))
+        Self::block_on(
+            self,
+            <T as GreeterServiceAsync>::reset(Self::get_ref(self), request),
+        )
+    }
+}
+
+// source: example/v1/tools.proto
+
+/// Methods named like the helpers of Contratto's bridges: the generated
+/// code must call the helpers, and callers must reach these methods.
+///
+/// Blocking form of `example.v1.ToolsService`: each method returns when the call is done. Streams are iterators.
+///
+/// Implement it for work that computes; implement `ToolsServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn ToolsServiceSync>` to choose it at run time. `Blocking` gives an `ToolsServiceAsync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
+pub trait ToolsServiceSync: ::core::marker::Send + ::core::marker::Sync {
+    /// Call `example.v1.ToolsService.Call`.
+    fn call(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status>;
+    /// Call `example.v1.ToolsService.Feed`.
+    fn feed(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status>;
+    /// Call `example.v1.ToolsService.GetRef`.
+    fn get_ref(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status>;
+    /// Call `example.v1.ToolsService.BlockOn`.
+    fn block_on(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status>;
+    /// Call `example.v1.ToolsService.IntoInner`.
+    fn into_inner(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status>;
+    /// Call `example.v1.ToolsService.ServerStreaming`.
+    fn server_streaming(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<
+        crate::rt::BoxIter<
+            'static,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        >,
+        crate::rt::Status,
+    >;
+}
+/// Methods named like the helpers of Contratto's bridges: the generated
+/// code must call the helpers, and callers must reach these methods.
+///
+/// Async form of `example.v1.ToolsService`: each method returns a future of the result. Streams are `Stream`s.
+///
+/// Implement it with plain `async fn` for work that waits on I/O; implement `ToolsServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl ToolsServiceAsync`) call it without boxing; `DynToolsServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `ToolsServiceSync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
+pub trait ToolsServiceAsync: ::core::marker::Send + ::core::marker::Sync {
+    /// Call `example.v1.ToolsService.Call`.
+    fn call(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send;
+    /// Call `example.v1.ToolsService.Feed`.
+    fn feed(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send;
+    /// Call `example.v1.ToolsService.GetRef`.
+    fn get_ref(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send;
+    /// Call `example.v1.ToolsService.BlockOn`.
+    fn block_on(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send;
+    /// Call `example.v1.ToolsService.IntoInner`.
+    fn into_inner(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send;
+    /// Call `example.v1.ToolsService.ServerStreaming`.
+    fn server_streaming(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            impl crate::rt::Stream<
+                Item = ::core::result::Result<
+                    crate::proto::example::v1::AddReply,
+                    crate::rt::Status,
+                >,
+            > + ::core::marker::Send + use<Self>,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send;
+}
+/// Any `ToolsServiceAsync` implementation behind dynamic dispatch, for an implementation chosen at run time. It implements `ToolsServiceAsync` itself, so generic code takes it like any other implementation.
+///
+/// Each call boxes its future, and its reply stream if there is one. Cloning shares the implementation.
+#[derive(Clone)]
+pub struct DynToolsServiceAsync {
+    inner: ::std::sync::Arc<dyn __dyn_tools_service_async::Erased>,
+}
+impl ::core::fmt::Debug for DynToolsServiceAsync {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("DynToolsServiceAsync").finish_non_exhaustive()
+    }
+}
+impl DynToolsServiceAsync {
+    /// Put `service` behind dynamic dispatch.
+    pub fn new<T: ToolsServiceAsync + 'static>(service: T) -> Self {
+        Self {
+            inner: ::std::sync::Arc::new(service),
+        }
+    }
+    /// Put a shared `service` behind dynamic dispatch.
+    pub fn from_arc<T: ToolsServiceAsync + 'static>(
+        service: ::std::sync::Arc<T>,
+    ) -> Self {
+        Self { inner: service }
+    }
+}
+impl ToolsServiceAsync for DynToolsServiceAsync {
+    fn call(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        self.inner.call(request)
+    }
+    fn feed(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        self.inner.feed(request)
+    }
+    fn get_ref(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        self.inner.get_ref(request)
+    }
+    fn block_on(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        self.inner.block_on(request)
+    }
+    fn into_inner(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        self.inner.into_inner(request)
+    }
+    fn server_streaming(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            impl crate::rt::Stream<
+                Item = ::core::result::Result<
+                    crate::proto::example::v1::AddReply,
+                    crate::rt::Status,
+                >,
+            > + ::core::marker::Send + use<>,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        self.inner.server_streaming(request)
+    }
+}
+/// The dyn-compatible face behind the handle: every future and reply
+/// stream boxed.
+#[allow(clippy::type_complexity, clippy::wrong_self_convention)]
+mod __dyn_tools_service_async {
+    pub trait Erased: ::core::marker::Send + ::core::marker::Sync {
+        fn call(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        >;
+        fn feed(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        >;
+        fn get_ref(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        >;
+        fn block_on(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        >;
+        fn into_inner(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        >;
+        fn server_streaming(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::rt::BoxStream<
+                    'static,
+                    ::core::result::Result<
+                        crate::proto::example::v1::AddReply,
+                        crate::rt::Status,
+                    >,
+                >,
+                crate::rt::Status,
+            >,
+        >;
+    }
+    impl<T: super::ToolsServiceAsync + 'static> Erased for T {
+        fn call(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        > {
+            ::std::boxed::Box::pin(<T as super::ToolsServiceAsync>::call(self, request))
+        }
+        fn feed(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        > {
+            ::std::boxed::Box::pin(<T as super::ToolsServiceAsync>::feed(self, request))
+        }
+        fn get_ref(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        > {
+            ::std::boxed::Box::pin(
+                <T as super::ToolsServiceAsync>::get_ref(self, request),
+            )
+        }
+        fn block_on(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        > {
+            ::std::boxed::Box::pin(
+                <T as super::ToolsServiceAsync>::block_on(self, request),
+            )
+        }
+        fn into_inner(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        > {
+            ::std::boxed::Box::pin(
+                <T as super::ToolsServiceAsync>::into_inner(self, request),
+            )
+        }
+        fn server_streaming(
+            &self,
+            request: crate::proto::example::v1::AddRequest,
+        ) -> crate::rt::BoxFuture<
+            '_,
+            ::core::result::Result<
+                crate::rt::BoxStream<
+                    'static,
+                    ::core::result::Result<
+                        crate::proto::example::v1::AddReply,
+                        crate::rt::Status,
+                    >,
+                >,
+                crate::rt::Status,
+            >,
+        > {
+            ::std::boxed::Box::pin(async move {
+                let stream = <T as super::ToolsServiceAsync>::server_streaming(
+                        self,
+                        request,
+                    )
+                    .await?;
+                ::core::result::Result::Ok(
+                    ::std::boxed::Box::pin(stream)
+                        as crate::rt::BoxStream<
+                            'static,
+                            ::core::result::Result<
+                                crate::proto::example::v1::AddReply,
+                                crate::rt::Status,
+                            >,
+                        >,
+                )
+            })
+        }
+    }
+}
+impl<T: ToolsServiceSync> ToolsServiceAsync for crate::rt::Inline<T> {
+    async fn call(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        <T as ToolsServiceSync>::call(Self::get_ref(self), request)
+    }
+    async fn feed(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        <T as ToolsServiceSync>::feed(Self::get_ref(self), request)
+    }
+    async fn get_ref(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        <T as ToolsServiceSync>::get_ref(Self::get_ref(self), request)
+    }
+    async fn block_on(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        <T as ToolsServiceSync>::block_on(Self::get_ref(self), request)
+    }
+    async fn into_inner(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        <T as ToolsServiceSync>::into_inner(Self::get_ref(self), request)
+    }
+    async fn server_streaming(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<
+        impl crate::rt::Stream<
+            Item = ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        > + ::core::marker::Send + use<T>,
+        crate::rt::Status,
+    > {
+        <T as ToolsServiceSync>::server_streaming(Self::get_ref(self), request)
+            .map(Self::reply_stream)
+    }
+}
+#[cfg(feature = "tokio")]
+impl<T: ToolsServiceSync + 'static> ToolsServiceAsync for crate::rt::Offload<T> {
+    fn call(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        Self::call(self, move |service| <T as ToolsServiceSync>::call(service, request))
+    }
+    fn feed(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        Self::call(self, move |service| <T as ToolsServiceSync>::feed(service, request))
+    }
+    fn get_ref(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        Self::call(
+            self,
+            move |service| <T as ToolsServiceSync>::get_ref(service, request),
+        )
+    }
+    fn block_on(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        Self::call(
+            self,
+            move |service| <T as ToolsServiceSync>::block_on(service, request),
+        )
+    }
+    fn into_inner(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        Self::call(
+            self,
+            move |service| <T as ToolsServiceSync>::into_inner(service, request),
+        )
+    }
+    fn server_streaming(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            impl crate::rt::Stream<
+                Item = ::core::result::Result<
+                    crate::proto::example::v1::AddReply,
+                    crate::rt::Status,
+                >,
+            > + ::core::marker::Send + use<T>,
+            crate::rt::Status,
+        >,
+    > + ::core::marker::Send {
+        Self::server_streaming(
+            self,
+            move |service| <T as ToolsServiceSync>::server_streaming(service, request),
+        )
+    }
+}
+#[cfg(feature = "tokio")]
+impl<T: ToolsServiceAsync + 'static> ToolsServiceSync for crate::rt::Blocking<T> {
+    fn call(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        Self::block_on(
+            self,
+            <T as ToolsServiceAsync>::call(Self::get_ref(self), request),
+        )
+    }
+    fn feed(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        Self::block_on(
+            self,
+            <T as ToolsServiceAsync>::feed(Self::get_ref(self), request),
+        )
+    }
+    fn get_ref(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        Self::block_on(
+            self,
+            <T as ToolsServiceAsync>::get_ref(Self::get_ref(self), request),
+        )
+    }
+    fn block_on(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        Self::block_on(
+            self,
+            <T as ToolsServiceAsync>::block_on(Self::get_ref(self), request),
+        )
+    }
+    fn into_inner(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, crate::rt::Status> {
+        Self::block_on(
+            self,
+            <T as ToolsServiceAsync>::into_inner(Self::get_ref(self), request),
+        )
+    }
+    fn server_streaming(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<
+        crate::rt::BoxIter<
+            'static,
+            ::core::result::Result<
+                crate::proto::example::v1::AddReply,
+                crate::rt::Status,
+            >,
+        >,
+        crate::rt::Status,
+    > {
+        Self::block_on_stream(
+            self,
+            <T as ToolsServiceAsync>::server_streaming(Self::get_ref(self), request),
+        )
     }
 }

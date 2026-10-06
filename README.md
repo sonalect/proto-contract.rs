@@ -137,8 +137,8 @@ The crate depends on `contratto` and on what buffa's output needs
 | `runtime=<path>` | path of the runtime crate; default `::contratto` |
 | `gate_tokio_feature[=<name>]` | `Offload` and `Blocking` impls under `#[cfg(feature = "<name>")]`; default `tokio` |
 
-Paths are absolute (`::…` or `crate::…`). Any other parameter fails the
-run.
+Paths are absolute (`::…`, `crate`, or `crate::…`). Any other parameter
+fails the run.
 
 ## Status
 

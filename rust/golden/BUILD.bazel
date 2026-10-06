@@ -20,6 +20,21 @@ rust_library(
     ],
 )
 
+# Without the crate's `tokio` feature: the `file_per_package` bridges,
+# gated by `gate_tokio_feature`, compile out.
+rust_library(
+    name = "golden_no_tokio",
+    srcs = glob(["src/**/*.rs"]),
+    crate_name = "contratto_golden",
+    visibility = ["//rust:__pkg__"],
+    deps = [
+        "//rust/contratto",
+        "@contratto_cargo//:buffa",
+        "@contratto_cargo//:buffa-types",
+        "@contratto_cargo//:connectrpc",
+    ],
+)
+
 [
     rust_test(
         name = test + "_test",

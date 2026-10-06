@@ -225,7 +225,7 @@ impl Method<'_> {
 
     /// `Inline<T>`: run the sync method inside the future's poll.
     pub(crate) fn inline_impl(&self) -> TokenStream {
-        let (ident, rt, sync_trait) = (&self.ident, self.rt, self.sync_trait);
+        let (ident, sync_trait) = (&self.ident, self.sync_trait);
         let signature = self.async_signature_as(Capture::BridgeParam, true);
         let buffer = if self.kind.streams_in() {
             quote!(let requests = Self::buffer(requests).await;)
@@ -233,9 +233,9 @@ impl Method<'_> {
             TokenStream::new()
         };
         let argument = self.argument();
-        let call = quote!(<T as #sync_trait>::#ident(self.get_ref(), #argument));
+        let call = quote!(<T as #sync_trait>::#ident(Self::get_ref(self), #argument));
         let call = if self.kind.streams_out() {
-            quote!(#call.map(#rt::IterStream::new))
+            quote!(#call.map(Self::reply_stream))
         } else {
             call
         };
@@ -248,16 +248,16 @@ impl Method<'_> {
         let signature = self.async_signature(Capture::BridgeParam);
         let body = match self.kind {
             Kind::Unary => quote! {
-                self.call(move |service| <T as #sync_trait>::#ident(service, request))
+                Self::call(self, move |service| <T as #sync_trait>::#ident(service, request))
             },
             Kind::ServerStreaming => quote! {
-                self.server_streaming(move |service| <T as #sync_trait>::#ident(service, request))
+                Self::server_streaming(self, move |service| <T as #sync_trait>::#ident(service, request))
             },
             Kind::ClientStreaming => quote! {
-                self.client_streaming(requests, <T as #sync_trait>::#ident)
+                Self::client_streaming(self, requests, <T as #sync_trait>::#ident)
             },
             Kind::Bidirectional => quote! {
-                self.bidirectional(requests, <T as #sync_trait>::#ident)
+                Self::bidirectional(self, requests, <T as #sync_trait>::#ident)
             },
         };
         quote!(#signature { #body })
@@ -268,16 +268,16 @@ impl Method<'_> {
         let (ident, async_trait) = (&self.ident, self.async_trait);
         let signature = self.sync_signature();
         let feed = if self.kind.streams_in() {
-            quote!(let requests = self.feed(requests);)
+            quote!(let requests = Self::feed(self, requests);)
         } else {
             TokenStream::new()
         };
         let argument = self.argument();
-        let call = quote!(<T as #async_trait>::#ident(self.get_ref(), #argument));
+        let call = quote!(<T as #async_trait>::#ident(Self::get_ref(self), #argument));
         let wait = if self.kind.streams_out() {
-            quote!(self.block_on_stream(#call))
+            quote!(Self::block_on_stream(self, #call))
         } else {
-            quote!(self.block_on(#call))
+            quote!(Self::block_on(self, #call))
         };
         quote!(#signature { #feed #wait })
     }

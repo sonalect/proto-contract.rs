@@ -2,3 +2,4 @@
 include!("example.v1.counter.__connect.rs");
 include!("example.v1.feed.__connect.rs");
 include!("example.v1.greeter.__connect.rs");
+include!("example.v1.tools.__connect.rs");

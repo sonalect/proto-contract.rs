@@ -1,0 +1,16 @@
+edition = "2023";
+
+package example.v1;
+
+import "example/v1/counter.proto";
+
+// Methods named like the helpers of Contratto's bridges: the generated
+// code must call the helpers, and callers must reach these methods.
+service ToolsService {
+  rpc Call(AddRequest) returns (AddReply);
+  rpc Feed(AddRequest) returns (AddReply);
+  rpc GetRef(AddRequest) returns (AddReply);
+  rpc BlockOn(AddRequest) returns (AddReply);
+  rpc IntoInner(AddRequest) returns (AddReply);
+  rpc ServerStreaming(AddRequest) returns (stream AddReply);
+}

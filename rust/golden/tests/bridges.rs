@@ -5,13 +5,14 @@
 use std::future::poll_fn;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicI64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::task::{Context, Poll};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use contratto::{Blocking, BoxIter, Code, Inline, IterStream, Offload, Status, Stream};
 use contratto_golden::contract::example::v1::{
-    CounterServiceAsync, CounterServiceSync, DynFeedServiceAsync, FeedServiceAsync, FeedServiceSync,
+    CounterServiceAsync, CounterServiceSync, DynFeedServiceAsync, FeedServiceAsync,
+    FeedServiceSync, ToolsServiceAsync, ToolsServiceSync,
 };
 use contratto_golden::proto::example::v1::{AddReply, AddRequest, Item, Summary, WatchRequest};
 use tokio::runtime::{Builder, Runtime};
@@ -87,6 +88,10 @@ fn watch(count: i32) -> WatchRequest {
 /// Count of `watch` that makes the sync feed panic after its first item.
 const PANIC_AFTER_ONE: i32 = 13;
 
+/// Count of `watch` that makes the sync feed yield an `Err` second, then
+/// go on as if nothing happened.
+const ERR_AT_ONE: i32 = 7;
+
 // ---- the sync implementations ----
 
 #[derive(Default)]
@@ -108,7 +113,11 @@ impl CounterServiceSync for SyncCounter {
     }
 }
 
-struct SyncFeed;
+/// Counts the reply items its streams have produced.
+#[derive(Default)]
+struct SyncFeed {
+    pulled: Arc<AtomicUsize>,
+}
 
 impl FeedServiceSync for SyncFeed {
     fn watch(
@@ -118,10 +127,18 @@ impl FeedServiceSync for SyncFeed {
         if request.count < 0 {
             return Err(Status::invalid_argument("count is negative"));
         }
-        let panics = request.count == PANIC_AFTER_ONE;
+        let (panics, fails) = (
+            request.count == PANIC_AFTER_ONE,
+            request.count == ERR_AT_ONE,
+        );
+        let pulled = Arc::clone(&self.pulled);
         Ok(Box::new((0..request.count).map(move |i| {
+            pulled.fetch_add(1, Ordering::SeqCst);
             if panics && i == 1 {
                 panic!("feed broke");
+            }
+            if fails && i == 1 {
+                return Err(Status::aborted("feed failed"));
             }
             Ok(item(&format!("s{i}")))
         })))
@@ -231,7 +248,7 @@ impl FeedServiceAsync for AsyncFeed {
 #[test]
 fn inline_runs_every_kind_in_place() {
     let counter = Inline::new(SyncCounter::default());
-    let feed = Inline::new(SyncFeed);
+    let feed = Inline::new(SyncFeed::default());
     current_thread().block_on(async {
         assert_eq!(counter.add(add(4)).await.unwrap().total, Some(4));
         assert_eq!(
@@ -256,7 +273,7 @@ fn inline_runs_every_kind_in_place() {
 
 #[test]
 fn inline_fits_in_the_dyn_handle() {
-    let service = DynFeedServiceAsync::new(Inline::new(SyncFeed));
+    let service = DynFeedServiceAsync::new(Inline::new(SyncFeed::default()));
     let replies =
         current_thread().block_on(async { drain(service.watch(watch(1)).await.unwrap()).await });
     assert_eq!(texts(replies), ["s0"]);
@@ -268,7 +285,7 @@ fn inline_fits_in_the_dyn_handle() {
 fn offload_runs_every_kind_on_the_blocking_pool() {
     for runtime in [multi_thread(), current_thread()] {
         let counter = Offload::new(SyncCounter::default(), runtime.handle().clone());
-        let feed = Offload::new(SyncFeed, runtime.handle().clone());
+        let feed = Offload::new(SyncFeed::default(), runtime.handle().clone());
         runtime.block_on(async {
             assert_eq!(counter.add(add(2)).await.unwrap().total, Some(2));
             assert_eq!(counter.add(add(3)).await.unwrap().total, Some(5));
@@ -299,26 +316,74 @@ fn offload_runs_every_kind_on_the_blocking_pool() {
 /// request.
 #[test]
 fn offload_bidirectional_is_a_conversation() {
+    for runtime in [multi_thread(), current_thread()] {
+        let feed = Offload::new(SyncFeed::default(), runtime.handle().clone());
+        runtime.block_on(async {
+            let (requests, inbound) = mpsc::channel(1);
+            let mut replies = Box::pin(feed.echo(Channel(inbound)).await.unwrap());
+            for text in ["ping", "pong", "done"] {
+                requests.send(Ok(item(text))).await.unwrap();
+                let reply = next(&mut replies).await.unwrap().unwrap();
+                assert_eq!(reply.text, text.to_uppercase());
+            }
+            drop(requests);
+            assert!(next(&mut replies).await.is_none());
+        });
+    }
+}
+
+/// Dropping a reply stream of `Offload` stops the pull on the blocking
+/// pool, within the channel's 16 items.
+#[test]
+fn offload_stops_pulling_a_dropped_stream() {
     let runtime = multi_thread();
-    let feed = Offload::new(SyncFeed, runtime.handle().clone());
+    let feed = SyncFeed::default();
+    let pulled = Arc::clone(&feed.pulled);
+    let feed = Offload::new(feed, runtime.handle().clone());
     runtime.block_on(async {
-        let (requests, inbound) = mpsc::channel(1);
-        let mut replies = Box::pin(feed.echo(Channel(inbound)).await.unwrap());
-        for text in ["ping", "pong", "done"] {
-            requests.send(Ok(item(text))).await.unwrap();
-            let reply = next(&mut replies).await.unwrap().unwrap();
-            assert_eq!(reply.text, text.to_uppercase());
+        let mut replies = Box::pin(feed.watch(watch(i32::MAX)).await.unwrap());
+        for _ in 0..3 {
+            next(&mut replies).await.unwrap().unwrap();
         }
-        drop(requests);
-        assert!(next(&mut replies).await.is_none());
+        drop(replies);
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        let settled = pulled.load(Ordering::SeqCst);
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        assert_eq!(pulled.load(Ordering::SeqCst), settled);
+        assert!(settled <= 3 + 16 + 2, "pulled {settled} items");
     });
+}
+
+/// An `Err` item ends a stream at every bridge, even when the sync
+/// iterator goes on after it.
+#[test]
+fn an_error_item_ends_the_stream() {
+    let runtime = multi_thread();
+    let offload = Offload::new(SyncFeed::default(), runtime.handle().clone());
+    let inline = Inline::new(SyncFeed::default());
+    runtime.block_on(async {
+        for replies in [
+            drain(offload.watch(watch(ERR_AT_ONE)).await.unwrap()).await,
+            drain(inline.watch(watch(ERR_AT_ONE)).await.unwrap()).await,
+        ] {
+            assert_eq!(replies.len(), 2);
+            assert_eq!(replies[0].as_ref().unwrap().text, "s0");
+            assert_eq!(replies[1].as_ref().unwrap_err().code(), Code::Aborted);
+        }
+    });
+    let blocking = Blocking::new(offload, runtime.handle().clone());
+    let replies: Vec<_> = FeedServiceSync::watch(&blocking, watch(ERR_AT_ONE))
+        .unwrap()
+        .collect();
+    assert_eq!(replies.len(), 2);
+    assert_eq!(replies[1].as_ref().unwrap_err().code(), Code::Aborted);
 }
 
 #[test]
 fn offload_turns_a_panic_into_internal() {
     let runtime = multi_thread();
     let counter = Offload::new(SyncCounter::default(), runtime.handle().clone());
-    let feed = Offload::new(SyncFeed, runtime.handle().clone());
+    let feed = Offload::new(SyncFeed::default(), runtime.handle().clone());
     runtime.block_on(async {
         let status = counter.add(add(i64::MIN)).await.unwrap_err();
         assert_eq!(status.code(), Code::Internal);
@@ -467,4 +532,60 @@ fn offload_cost() {
             "per call: direct {direct_cost:?}, Inline {inline_cost:?}, Offload {offload_cost:?}"
         );
     });
+}
+
+// ---- methods named like the bridges' helpers ----
+
+#[derive(Default)]
+struct Tools;
+
+fn tool(request: AddRequest, base: i64) -> Result<AddReply, Status> {
+    Ok(AddReply {
+        total: Some(base + request.delta.unwrap_or_default()),
+        ..Default::default()
+    })
+}
+
+impl ToolsServiceSync for Tools {
+    fn call(&self, request: AddRequest) -> Result<AddReply, Status> {
+        tool(request, 100)
+    }
+    fn feed(&self, request: AddRequest) -> Result<AddReply, Status> {
+        tool(request, 200)
+    }
+    fn get_ref(&self, request: AddRequest) -> Result<AddReply, Status> {
+        tool(request, 300)
+    }
+    fn block_on(&self, request: AddRequest) -> Result<AddReply, Status> {
+        tool(request, 400)
+    }
+    fn into_inner(&self, request: AddRequest) -> Result<AddReply, Status> {
+        tool(request, 500)
+    }
+    fn server_streaming(
+        &self,
+        request: AddRequest,
+    ) -> Result<BoxIter<'static, Result<AddReply, Status>>, Status> {
+        Ok(Box::new(std::iter::once(tool(request, 600))))
+    }
+}
+
+/// A method named like a bridge helper is reached with method syntax: the
+/// helpers are associated functions and hide nothing.
+#[test]
+fn methods_named_like_helpers_are_reachable() {
+    let runtime = multi_thread();
+    let inline = Inline::new(Tools);
+    let offload = Offload::new(Tools, runtime.handle().clone());
+    runtime.block_on(async {
+        assert_eq!(inline.get_ref(add(1)).await.unwrap().total, Some(301));
+        assert_eq!(offload.call(add(1)).await.unwrap().total, Some(101));
+        assert_eq!(offload.feed(add(1)).await.unwrap().total, Some(201));
+        let replies = drain(offload.server_streaming(add(1)).await.unwrap()).await;
+        assert_eq!(replies[0].as_ref().unwrap().total, Some(601));
+    });
+    let blocking = Blocking::new(offload, runtime.handle().clone());
+    assert_eq!(blocking.block_on(add(1)).unwrap().total, Some(401));
+    assert_eq!(blocking.into_inner(add(1)).unwrap().total, Some(501));
+    assert_eq!(blocking.get_ref(add(1)).unwrap().total, Some(301));
 }

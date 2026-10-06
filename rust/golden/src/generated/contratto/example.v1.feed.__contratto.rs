@@ -6,6 +6,7 @@
 /// Blocking form of `example.v1.FeedService`: each method returns when the call is done. Streams are iterators.
 ///
 /// Implement it for work that computes; implement `FeedServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn FeedServiceSync>` to choose it at run time. `Blocking` gives an `FeedServiceAsync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait FeedServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Stream the first `count` items of the feed, one reply per item.
     fn watch(
@@ -46,6 +47,7 @@ pub trait FeedServiceSync: ::core::marker::Send + ::core::marker::Sync {
 /// Async form of `example.v1.FeedService`: each method returns a future of the result. Streams are `Stream`s.
 ///
 /// Implement it with plain `async fn` for work that waits on I/O; implement `FeedServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl FeedServiceAsync`) call it without boxing; `DynFeedServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `FeedServiceSync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait FeedServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Stream the first `count` items of the feed, one reply per item.
     fn watch(
@@ -108,6 +110,11 @@ pub trait FeedServiceAsync: ::core::marker::Send + ::core::marker::Sync {
 #[derive(Clone)]
 pub struct DynFeedServiceAsync {
     inner: ::std::sync::Arc<dyn __dyn_feed_service_async::Erased>,
+}
+impl ::core::fmt::Debug for DynFeedServiceAsync {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("DynFeedServiceAsync").finish_non_exhaustive()
+    }
 }
 impl DynFeedServiceAsync {
     /// Put `service` behind dynamic dispatch.
@@ -186,7 +193,7 @@ impl FeedServiceAsync for DynFeedServiceAsync {
 }
 /// The dyn-compatible face behind the handle: every future and reply
 /// stream boxed.
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::wrong_self_convention)]
 mod __dyn_feed_service_async {
     pub trait Erased: ::core::marker::Send + ::core::marker::Sync {
         fn watch(
@@ -346,8 +353,8 @@ impl<T: FeedServiceSync> FeedServiceAsync for ::contratto::Inline<T> {
         > + ::core::marker::Send + use<T>,
         ::contratto::Status,
     > {
-        <T as FeedServiceSync>::watch(self.get_ref(), request)
-            .map(::contratto::IterStream::new)
+        <T as FeedServiceSync>::watch(Self::get_ref(self), request)
+            .map(Self::reply_stream)
     }
     async fn collect<R>(
         &self,
@@ -362,7 +369,7 @@ impl<T: FeedServiceSync> FeedServiceAsync for ::contratto::Inline<T> {
             > + ::core::marker::Send + 'static,
     {
         let requests = Self::buffer(requests).await;
-        <T as FeedServiceSync>::collect(self.get_ref(), requests)
+        <T as FeedServiceSync>::collect(Self::get_ref(self), requests)
     }
     async fn echo<R>(
         &self,
@@ -385,8 +392,8 @@ impl<T: FeedServiceSync> FeedServiceAsync for ::contratto::Inline<T> {
             > + ::core::marker::Send + 'static,
     {
         let requests = Self::buffer(requests).await;
-        <T as FeedServiceSync>::echo(self.get_ref(), requests)
-            .map(::contratto::IterStream::new)
+        <T as FeedServiceSync>::echo(Self::get_ref(self), requests)
+            .map(Self::reply_stream)
     }
 }
 impl<T: FeedServiceSync + 'static> FeedServiceAsync for ::contratto::Offload<T> {
@@ -404,10 +411,10 @@ impl<T: FeedServiceSync + 'static> FeedServiceAsync for ::contratto::Offload<T> 
             ::contratto::Status,
         >,
     > + ::core::marker::Send {
-        self.server_streaming(move |service| <T as FeedServiceSync>::watch(
-            service,
-            request,
-        ))
+        Self::server_streaming(
+            self,
+            move |service| <T as FeedServiceSync>::watch(service, request),
+        )
     }
     fn collect<R>(
         &self,
@@ -426,7 +433,7 @@ impl<T: FeedServiceSync + 'static> FeedServiceAsync for ::contratto::Offload<T> 
                 >,
             > + ::core::marker::Send + 'static,
     {
-        self.client_streaming(requests, <T as FeedServiceSync>::collect)
+        Self::client_streaming(self, requests, <T as FeedServiceSync>::collect)
     }
     fn echo<R>(
         &self,
@@ -450,7 +457,7 @@ impl<T: FeedServiceSync + 'static> FeedServiceAsync for ::contratto::Offload<T> 
                 >,
             > + ::core::marker::Send + 'static,
     {
-        self.bidirectional(requests, <T as FeedServiceSync>::echo)
+        Self::bidirectional(self, requests, <T as FeedServiceSync>::echo)
     }
 }
 impl<T: FeedServiceAsync + 'static> FeedServiceSync for ::contratto::Blocking<T> {
@@ -464,7 +471,10 @@ impl<T: FeedServiceAsync + 'static> FeedServiceSync for ::contratto::Blocking<T>
         >,
         ::contratto::Status,
     > {
-        self.block_on_stream(<T as FeedServiceAsync>::watch(self.get_ref(), request))
+        Self::block_on_stream(
+            self,
+            <T as FeedServiceAsync>::watch(Self::get_ref(self), request),
+        )
     }
     fn collect(
         &self,
@@ -476,8 +486,11 @@ impl<T: FeedServiceAsync + 'static> FeedServiceSync for ::contratto::Blocking<T>
         crate::proto::example::v1::Summary,
         ::contratto::Status,
     > {
-        let requests = self.feed(requests);
-        self.block_on(<T as FeedServiceAsync>::collect(self.get_ref(), requests))
+        let requests = Self::feed(self, requests);
+        Self::block_on(
+            self,
+            <T as FeedServiceAsync>::collect(Self::get_ref(self), requests),
+        )
     }
     fn echo(
         &self,
@@ -492,7 +505,10 @@ impl<T: FeedServiceAsync + 'static> FeedServiceSync for ::contratto::Blocking<T>
         >,
         ::contratto::Status,
     > {
-        let requests = self.feed(requests);
-        self.block_on_stream(<T as FeedServiceAsync>::echo(self.get_ref(), requests))
+        let requests = Self::feed(self, requests);
+        Self::block_on_stream(
+            self,
+            <T as FeedServiceAsync>::echo(Self::get_ref(self), requests),
+        )
     }
 }

@@ -237,6 +237,12 @@ fn dyn_handle_is_an_implementation_and_moves_across_threads() {
     assert_eq!(text(&reply), "Hello, Ada!");
 }
 
+#[test]
+fn dyn_handle_has_debug() {
+    let service = DynGreeterServiceAsync::new(AsyncGreeter::default());
+    assert_eq!(format!("{service:?}"), "DynGreeterServiceAsync { .. }");
+}
+
 /// The handle may be chosen at run time among implementations.
 #[test]
 fn dyn_handle_swaps_implementations() {

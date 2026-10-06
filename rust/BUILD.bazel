@@ -11,6 +11,7 @@ rust_clippy_test(
         "//rust/contratto:contratto_no_tokio_test",
         "//rust/contratto:contratto_test",
         "//rust/golden",
+        "//rust/golden:golden_no_tokio",
         "//rust/golden:bridges_test",
         "//rust/golden:direct_test",
         "//rust/golden:streaming_test",

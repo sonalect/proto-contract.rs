@@ -61,7 +61,7 @@ pub(crate) fn layout(
             let content = by_package
                 .entry(package)
                 .or_insert_with(|| format!("{HEADER}\n"));
-            content.push_str(&format!("\n// source: {proto}\n\n{code}"));
+            content.push_str(&format!("\n// source: {}\n\n{code}", comment_safe(&proto)));
         }
         return by_package
             .into_iter()
@@ -86,7 +86,7 @@ pub(crate) fn layout(
             .push_str(&format!("include!({name:?});\n"));
         files.push(OutputFile {
             name,
-            content: format!("{HEADER}\n// source: {proto}\n\n{code}"),
+            content: format!("{HEADER}\n// source: {}\n\n{code}", comment_safe(&proto)),
         });
     }
     files.extend(stitchers.into_iter().map(|(package, content)| OutputFile {
@@ -176,11 +176,15 @@ fn service_tokens(
     let sync = quote!(::core::marker::Sync);
     Ok(quote! {
         #sync_doc
+        // Method names come from the proto: `IntoX` or `ToX` is a contract's
+        // choice, not a conversion.
+        #[allow(clippy::wrong_self_convention)]
         pub trait #sync_trait: #send + #sync {
             #(#sync_decls)*
         }
 
         #async_doc
+        #[allow(clippy::wrong_self_convention)]
         pub trait #async_trait: #send + #sync {
             #(#async_decls)*
         }
@@ -189,6 +193,12 @@ fn service_tokens(
         #[derive(Clone)]
         pub struct #dyn_ident {
             inner: ::std::sync::Arc<dyn #erased_module::Erased>,
+        }
+
+        impl ::core::fmt::Debug for #dyn_ident {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                f.debug_struct(#dyn_name).finish_non_exhaustive()
+            }
         }
 
         impl #dyn_ident {
@@ -209,7 +219,7 @@ fn service_tokens(
 
         /// The dyn-compatible face behind the handle: every future and reply
         /// stream boxed.
-        #[allow(clippy::type_complexity)]
+        #[allow(clippy::type_complexity, clippy::wrong_self_convention)]
         mod #erased_module {
             pub trait Erased: #send + #sync {
                 #(#erased_decls)*
@@ -234,6 +244,21 @@ fn service_tokens(
             #(#blocking_impls)*
         }
     })
+}
+
+/// `text` for a `//` comment: control characters (a line break would end
+/// the comment) are escaped.
+fn comment_safe(text: &str) -> String {
+    text.chars()
+        .flat_map(|c| {
+            let escaped: Vec<char> = if c.is_control() {
+                c.escape_default().collect()
+            } else {
+                vec![c]
+            };
+            escaped
+        })
+        .collect()
 }
 
 /// Refuse methods whose Rust names collide.

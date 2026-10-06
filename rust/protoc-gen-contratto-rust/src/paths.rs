@@ -4,25 +4,26 @@ use proc_macro2::TokenStream;
 
 use crate::Error;
 
-/// Whether `path` starts at a crate root (`::…` or `crate::…`), so it
-/// names the same item from any module the output is mounted in.
+/// Whether `path` starts at a crate root (`::…`, `crate`, or `crate::…`),
+/// so it names the same item from any module the output is mounted in.
 pub(crate) fn is_absolute(path: &str) -> bool {
-    path.starts_with("::") || path.starts_with("crate::")
+    path.starts_with("::") || path == "crate" || path.starts_with("crate::")
 }
 
-/// Fail unless `path` is an absolute Rust path made of plain identifiers.
-/// `what` names the plugin parameter for the message.
+/// Fail unless `path` is an absolute Rust path made of plain identifiers:
+/// `::some_crate::…`, `crate`, or `crate::…`. `what` names the plugin
+/// parameter for the message.
 pub(crate) fn check_absolute_path(path: &str, what: &str) -> Result<(), Error> {
     let rest = path
         .strip_prefix("::")
         .or_else(|| path.strip_prefix("crate::"));
-    let valid = rest.is_some_and(|rest| rest.split("::").all(is_identifier));
+    let valid = path == "crate" || rest.is_some_and(|rest| rest.split("::").all(is_identifier));
     if valid {
         Ok(())
     } else {
         Err(Error::new(format!(
             "plugin parameter `{what}`: {path:?} is not an absolute Rust path; \
-             write `::some_crate::module` or `crate::module`"
+             write `::some_crate::module`, `crate`, or `crate::module`"
         )))
     }
 }
@@ -62,7 +63,10 @@ mod tests {
         assert!(!is_absolute("Name"));
         assert!(check_absolute_path("::contratto", "runtime").is_ok());
         assert!(check_absolute_path("crate::a::b_c::D1", "runtime").is_ok());
-        assert!(check_absolute_path("crate", "runtime").is_err());
+        assert!(is_absolute("crate"));
+        assert!(!is_absolute("crates::a"));
+        assert!(check_absolute_path("crate", "buffa_module").is_ok());
+        assert!(check_absolute_path("crates", "runtime").is_err());
         assert!(check_absolute_path("::a::", "runtime").is_err());
         assert!(check_absolute_path("::a::1b", "runtime").is_err());
         assert!(check_absolute_path("::a::_", "runtime").is_err());

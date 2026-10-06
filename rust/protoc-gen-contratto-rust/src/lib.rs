@@ -42,8 +42,10 @@
 //!   request, as for `protoc-gen-buffa`.
 //! - `runtime=<rust_path>`: path of the runtime crate; default
 //!   `::contratto`.
+//! - `gate_tokio_feature[=<name>]`: put the `Offload` and `Blocking` impls
+//!   under `#[cfg(feature = "<name>")]`; default name `tokio`.
 //!
-//! Every path must be absolute: `::some_crate::…` or `crate::…`. Any other
+//! Every path must be absolute: `::some_crate::…`, `crate`, or `crate::…`. Any other
 //! parameter fails the run. So does a generated name that another item of
 //! the package's module already has; the message names both proto
 //! elements.

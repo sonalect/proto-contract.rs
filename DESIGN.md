@@ -157,7 +157,8 @@ every `T: GreeterServiceAsync`. The trait lives in a private module
 same method names. Only a call through the handle pays the allocation: one
 per call for the future, one per stream. The handle implements the async
 trait itself, so generic code takes it like any implementation. This is
-what the `dynosaur` crate does, generated instead of derived by a macro.
+what the `dynosaur` crate does, generated instead of derived by a macro. The handle implements
+`Clone` (sharing the implementation) and `Debug` (its type name).
 Once Rust can call async trait methods through `dyn`, the handle can go
 and implementations stay as they are.
 
@@ -231,6 +232,13 @@ each request is answered as it arrives. Through `Inline` it is not, since a
 sync method cannot wait in `poll`: the whole inbound stream is read first,
 so a caller that waits for a reply before its next request would wait
 forever. `Inline` documents that limit.
+
+Every bridge ends a stream after its first `Err` item, even when the
+iterator or stream behind it would go on; the `Dyn…Async` handle passes
+items through as the implementation yields them. The helpers the generated
+impls call (`Offload::call`, `Blocking::block_on`, `Blocking::feed`,
+`Inline::get_ref`, …) are associated functions, not methods, so they never
+hide an RPC of the same name.
 
 A panic of the sync method under `Offload` happens on another thread; it
 becomes `Status::internal`, for the call or as the last stream item. Under
@@ -310,8 +318,8 @@ the same way:
 - Message paths are resolved with
   `buffa_codegen::context::CodeGenContext::for_generate` and
   `rust_type_relative`, as connect-rust's `TypeResolver` does, so they are
-  the paths `protoc-gen-buffa` emits. Every path must be absolute (`::…` or
-  `crate::…`). A type that `buffa_module` / `extern_path` does not cover
+  the paths `protoc-gen-buffa` emits. Every path must be absolute (`::…`,
+  `crate`, or `crate::…`). A type that `buffa_module` / `extern_path` does not cover
   fails the run, and the message names the fix. Well-known types resolve
   to `::buffa_types::google::protobuf::…` on their own.
 - Code is built with `quote`, checked with `syn`, and formatted with
@@ -336,7 +344,7 @@ the same way:
 | `validate` | emit §4.7 | — |
 
 Every Rust path a parameter gives, `runtime` included, must be absolute
-and made of plain identifiers. A proto prefix mapped twice fails the run
+(`::…`, `crate`, or `crate::…`) and made of plain identifiers. A proto prefix mapped twice fails the run
 instead of letting one mapping win silently. Any other parameter fails the
 run and lists the supported ones; a stage accepts only the parameters it
 implements.
@@ -420,9 +428,9 @@ connect-rust takes.
    mounted into one module without a duplicate name (E0428) or a
    conflicting impl (E0119).
 2. Before emitting, the plugin checks each of its names for a service
-   against every name the package module holds: messages, enums, the
-   modules buffa makes for nested types, services, connect-rust's names for
-   each service, and Contratto's names for the other services. A clash (service `Foo` next to a
+   against every name the package module holds: messages, enums, services,
+   connect-rust's names for each service, and Contratto's names for the
+   other services. A clash (service `Foo` next to a
    message or service `FooSync`) fails the run and names both proto
    elements, as connect-rust does for its own method names.
 3. The adapters name connect-rust's items by the scheme above, which is
@@ -499,9 +507,11 @@ the named exceptions of its dependency quarantine, next to `scheda` and
   `Arc<dyn …Sync>`, and the `Dyn…Async` handle, errors before and inside a
   stream, a reply stream that outlives the service; then `Inline`,
   `Offload`, and `Blocking` for every kind, a bidirectional conversation
-  through `Offload` and `Blocking`, a panic under `Offload`, and `Blocking`
-  from a plain thread, a worker task, `block_on`'s future, `spawn_blocking`,
-  and a current-thread runtime (O1).
+  through `Offload` and `Blocking`, a panic under `Offload`, an `Err` that
+  ends a stream at every bridge, a dropped `Offload` stream that stops its
+  pull, RPCs named like the bridges' helpers (`tools.proto`), and
+  `Blocking` from a plain thread, a worker task, `block_on`'s future,
+  `spawn_blocking`, and a current-thread runtime (O1).
 - **T3. Connect round trip in process.** `Served`, `ServiceTransport`, and the
   client adapter. `Status` ↔ `ConnectError` keeps code, message, and
   details.
@@ -535,8 +545,8 @@ which is sync and stays in process. That pilot is planned in Knowqore.
 
 Each item has a recommendation. An item the owner does not mention is
 accepted. The owner accepted items 1–13 on 6 October 2026, then revised
-item 6 and accepted items 14–25 the same day. Items 26–28 came up in C2
-and wait for the owner.
+item 6 and accepted items 14–25 the same day, and accepted items 26–31,
+which came up in C2 and its review, the same day.
 
 1. **Name.** Contratto: repository `sonalect/protoc-gen-contratto-rust`,
    crate `contratto`, binary `protoc-gen-contratto-rust`. The `-rust`
@@ -597,12 +607,19 @@ and wait for the owner.
     of a thread that owns the service for the stream's life, and a borrowed
     inbound iterator cannot be handed to an async method that needs a
     `'static` stream. The sync implementation clones what its stream needs,
-    as the async one does. *Proposed 6 October 2026 and implemented; the
-    owner may revise.*
+    as the async one does. *Accepted 6 October 2026.*
 27. **`Inline` reads an inbound stream to its end before the sync call**
     (§4.5). The alternative is to refuse streaming methods in `Inline`.
-    *Proposed 6 October 2026 and implemented; the owner may revise.*
+    *Accepted 6 October 2026.*
 28. **`Blocking` refuses inside any current-thread runtime** (§8, O1),
     including its `spawn_blocking` threads, rather than risk a deadlock or
-    a panic. *Proposed 6 October 2026 and implemented; the owner may
-    revise.*
+    a panic. *Accepted 6 October 2026.*
+29. **The bridges' helpers are associated functions** (`Offload::call(this,
+    …)`, `Blocking::block_on(this, …)`, `Inline::get_ref(this)`), as std's
+    smart pointers do it, so an RPC named `Call`, `Feed`, or `GetRef` stays
+    reachable as `wrapper.call(request)` (§4.5). *Accepted 6 October 2026.*
+30. **Every bridge ends a stream after its first `Err` item** (§4.4,
+    §4.5); the `Dyn…Async` handle passes items through unchanged.
+    *Accepted 6 October 2026.*
+31. **`buffa_module=crate` is a valid mapping** (§6.1): the buffa output
+    may sit at the crate root, as in Knowqore. *Accepted 6 October 2026.*

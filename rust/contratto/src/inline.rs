@@ -2,8 +2,8 @@
 
 use futures_core::Stream;
 
-use crate::BoxIter;
 use crate::stream::next;
+use crate::{BoxIter, IterStream, Status};
 
 /// The async form of a sync implementation, without a thread hop: each call
 /// runs the sync method inside the future's `poll`.
@@ -20,8 +20,12 @@ use crate::stream::next;
 /// do not use it for a conversation where the caller waits for a reply
 /// before it sends the next request.
 ///
+/// A reply stream ends after its first `Err` item.
+///
 /// The plugin implements each `<Service>Async` for `Inline<T>` where `T`
-/// implements `<Service>Sync`.
+/// implements `<Service>Sync`. The helpers below are associated functions
+/// (`Inline::get_ref(&inline)`), so they never hide a trait method of the
+/// same name.
 #[derive(Clone, Debug, Default)]
 pub struct Inline<T> {
     service: T,
@@ -34,13 +38,23 @@ impl<T> Inline<T> {
     }
 
     /// The sync implementation.
-    pub fn get_ref(&self) -> &T {
-        &self.service
+    pub fn get_ref(this: &Inline<T>) -> &T {
+        &this.service
     }
 
     /// The sync implementation, moved out.
-    pub fn into_inner(self) -> T {
-        self.service
+    pub fn into_inner(this: Inline<T>) -> T {
+        this.service
+    }
+
+    /// A sync reply iterator as a stream read in `poll`, ended after its
+    /// first `Err` item.
+    pub fn reply_stream<X: Send + 'static>(
+        replies: BoxIter<'static, Result<X, Status>>,
+    ) -> IterStream<BoxIter<'static, Result<X, Status>>> {
+        IterStream::new(Box::new(UntilError {
+            items: Some(replies),
+        }))
     }
 
     /// Read `requests` to its end and hand the items over as an iterator,
@@ -59,6 +73,24 @@ impl<T> Inline<T> {
     }
 }
 
+/// An iterator that ends after its first `Err` item.
+struct UntilError<I> {
+    /// `None` once an `Err` has been yielded.
+    items: Option<I>,
+}
+
+impl<X, I: Iterator<Item = Result<X, Status>>> Iterator for UntilError<I> {
+    type Item = Result<X, Status>;
+
+    fn next(&mut self) -> Option<Result<X, Status>> {
+        let item = self.items.as_mut()?.next();
+        if matches!(item, Some(Err(_))) {
+            self.items = None;
+        }
+        item
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::future::Future;
@@ -66,7 +98,7 @@ mod tests {
     use std::task::{Context, Poll, Waker};
 
     use super::Inline;
-    use crate::IterStream;
+    use crate::{IterStream, Status, Stream};
 
     #[test]
     fn buffer_keeps_every_item_in_order() {
@@ -79,6 +111,21 @@ mod tests {
             panic!("buffering waited");
         };
         assert_eq!(items.collect::<Vec<_>>(), [1, 2, 3, 4]);
-        assert_eq!(Inline::new(5).into_inner(), 5);
+        assert_eq!(Inline::into_inner(Inline::new(5)), 5);
+    }
+
+    #[test]
+    fn reply_stream_ends_after_the_first_error() {
+        let replies: Vec<Result<u8, Status>> = vec![Ok(1), Err(Status::aborted("stop")), Ok(2)];
+        let stream = Inline::<()>::reply_stream(Box::new(replies.into_iter()));
+        let mut stream = pin!(stream);
+        let mut seen = Vec::new();
+        while let Poll::Ready(Some(item)) = stream
+            .as_mut()
+            .poll_next(&mut Context::from_waker(Waker::noop()))
+        {
+            seen.push(item);
+        }
+        assert_eq!(seen, [Ok(1), Err(Status::aborted("stop"))]);
     }
 }

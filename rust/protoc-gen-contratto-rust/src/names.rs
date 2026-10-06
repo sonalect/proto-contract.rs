@@ -69,8 +69,7 @@ pub(crate) fn qualified(package: &str, name: &str) -> String {
 /// Fail if a name Contratto gives an item of a service in `package` is
 /// also the name of another item of the package's Rust module.
 ///
-/// Items checked: messages, enums, and the modules of nested types (buffa),
-/// the server trait and the `Ext`, `RegisterMarker`, `Server`, and `Client`
+/// Items checked: messages and enums (buffa), the server trait and the `Ext`, `RegisterMarker`, `Server`, and `Client`
 /// items of every service (connect-rust), and the items of every other
 /// service (Contratto). connect-rust's constants are upper snake case and
 /// its `Owned…View` aliases end in `View`, so neither can match a name that
@@ -86,9 +85,10 @@ pub(crate) fn check_clashes(files: &[FileDescriptorProto], package: &str) -> Res
     for file in in_package() {
         for message in &file.message_type {
             let name = message.name.as_deref().unwrap_or_default();
-            let origin = format!("message {}", qualified(package, name));
-            taken.insert(name.to_snake_case(), origin.clone());
-            taken.insert(name.to_string(), origin);
+            taken.insert(
+                name.to_string(),
+                format!("message {}", qualified(package, name)),
+            );
         }
         for enumeration in &file.enum_type {
             let name = enumeration.name.as_deref().unwrap_or_default();
@@ -252,10 +252,6 @@ mod tests {
         let files = [file("a.v1", &["DynFooAsync"], &["Foo"])];
         let error = check_clashes(&files, "a.v1").unwrap_err();
         assert!(error.message().contains("`DynFooAsync`"), "{error}");
-        // buffa's module for the nested types of a message `DynFooAsync`
-        // is `dyn_foo_async`, not the handle's `__dyn_foo_async`.
-        let files = [file("a.v1", &["Bar"], &["Foo"])];
-        assert!(check_clashes(&files, "a.v1").is_ok());
     }
 
     #[test]

@@ -6,6 +6,7 @@
 /// Blocking form of `example.v1.GreeterService`: each method returns when the call is done. Streams are iterators.
 ///
 /// Implement it for work that computes; implement `GreeterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn GreeterServiceSync>` to choose it at run time. `Blocking` gives an `GreeterServiceAsync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait GreeterServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Greet a person by name.
     fn greet(
@@ -50,6 +51,7 @@ pub trait GreeterServiceSync: ::core::marker::Send + ::core::marker::Sync {
 /// Async form of `example.v1.GreeterService`: each method returns a future of the result. Streams are `Stream`s.
 ///
 /// Implement it with plain `async fn` for work that waits on I/O; implement `GreeterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl GreeterServiceAsync`) call it without boxing; `DynGreeterServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `GreeterServiceSync` implementation this form.
+#[allow(clippy::wrong_self_convention)]
 pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Greet a person by name.
     fn greet(
@@ -105,6 +107,11 @@ pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
 #[derive(Clone)]
 pub struct DynGreeterServiceAsync {
     inner: ::std::sync::Arc<dyn __dyn_greeter_service_async::Erased>,
+}
+impl ::core::fmt::Debug for DynGreeterServiceAsync {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+        f.debug_struct("DynGreeterServiceAsync").finish_non_exhaustive()
+    }
 }
 impl DynGreeterServiceAsync {
     /// Put `service` behind dynamic dispatch.
@@ -176,7 +183,7 @@ impl GreeterServiceAsync for DynGreeterServiceAsync {
 }
 /// The dyn-compatible face behind the handle: every future and reply
 /// stream boxed.
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::wrong_self_convention)]
 mod __dyn_greeter_service_async {
     pub trait Erased: ::core::marker::Send + ::core::marker::Sync {
         fn greet(
@@ -305,7 +312,7 @@ impl<T: GreeterServiceSync> GreeterServiceAsync for ::contratto::Inline<T> {
         crate::proto::example::v1::GreetReply,
         ::contratto::Status,
     > {
-        <T as GreeterServiceSync>::greet(self.get_ref(), request)
+        <T as GreeterServiceSync>::greet(Self::get_ref(self), request)
     }
     async fn greet_name(
         &self,
@@ -314,7 +321,7 @@ impl<T: GreeterServiceSync> GreeterServiceAsync for ::contratto::Inline<T> {
         crate::proto::example::v1::GreetReply,
         ::contratto::Status,
     > {
-        <T as GreeterServiceSync>::greet_name(self.get_ref(), request)
+        <T as GreeterServiceSync>::greet_name(Self::get_ref(self), request)
     }
     async fn get_options(
         &self,
@@ -323,13 +330,13 @@ impl<T: GreeterServiceSync> GreeterServiceAsync for ::contratto::Inline<T> {
         crate::proto::example::v1::greet_request::Options,
         ::contratto::Status,
     > {
-        <T as GreeterServiceSync>::get_options(self.get_ref(), request)
+        <T as GreeterServiceSync>::get_options(Self::get_ref(self), request)
     }
     async fn echo_label(
         &self,
         request: crate::shared::v1::Label,
     ) -> ::core::result::Result<crate::shared::v1::Label, ::contratto::Status> {
-        <T as GreeterServiceSync>::echo_label(self.get_ref(), request)
+        <T as GreeterServiceSync>::echo_label(Self::get_ref(self), request)
     }
     async fn reset(
         &self,
@@ -338,7 +345,7 @@ impl<T: GreeterServiceSync> GreeterServiceAsync for ::contratto::Inline<T> {
         ::buffa_types::google::protobuf::Empty,
         ::contratto::Status,
     > {
-        <T as GreeterServiceSync>::reset(self.get_ref(), request)
+        <T as GreeterServiceSync>::reset(Self::get_ref(self), request)
     }
 }
 impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offload<T> {
@@ -351,7 +358,10 @@ impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offlo
             ::contratto::Status,
         >,
     > + ::core::marker::Send {
-        self.call(move |service| <T as GreeterServiceSync>::greet(service, request))
+        Self::call(
+            self,
+            move |service| <T as GreeterServiceSync>::greet(service, request),
+        )
     }
     fn greet_name(
         &self,
@@ -362,7 +372,10 @@ impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offlo
             ::contratto::Status,
         >,
     > + ::core::marker::Send {
-        self.call(move |service| <T as GreeterServiceSync>::greet_name(service, request))
+        Self::call(
+            self,
+            move |service| <T as GreeterServiceSync>::greet_name(service, request),
+        )
     }
     fn get_options(
         &self,
@@ -373,10 +386,10 @@ impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offlo
             ::contratto::Status,
         >,
     > + ::core::marker::Send {
-        self.call(move |service| <T as GreeterServiceSync>::get_options(
-            service,
-            request,
-        ))
+        Self::call(
+            self,
+            move |service| <T as GreeterServiceSync>::get_options(service, request),
+        )
     }
     fn echo_label(
         &self,
@@ -384,7 +397,10 @@ impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offlo
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<crate::shared::v1::Label, ::contratto::Status>,
     > + ::core::marker::Send {
-        self.call(move |service| <T as GreeterServiceSync>::echo_label(service, request))
+        Self::call(
+            self,
+            move |service| <T as GreeterServiceSync>::echo_label(service, request),
+        )
     }
     fn reset(
         &self,
@@ -395,7 +411,10 @@ impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offlo
             ::contratto::Status,
         >,
     > + ::core::marker::Send {
-        self.call(move |service| <T as GreeterServiceSync>::reset(service, request))
+        Self::call(
+            self,
+            move |service| <T as GreeterServiceSync>::reset(service, request),
+        )
     }
 }
 impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for ::contratto::Blocking<T> {
@@ -406,7 +425,10 @@ impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for ::contratto::Block
         crate::proto::example::v1::GreetReply,
         ::contratto::Status,
     > {
-        self.block_on(<T as GreeterServiceAsync>::greet(self.get_ref(), request))
+        Self::block_on(
+            self,
+            <T as GreeterServiceAsync>::greet(Self::get_ref(self), request),
+        )
     }
     fn greet_name(
         &self,
@@ -415,7 +437,10 @@ impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for ::contratto::Block
         crate::proto::example::v1::GreetReply,
         ::contratto::Status,
     > {
-        self.block_on(<T as GreeterServiceAsync>::greet_name(self.get_ref(), request))
+        Self::block_on(
+            self,
+            <T as GreeterServiceAsync>::greet_name(Self::get_ref(self), request),
+        )
     }
     fn get_options(
         &self,
@@ -424,13 +449,19 @@ impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for ::contratto::Block
         crate::proto::example::v1::greet_request::Options,
         ::contratto::Status,
     > {
-        self.block_on(<T as GreeterServiceAsync>::get_options(self.get_ref(), request))
+        Self::block_on(
+            self,
+            <T as GreeterServiceAsync>::get_options(Self::get_ref(self), request),
+        )
     }
     fn echo_label(
         &self,
         request: crate::shared::v1::Label,
     ) -> ::core::result::Result<crate::shared::v1::Label, ::contratto::Status> {
-        self.block_on(<T as GreeterServiceAsync>::echo_label(self.get_ref(), request))
+        Self::block_on(
+            self,
+            <T as GreeterServiceAsync>::echo_label(Self::get_ref(self), request),
+        )
     }
     fn reset(
         &self,
@@ -439,6 +470,9 @@ impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for ::contratto::Block
         ::buffa_types::google::protobuf::Empty,
         ::contratto::Status,
     > {
-        self.block_on(<T as GreeterServiceAsync>::reset(self.get_ref(), request))
+        Self::block_on(
+            self,
+            <T as GreeterServiceAsync>::reset(Self::get_ref(self), request),
+        )
     }
 }

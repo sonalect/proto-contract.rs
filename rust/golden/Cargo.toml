@@ -23,7 +23,7 @@ connectrpc = { workspace = true }
 contratto = { workspace = true, features = ["tokio"] }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["rt", "rt-multi-thread", "sync"] }
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "sync", "time"] }
 
 [lints]
 workspace = true

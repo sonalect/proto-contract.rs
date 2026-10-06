@@ -88,19 +88,27 @@ pub mod together {
             clippy::match_single_binding,
             clippy::uninlined_format_args,
             clippy::doc_lazy_continuation,
-            clippy::module_inception
+            clippy::module_inception,
+            // connect-rust's trait method for the RPC `IntoInner`.
+            clippy::wrong_self_convention
         )]
         pub mod v1 {
             include!("generated/buffa/example.v1.mod.rs");
             include!("generated/connect/example.v1.counter.__connect.rs");
             include!("generated/connect/example.v1.feed.__connect.rs");
             include!("generated/connect/example.v1.greeter.__connect.rs");
+            include!("generated/connect/example.v1.tools.__connect.rs");
             include!("generated/contratto/example.v1.counter.__contratto.rs");
             include!("generated/contratto/example.v1.feed.__contratto.rs");
             include!("generated/contratto/example.v1.greeter.__contratto.rs");
+            include!("generated/contratto/example.v1.tools.__contratto.rs");
         }
     }
 }
 
 /// The package the golden run maps with `extern_path=.example.shared=crate::shared`.
 pub use proto::example::shared;
+
+/// The runtime crate, as the `file_per_package` run names it
+/// (`runtime=crate::rt`).
+pub use contratto as rt;

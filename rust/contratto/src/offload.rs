@@ -34,7 +34,9 @@ pub(crate) const STREAM_BUFFER: usize = 16;
 /// that is already running on the blocking pool.
 ///
 /// The plugin implements each `<Service>Async` for `Offload<T>` where `T`
-/// implements `<Service>Sync`.
+/// implements `<Service>Sync`. The helpers below are associated functions
+/// (`Offload::call(&offload, …)`), so they never hide a trait method of the
+/// same name.
 #[derive(Debug)]
 pub struct Offload<T> {
     service: Arc<T>,
@@ -50,7 +52,7 @@ impl<T> Clone for Offload<T> {
     }
 }
 
-impl<T: Send + Sync + 'static> Offload<T> {
+impl<T> Offload<T> {
     /// The async form of `service`, run on the blocking pool of the runtime
     /// behind `handle`.
     pub fn new(service: T, handle: Handle) -> Offload<T> {
@@ -63,17 +65,22 @@ impl<T: Send + Sync + 'static> Offload<T> {
     }
 
     /// The sync implementation.
-    pub fn get_ref(&self) -> &T {
-        &self.service
+    pub fn get_ref(this: &Offload<T>) -> &T {
+        &this.service
     }
+}
 
+impl<T: Send + Sync + 'static> Offload<T> {
     /// Run `call` on the blocking pool and return its result.
-    pub fn call<R, F>(&self, call: F) -> impl Future<Output = Result<R, Status>> + Send + 'static
+    pub fn call<R, F>(
+        this: &Offload<T>,
+        call: F,
+    ) -> impl Future<Output = Result<R, Status>> + Send + 'static
     where
         F: FnOnce(&T) -> Result<R, Status> + Send + 'static,
         R: Send + 'static,
     {
-        let (service, handle) = (Arc::clone(&self.service), self.handle.clone());
+        let (service, handle) = (Arc::clone(&this.service), this.handle.clone());
         async move {
             let task = handle.spawn_blocking(move || {
                 catch_unwind(AssertUnwindSafe(|| call(&service)))
@@ -88,21 +95,21 @@ impl<T: Send + Sync + 'static> Offload<T> {
     /// Run `call`, which returns a reply stream, on the blocking pool, and
     /// pull that stream there.
     pub fn server_streaming<X, F>(
-        &self,
+        this: &Offload<T>,
         call: F,
     ) -> impl Future<Output = Result<ChannelStream<Result<X, Status>>, Status>> + Send + 'static
     where
         F: FnOnce(&T) -> Result<BoxIter<'static, Result<X, Status>>, Status> + Send + 'static,
         X: Send + 'static,
     {
-        let (service, handle) = (Arc::clone(&self.service), self.handle.clone());
+        let (service, handle) = (Arc::clone(&this.service), this.handle.clone());
         streaming(handle, move || call(&service))
     }
 
     /// Run `call` on the blocking pool with `requests` as an iterator and
     /// return its result.
     pub fn client_streaming<S, X, R, F>(
-        &self,
+        this: &Offload<T>,
         requests: S,
         call: F,
     ) -> impl Future<Output = Result<R, Status>> + Send + 'static
@@ -112,14 +119,16 @@ impl<T: Send + Sync + 'static> Offload<T> {
         F: FnOnce(&T, BoxIter<'static, Result<X, Status>>) -> Result<R, Status> + Send + 'static,
         R: Send + 'static,
     {
-        let inbound = self.handle.clone();
-        self.call(move |service| call(service, Box::new(StreamIter::new(inbound, requests))))
+        let inbound = this.handle.clone();
+        Offload::call(this, move |service| {
+            call(service, Box::new(StreamIter::new(inbound, requests)))
+        })
     }
 
     /// Run `call` on the blocking pool with `requests` as an iterator, and
     /// pull the reply stream it returns there.
     pub fn bidirectional<S, X, Y, F>(
-        &self,
+        this: &Offload<T>,
         requests: S,
         call: F,
     ) -> impl Future<Output = Result<ChannelStream<Result<Y, Status>>, Status>> + Send + 'static
@@ -134,7 +143,7 @@ impl<T: Send + Sync + 'static> Offload<T> {
             + Send
             + 'static,
     {
-        let (service, handle) = (Arc::clone(&self.service), self.handle.clone());
+        let (service, handle) = (Arc::clone(&this.service), this.handle.clone());
         let inbound = handle.clone();
         streaming(handle, move || {
             call(&service, Box::new(StreamIter::new(inbound, requests)))
@@ -179,8 +188,9 @@ where
     }
 }
 
-/// Send each item of `items` until it ends, the reader goes away, or `next`
-/// panics (sent as a last `Status::internal` item).
+/// Send each item of `items` until it ends, an `Err` item has been sent
+/// (an `Err` ends a stream), the reader goes away, or `next` panics (sent
+/// as a last `Status::internal` item).
 pub(crate) fn pump<X>(
     mut items: BoxIter<'static, Result<X, Status>>,
     sender: &mpsc::Sender<Result<X, Status>>,
@@ -194,7 +204,8 @@ pub(crate) fn pump<X>(
                 return;
             }
         };
-        if sender.blocking_send(item).is_err() {
+        let ends = item.is_err();
+        if sender.blocking_send(item).is_err() || ends {
             return;
         }
     }

@@ -38,7 +38,9 @@ use crate::{BoxIter, ChannelStream, Status};
 /// would from a direct call.
 ///
 /// The plugin implements each `<Service>Sync` for `Blocking<T>` where `T`
-/// implements `<Service>Async`.
+/// implements `<Service>Async`. The helpers below are associated functions
+/// (`Blocking::block_on(&blocking, …)`), so they never hide a trait method
+/// of the same name.
 #[derive(Clone, Debug)]
 pub struct Blocking<T> {
     service: T,
@@ -52,13 +54,13 @@ impl<T> Blocking<T> {
     }
 
     /// The async implementation.
-    pub fn get_ref(&self) -> &T {
-        &self.service
+    pub fn get_ref(this: &Blocking<T>) -> &T {
+        &this.service
     }
 
     /// The async implementation, moved out.
-    pub fn into_inner(self) -> T {
-        self.service
+    pub fn into_inner(this: Blocking<T>) -> T {
+        this.service
     }
 
     /// Block until `call` is done and return its result.
@@ -67,8 +69,11 @@ impl<T> Blocking<T> {
     ///
     /// `FAILED_PRECONDITION` when called inside a current-thread runtime;
     /// otherwise whatever `call` returns.
-    pub fn block_on<R>(&self, call: impl Future<Output = Result<R, Status>>) -> Result<R, Status> {
-        block_on(&self.handle, call)
+    pub fn block_on<R>(
+        this: &Blocking<T>,
+        call: impl Future<Output = Result<R, Status>>,
+    ) -> Result<R, Status> {
+        block_on(&this.handle, call)
     }
 
     /// Block until `call` returns its reply stream, and return the stream
@@ -78,28 +83,29 @@ impl<T> Blocking<T> {
     ///
     /// As [`Blocking::block_on`].
     pub fn block_on_stream<X, S>(
-        &self,
+        this: &Blocking<T>,
         call: impl Future<Output = Result<S, Status>>,
     ) -> Result<BoxIter<'static, Result<X, Status>>, Status>
     where
         S: Stream<Item = Result<X, Status>> + Send + 'static,
         X: Send + 'static,
     {
-        let stream = self.block_on(call)?;
+        let stream = Blocking::block_on(this, call)?;
         Ok(Box::new(BlockingIter {
-            handle: self.handle.clone(),
+            handle: this.handle.clone(),
             stream: Some(Box::pin(stream)),
         }))
     }
 
     /// Pull `requests` on the runtime's blocking pool and return them as a
-    /// stream for an async method. Dropping the stream stops the pull.
+    /// stream for an async method. Dropping the stream stops the pull; an
+    /// `Err` item ends it.
     pub fn feed<X: Send + 'static>(
-        &self,
+        this: &Blocking<T>,
         requests: BoxIter<'static, Result<X, Status>>,
     ) -> ChannelStream<Result<X, Status>> {
         let (sender, receiver) = mpsc::channel(STREAM_BUFFER);
-        drop(self.handle.spawn_blocking(move || pump(requests, &sender)));
+        drop(this.handle.spawn_blocking(move || pump(requests, &sender)));
         ChannelStream::new(receiver)
     }
 }

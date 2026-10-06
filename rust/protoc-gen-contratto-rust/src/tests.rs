@@ -230,6 +230,38 @@ fn comments_become_sanitized_rustdoc() {
     assert!(code.contains("    /// Call `example.v1.GreeterService.GetOptions`.\n"));
 }
 
+/// The buffa output may sit at the crate root.
+#[test]
+fn buffa_module_may_be_the_crate_root() {
+    let response = generate(&request(
+        greeter_files(greeter_methods()),
+        "buffa_module=crate",
+    ))
+    .unwrap();
+    let code = squeeze(outputs(&response)[0].1);
+    assert!(
+        code.contains("fngreet(&self,request:crate::example::v1::GreetRequest)"),
+        "{code}"
+    );
+    assert!(code.contains("fnecho_label(&self,request:crate::example::shared::v1::Label)"));
+}
+
+/// A proto path cannot break out of the `// source:` comment.
+#[test]
+fn source_comment_escapes_line_breaks() {
+    let mut files = greeter_files(greeter_methods());
+    files[3].name = Some("evil\npub fn injected() {}.proto".into());
+    let mut request = request(files, PARAMETER);
+    request.file_to_generate = vec!["evil\npub fn injected() {}.proto".into()];
+    let response = generate(&request).unwrap();
+    let code = outputs(&response)[0].1;
+    assert!(
+        code.contains("// source: evil\\npub fn injected() {}.proto\n"),
+        "{code}"
+    );
+    assert!(!code.contains("\npub fn injected"));
+}
+
 #[test]
 fn runtime_path_is_a_parameter() {
     let parameter = format!("{PARAMETER},runtime=crate::rt");
@@ -366,19 +398,19 @@ fn bridges_for_every_kind() {
         // Inline
         "asyncfngreet(&self,request:crate::proto::example::v1::GreetRequest)\
          ->::core::result::Result<crate::proto::example::v1::GreetReply,::contratto::Status>\
-         {<TasGreeterServiceSync>::greet(self.get_ref(),request)}",
-        "{<TasGreeterServiceSync>::watch(self.get_ref(),request).map(::contratto::IterStream::new)}",
-        "{letrequests=Self::buffer(requests).await;<TasGreeterServiceSync>::collect(self.get_ref(),requests)}",
+         {<TasGreeterServiceSync>::greet(Self::get_ref(self),request)}",
+        "{<TasGreeterServiceSync>::watch(Self::get_ref(self),request).map(Self::reply_stream)}",
+        "{letrequests=Self::buffer(requests).await;<TasGreeterServiceSync>::collect(Self::get_ref(self),requests)}",
         // Offload
-        "self.call(move|service|<TasGreeterServiceSync>::greet(service,request))",
-        "self.server_streaming(move|service|<TasGreeterServiceSync>::watch(service,request))",
-        "self.client_streaming(requests,<TasGreeterServiceSync>::collect)",
-        "self.bidirectional(requests,<TasGreeterServiceSync>::chat)",
+        "Self::call(self,move|service|<TasGreeterServiceSync>::greet(service,request))",
+        "Self::server_streaming(self,move|service|<TasGreeterServiceSync>::watch(service,request))",
+        "Self::client_streaming(self,requests,<TasGreeterServiceSync>::collect)",
+        "Self::bidirectional(self,requests,<TasGreeterServiceSync>::chat)",
         // Blocking
-        "self.block_on(<TasGreeterServiceAsync>::greet(self.get_ref(),request))",
-        "self.block_on_stream(<TasGreeterServiceAsync>::watch(self.get_ref(),request))",
-        "letrequests=self.feed(requests);self.block_on(<TasGreeterServiceAsync>::collect(self.get_ref(),requests))",
-        "letrequests=self.feed(requests);self.block_on_stream(<TasGreeterServiceAsync>::chat(self.get_ref(),requests))",
+        "Self::block_on(self,<TasGreeterServiceAsync>::greet(Self::get_ref(self),request))",
+        "Self::block_on_stream(self,<TasGreeterServiceAsync>::watch(Self::get_ref(self),request))",
+        "letrequests=Self::feed(self,requests);Self::block_on(self,<TasGreeterServiceAsync>::collect(Self::get_ref(self),requests))",
+        "letrequests=Self::feed(self,requests);Self::block_on_stream(self,<TasGreeterServiceAsync>::chat(Self::get_ref(self),requests))",
     ] {
         assert!(code.contains(expected), "missing {expected}\nin {code}");
     }
