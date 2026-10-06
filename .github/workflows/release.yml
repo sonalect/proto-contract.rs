@@ -151,6 +151,17 @@ jobs:
             echo "${bin}" >> "${GITHUB_PATH}"
           fi
 
+      # Bazel's C++ toolchain links Rust with lld when it finds one and
+      # falls back to gold, which rustc warns is deprecated and buggy.
+      # Ubuntu runners have gold and no lld.
+      - name: Install lld
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends lld
+          ld.lld --version
+
       - name: Configure Bazel for Windows
         if: runner.os == 'Windows'
         run: |
