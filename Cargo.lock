@@ -132,7 +132,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "contratto"
+name = "contract"
 version = "0.0.0"
 dependencies = [
  "buffa-types",
@@ -141,13 +141,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "contratto-golden"
+name = "contract-golden"
 version = "0.0.0"
 dependencies = [
  "buffa",
  "buffa-types",
  "connectrpc",
- "contratto",
+ "contract",
  "tokio",
 ]
 
@@ -479,7 +479,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "protoc-gen-contratto-rust"
+name = "protoc-gen-contract-rust"
 version = "0.0.0"
 dependencies = [
  "buffa",

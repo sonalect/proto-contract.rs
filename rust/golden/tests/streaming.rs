@@ -7,11 +7,11 @@ use std::pin::{Pin, pin};
 use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
 
-use contratto::{BoxIter, Code, Status, Stream};
-use contratto_golden::contract::example::v1::{
+use contract::{BoxIter, Code, Status, Stream};
+use contract_golden::proto::example::v1::{Item, Summary, WatchRequest};
+use contract_golden::traits::example::v1::{
     DynFeedServiceAsync, FeedServiceAsync, FeedServiceSync,
 };
-use contratto_golden::proto::example::v1::{Item, Summary, WatchRequest};
 
 // ---- test plumbing: streams that never wait, polled without a runtime ----
 

@@ -1,5 +1,5 @@
 [package]
-name = "protoc-gen-contratto-rust"
+name = "protoc-gen-contract-rust"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,11 +9,11 @@ description = "protoc plugin: plain Rust sync and async traits for protobuf serv
 readme = "../../README.md"
 
 [lib]
-name = "protoc_gen_contratto_rust"
+name = "protoc_gen_contract_rust"
 path = "src/lib.rs"
 
 [[bin]]
-name = "protoc-gen-contratto-rust"
+name = "protoc-gen-contract-rust"
 path = "src/main.rs"
 
 [dependencies]

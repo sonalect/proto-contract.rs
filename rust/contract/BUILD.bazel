@@ -3,45 +3,45 @@ load("@rules_rust//rust:defs.bzl", "rust_doc_test", "rust_library", "rust_test")
 exports_files(["Cargo.toml"])
 
 rust_library(
-    name = "contratto",
+    name = "contract",
     srcs = glob(["src/**/*.rs"]),
     crate_features = ["tokio"],
-    crate_name = "contratto",
+    crate_name = "contract",
     visibility = ["//visibility:public"],
     deps = [
-        "@contratto_cargo//:buffa-types",
-        "@contratto_cargo//:futures-core",
-        "@contratto_cargo//:tokio",
+        "@contract_cargo//:buffa-types",
+        "@contract_cargo//:futures-core",
+        "@contract_cargo//:tokio",
     ],
 )
 
 rust_test(
-    name = "contratto_test",
-    crate = ":contratto",
+    name = "contract_test",
+    crate = ":contract",
     crate_features = ["tokio"],
     visibility = ["//rust:__pkg__"],
 )
 
 rust_doc_test(
-    name = "contratto_doc_test",
-    crate = ":contratto",
+    name = "contract_doc_test",
+    crate = ":contract",
     crate_features = ["tokio"],
 )
 
 # The default feature set: no tokio, no bridges that need it.
 rust_library(
-    name = "contratto_no_tokio",
+    name = "contract_no_tokio",
     srcs = glob(["src/**/*.rs"]),
-    crate_name = "contratto",
+    crate_name = "contract",
     visibility = ["//rust:__pkg__"],
     deps = [
-        "@contratto_cargo//:buffa-types",
-        "@contratto_cargo//:futures-core",
+        "@contract_cargo//:buffa-types",
+        "@contract_cargo//:futures-core",
     ],
 )
 
 rust_test(
-    name = "contratto_no_tokio_test",
-    crate = ":contratto_no_tokio",
+    name = "contract_no_tokio_test",
+    crate = ":contract_no_tokio",
     visibility = ["//rust:__pkg__"],
 )

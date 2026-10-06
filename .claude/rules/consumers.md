@@ -1,11 +1,11 @@
 # Consumers outside this repository
 
-Contratto is a general-purpose generator and runtime for any Rust project
+Contract is a general-purpose generator and runtime for any Rust project
 that uses buffa, other people's included. Knowqore
 (`github.com/sonalect/knowqore`, usually cloned next to this repository as
 `../knowqore`) is its **anchor consumer**: the first user, the motivation
 and the source of requirements for current work. It is not the only one,
-and Contratto is not built for it alone.
+and Contract is not built for it alone.
 
 ## Requirements from the anchor consumer
 
@@ -31,12 +31,12 @@ Before calling such a change done:
    words any caller can act on.
 2. Bump per `.claude/skills/versioning/SKILL.md` at release: breaking →
    minor while major is 0.
-3. Once Knowqore uses Contratto, check it as a real-world sample:
-   `git grep -n contratto ../knowqore` (or ask `scout`), and tell the
+3. Once Knowqore uses Contract, check it as a real-world sample:
+   `git grep -n contract ../knowqore` (or ask `scout`), and tell the
    owner which of its call sites change. Knowqore passing is a sample, not
    proof that other consumers are safe.
 
-Contratto sits next to two generators it does not own. The Rust paths it
+Contract sits next to two generators it does not own. The Rust paths it
 emits must match `protoc-gen-buffa`, and the Connect adapters must match
 `protoc-gen-connect-rust`, at the versions this repository pins. A bump of
 either is tested against the golden files before it lands.

@@ -1,4 +1,4 @@
-//! `protoc-gen-contratto-rust`: a protoc plugin that turns each protobuf
+//! `protoc-gen-contract-rust`: a protoc plugin that turns each protobuf
 //! `service` into plain Rust traits over the message structs
 //! `protoc-gen-buffa` generates.
 //!
@@ -7,12 +7,12 @@
 //!
 //! ```rust,ignore
 //! pub trait GreeterServiceSync: Send + Sync {
-//!     fn greet(&self, request: GreetRequest) -> Result<GreetReply, contratto::Status>;
+//!     fn greet(&self, request: GreetRequest) -> Result<GreetReply, contract::Status>;
 //! }
 //!
 //! pub trait GreeterServiceAsync: Send + Sync {
 //!     fn greet(&self, request: GreetRequest)
-//!         -> impl Future<Output = Result<GreetReply, contratto::Status>> + Send;
+//!         -> impl Future<Output = Result<GreetReply, contract::Status>> + Send;
 //! }
 //!
 //! /// Any `GreeterServiceAsync` behind dynamic dispatch; implements it too.
@@ -21,8 +21,8 @@
 //! ```
 //!
 //! An async implementation writes plain `async fn`. Streaming methods take
-//! and return `contratto::BoxIter` in the sync form and `impl Stream` in
-//! the async form; see the `contratto` crate for each kind.
+//! and return `contract::BoxIter` in the sync form and `impl Stream` in
+//! the async form; see the `contract` crate for each kind.
 //!
 //! The request is taken by value and the reply is owned. Message paths are
 //! absolute (`buffa_module=` / `extern_path=`), so the output compiles
@@ -37,11 +37,11 @@
 //!   method names must be covered; well-known types map to `buffa_types`
 //!   on their own.
 //! - `file_per_package`: one `<dotted.pkg>.rs` per package instead of a
-//!   `<stem>.__contratto.rs` per proto plus a `<pkg>.mod.rs` stitcher.
+//!   `<stem>.__contract.rs` per proto plus a `<pkg>.mod.rs` stitcher.
 //! - `element_memory_limit=<bytes|unlimited>`: the decode bound of the
 //!   request, as for `protoc-gen-buffa`.
 //! - `runtime=<rust_path>`: path of the runtime crate; default
-//!   `::contratto`.
+//!   `::contract`.
 //! - `gate_tokio_feature[=<name>]`: put the `Offload` and `Blocking` impls
 //!   under `#[cfg(feature = "<name>")]`; default name `tokio`.
 //!

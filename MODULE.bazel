@@ -1,7 +1,7 @@
-"""Root Bazel module: Contratto runtime, protoc plugin, golden protos, linters."""
+"""Root Bazel module: Contract runtime, protoc plugin, golden protos, linters."""
 
 module(
-    name = "contratto",
+    name = "contract",
     version = "0.0.0",
 )
 

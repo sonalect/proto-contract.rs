@@ -26,11 +26,11 @@ buf_format(
     module = ":module",
 )
 
-# buffa messages plus both Contratto layouts, from the plugin built here.
+# buffa messages plus both Contract layouts, from the plugin built here.
 buf_generate(
     name = "golden",
     module = ":module",
-    plugins = ["//rust/protoc-gen-contratto-rust"],
+    plugins = ["//rust/protoc-gen-contract-rust"],
     template = "//:buf.gen.golden.yaml",
 )
 

@@ -10,13 +10,13 @@ rust_library(
     name = "golden",
     srcs = glob(["src/**/*.rs"]),
     crate_features = ["tokio"],
-    crate_name = "contratto_golden",
+    crate_name = "contract_golden",
     visibility = ["//rust:__pkg__"],
     deps = [
-        "//rust/contratto",
-        "@contratto_cargo//:buffa",
-        "@contratto_cargo//:buffa-types",
-        "@contratto_cargo//:connectrpc",
+        "//rust/contract",
+        "@contract_cargo//:buffa",
+        "@contract_cargo//:buffa-types",
+        "@contract_cargo//:connectrpc",
     ],
 )
 
@@ -25,13 +25,13 @@ rust_library(
 rust_library(
     name = "golden_no_tokio",
     srcs = glob(["src/**/*.rs"]),
-    crate_name = "contratto_golden",
+    crate_name = "contract_golden",
     visibility = ["//rust:__pkg__"],
     deps = [
-        "//rust/contratto",
-        "@contratto_cargo//:buffa",
-        "@contratto_cargo//:buffa-types",
-        "@contratto_cargo//:connectrpc",
+        "//rust/contract",
+        "@contract_cargo//:buffa",
+        "@contract_cargo//:buffa-types",
+        "@contract_cargo//:connectrpc",
     ],
 )
 
@@ -42,9 +42,9 @@ rust_library(
         visibility = ["//rust:__pkg__"],
         deps = [
             ":golden",
-            "//rust/contratto",
-            "@contratto_cargo//:buffa-types",
-            "@contratto_cargo//:tokio",
+            "//rust/contract",
+            "@contract_cargo//:buffa-types",
+            "@contract_cargo//:tokio",
         ],
     )
     for test in [

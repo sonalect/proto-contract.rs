@@ -8,7 +8,7 @@ Do not append at the bottom.
 - `[workspace.members]`: alphabetical by path.
 - `[workspace.dependencies]`, `[dependencies]`, `[dev-dependencies]`,
   `[build-dependencies]`, per-target tables: alphabetical by package name,
-  the path crates (`contratto`, `protoc-gen-contratto-rust`) sorted in
+  the path crates (`contract`, `protoc-gen-contract-rust`) sorted in
   with the rest. Optional crates stay in that same sort.
 
 ```toml
@@ -26,7 +26,7 @@ tokio = { workspace = true, optional = true }
 ## BUILD.bazel
 
 `deps` / `proc_macro_deps` lists: alphabetical. Workspace `//rust/…` first,
-then `@contratto_cargo//:…`. `bazel run //bazel:format` sorts what
+then `@contract_cargo//:…`. `bazel run //bazel:format` sorts what
 buildifier can.
 
 Does not replace `dependency-quarantine.md` or the crate_universe repin

@@ -1,6 +1,6 @@
 //! Names of the generated items, and the check that they are free.
 //!
-//! Contratto's output is often mounted into the module that already holds
+//! Contract's output is often mounted into the module that already holds
 //! a package's buffa messages and connect-rust's service items. Two items
 //! with one name in one module do not compile (E0428), so the run fails
 //! first and names both proto elements.
@@ -13,7 +13,7 @@ use heck::{ToSnakeCase, ToUpperCamelCase};
 
 use crate::Error;
 
-/// The names Contratto gives the items of one service.
+/// The names Contract gives the items of one service.
 pub(crate) struct ServiceNames {
     /// The blocking trait, `<Service>Sync`.
     pub(crate) sync: String,
@@ -66,12 +66,12 @@ pub(crate) fn qualified(package: &str, name: &str) -> String {
     }
 }
 
-/// Fail if a name Contratto gives an item of a service in `package` is
+/// Fail if a name Contract gives an item of a service in `package` is
 /// also the name of another item of the package's Rust module.
 ///
 /// Items checked: messages and enums (buffa), the server trait and the `Ext`, `RegisterMarker`, `Server`, and `Client`
 /// items of every service (connect-rust), and the items of every other
-/// service (Contratto). connect-rust's constants are upper snake case and
+/// service (Contract). connect-rust's constants are upper snake case and
 /// its `Owned…View` aliases end in `View`, so neither can match a name that
 /// ends in `Sync` or `Async`.
 pub(crate) fn check_clashes(files: &[FileDescriptorProto], package: &str) -> Result<(), Error> {
@@ -241,7 +241,7 @@ mod tests {
     }
 
     #[test]
-    fn clash_between_two_services_of_contratto() {
+    fn clash_between_two_services_of_contract() {
         let files = [file("a.v1", &[], &["foo", "Foo"])];
         let error = check_clashes(&files, "a.v1").unwrap_err();
         assert!(error.message().contains("`FooSync`"), "{error}");

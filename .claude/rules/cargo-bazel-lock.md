@@ -1,6 +1,6 @@
 # Crate universe lockfile
 
-`cargo-bazel-lock.json` is the crate_universe lock for hub `contratto_cargo`
+`cargo-bazel-lock.json` is the crate_universe lock for hub `contract_cargo`
 (`lockfile =` on `from_cargo` in `rust.MODULE.bazel`). Bazel analysis uses
 it; `Cargo.lock` alone is not enough for a transitive `bazel_dep`. Do not
 edit it by hand.
@@ -13,7 +13,7 @@ After any of:
   version)
 - `rust.MODULE.bazel` crate_universe tags (`from_cargo`, `annotation`,
   `spec`, hub name)
-- a `BUILD.bazel` dep on `@contratto_cargo//:…` for a crate that was not in
+- a `BUILD.bazel` dep on `@contract_cargo//:…` for a crate that was not in
   the hub
 
 **Before every git commit** that includes those files: the lockfile in the
@@ -29,7 +29,7 @@ analysis, or as CI rewriting the JSON.
 From the repo root (`MODULE.bazel`), unsandboxed (`run-commands.md`):
 
 ```bash
-CARGO_BAZEL_REPIN=1 bazel fetch @contratto_cargo//:all
+CARGO_BAZEL_REPIN=1 bazel fetch @contract_cargo//:all
 ```
 
 If the JSON path is missing, write `{}` first, then the same command. Leave
@@ -37,5 +37,5 @@ If the JSON path is missing, write `{}` first, then the same command. Leave
 
 ```text
 # BAD — bump a crate in Cargo.toml, commit Cargo.lock, leave cargo-bazel-lock.json
-# GOOD — CARGO_BAZEL_REPIN=1 bazel fetch @contratto_cargo//:all, then test, then commit
+# GOOD — CARGO_BAZEL_REPIN=1 bazel fetch @contract_cargo//:all, then test, then commit
 ```

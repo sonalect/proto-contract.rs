@@ -18,11 +18,11 @@ cargo = use_extension(
     "crate",
 )
 cargo.from_cargo(
-    name = "contratto_cargo",
+    name = "contract_cargo",
     cargo_lockfile = "//:Cargo.lock",
     lockfile = "//:cargo-bazel-lock.json",
     manifests = [
         "//:Cargo.toml",
     ],
 )
-use_repo(cargo, "contratto_cargo")
+use_repo(cargo, "contract_cargo")

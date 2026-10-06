@@ -1,4 +1,4 @@
-//! Runtime for the code that `protoc-gen-contratto-rust` generates.
+//! Runtime for the code that `protoc-gen-contract-rust` generates.
 //!
 //! For each protobuf `service`, the plugin emits:
 //!
@@ -74,7 +74,7 @@ pub use stream::IterStream;
 /// `Send`, and borrowing for at most `'a`.
 ///
 /// ```
-/// use contratto::{BoxFuture, Status};
+/// use contract::{BoxFuture, Status};
 ///
 /// fn double(value: i64) -> BoxFuture<'static, Result<i64, Status>> {
 ///     Box::pin(async move { Ok(value * 2) })
@@ -87,7 +87,7 @@ pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 /// borrows for at most `'a`.
 ///
 /// ```
-/// use contratto::{BoxIter, Status};
+/// use contract::{BoxIter, Status};
 ///
 /// let replies: BoxIter<'static, Result<u32, Status>> = Box::new((1..=3).map(Ok));
 /// assert_eq!(replies.count(), 3);

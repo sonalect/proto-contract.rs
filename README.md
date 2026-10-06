@@ -1,11 +1,11 @@
-# Contratto
+# Contract
 
 Plain Rust traits for protobuf services.
 
-`protoc-gen-contratto-rust` turns each `service` into plain Rust traits
+`protoc-gen-contract-rust` turns each `service` into plain Rust traits
 over the message structs [buffa](https://github.com/anthropics/buffa)
 generates. A component in the same process is called by a method call: no
-encoding, no transport, no view types. The runtime crate `contratto` holds
+encoding, no transport, no view types. The runtime crate `contract` holds
 the types the generated code names.
 
 ```protobuf
@@ -18,13 +18,13 @@ service GreeterService {
 ```rust
 pub trait GreeterServiceSync: Send + Sync {
     /// Greet a person by name.
-    fn greet(&self, request: GreetRequest) -> Result<GreetReply, contratto::Status>;
+    fn greet(&self, request: GreetRequest) -> Result<GreetReply, contract::Status>;
 }
 
 pub trait GreeterServiceAsync: Send + Sync {
     /// Greet a person by name.
     fn greet(&self, request: GreetRequest)
-        -> impl Future<Output = Result<GreetReply, contratto::Status>> + Send;
+        -> impl Future<Output = Result<GreetReply, contract::Status>> + Send;
 }
 
 /// Any `GreeterServiceAsync` behind dynamic dispatch; implements it too.
@@ -38,7 +38,7 @@ at run time as `Arc<dyn GreeterServiceSync>` or `DynGreeterServiceAsync`;
 generic callers (`impl GreeterServiceAsync`) pay no allocation.
 
 Streaming methods of every kind are generated. The sync form uses
-`contratto::BoxIter`, the async form `contratto::Stream`; stream items are
+`contract::BoxIter`, the async form `contract::Stream`; stream items are
 `Result<_, Status>`:
 
 ```protobuf
@@ -83,9 +83,9 @@ of one form can use an implementation of the other:
 
 | Wrapper | Gives | How |
 | - | - | - |
-| `contratto::Inline<T>` | a sync impl the async form | runs the call inside `poll`; for calls of microseconds |
-| `contratto::Offload<T>` | a sync impl the async form | runs the call on tokio's blocking pool (about 20 µs a call) |
-| `contratto::Blocking<T>` | an async impl the sync form | blocks the caller on a tokio runtime handle |
+| `contract::Inline<T>` | a sync impl the async form | runs the call inside `poll`; for calls of microseconds |
+| `contract::Offload<T>` | a sync impl the async form | runs the call on tokio's blocking pool (about 20 µs a call) |
+| `contract::Blocking<T>` | an async impl the sync form | blocks the caller on a tokio runtime handle |
 
 `Offload` and `Blocking` need the runtime crate's `tokio` feature; the
 plugin parameter `gate_tokio_feature` puts their impls behind a feature of
@@ -109,11 +109,11 @@ plugins:
   - local: protoc-gen-buffa-packaging
     out: src/generated/buffa
     strategy: all
-  - local: protoc-gen-contratto-rust
-    out: src/generated/contratto
+  - local: protoc-gen-contract-rust
+    out: src/generated/contract
     opt: [buffa_module=crate::proto]
   - local: protoc-gen-buffa-packaging
-    out: src/generated/contratto
+    out: src/generated/contract
     strategy: all
     opt: [filter=services]
 ```
@@ -121,11 +121,11 @@ plugins:
 ```rust
 #[path = "generated/buffa/mod.rs"]
 pub mod proto;
-#[path = "generated/contratto/mod.rs"]
-pub mod contract;
+#[path = "generated/contract/mod.rs"]
+pub mod traits;
 ```
 
-The crate depends on `contratto` and on what buffa's output needs
+The crate depends on `contract` and on what buffa's output needs
 (`buffa`, and `buffa-types` for well-known types).
 
 | Parameter | Meaning |
@@ -134,7 +134,7 @@ The crate depends on `contratto` and on what buffa's output needs
 | `extern_path=<proto>=<path>` | maps a proto package prefix to a Rust module; repeatable, longest prefix wins |
 | `file_per_package` | one `<dotted.pkg>.rs` per package instead of per-proto files and a stitcher |
 | `element_memory_limit=<bytes\|unlimited>` | decode bound of the request, as for `protoc-gen-buffa` |
-| `runtime=<path>` | path of the runtime crate; default `::contratto` |
+| `runtime=<path>` | path of the runtime crate; default `::contract` |
 | `gate_tokio_feature[=<name>]` | `Offload` and `Blocking` impls under `#[cfg(feature = "<name>")]`; default `tokio` |
 
 Paths are absolute (`::…`, `crate`, or `crate::…`). Any other parameter

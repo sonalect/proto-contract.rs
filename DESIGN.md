@@ -1,14 +1,14 @@
-# Design: Contratto
+# Design: Contract
 
 Status: accepted by the owner (6 October 2026); stages C1 and C2 done (6 October 2026)
-Repository: `github.com/sonalect/protoc-gen-contratto-rust`
-Crates: `contratto` (runtime), `protoc-gen-contratto-rust` (protoc plugin)
+Repository: `github.com/sonalect/protoc-gen-contract-rust`
+Crates: `contract` (runtime), `protoc-gen-contract-rust` (protoc plugin)
 License: Apache-2.0
 
 ## 1. Goal
 
 A protobuf `service` is the contract of a component: its messages are the
-data, its methods are the operations. Contratto generates from each service
+data, its methods are the operations. Contract generates from each service
 plain Rust traits whose methods take and return the message structs that
 [buffa](https://github.com/anthropics/buffa) generates. A component in the
 same process is called by a method call: no encoding, no HTTP, no view type.
@@ -60,9 +60,9 @@ Google's generators keep the contract neutral and emit several forms of one
 service; the caller picks. gRPC Java emits `newBlockingStub`, `newFutureStub`,
 and `newStub`. gRPC C++ emits `Service`, `AsyncService`, and
 `CallbackService`. Go emits one blocking form because the language gives
-goroutines. Rust does not, so Contratto follows Java and C++.
+goroutines. Rust does not, so Contract follows Java and C++.
 
-Contratto reads no option from `.proto` files. Every choice is a plugin
+Contract reads no option from `.proto` files. Every choice is a plugin
 parameter in `buf.gen.yaml`.
 
 ## 4. What is generated
@@ -84,7 +84,7 @@ service GreeterService {
 ```rust
 pub trait GreeterServiceSync: Send + Sync {
     /// Greet a person by name.
-    fn greet(&self, request: GreetRequest) -> Result<GreetReply, contratto::Status>;
+    fn greet(&self, request: GreetRequest) -> Result<GreetReply, contract::Status>;
 }
 ```
 
@@ -96,11 +96,11 @@ pub trait GreeterServiceAsync: Send + Sync {
     fn greet(
         &self,
         request: GreetRequest,
-    ) -> impl Future<Output = Result<GreetReply, contratto::Status>> + Send;
+    ) -> impl Future<Output = Result<GreetReply, contract::Status>> + Send;
 }
 
 impl GreeterServiceAsync for MyGreeter {
-    async fn greet(&self, request: GreetRequest) -> Result<GreetReply, contratto::Status> {
+    async fn greet(&self, request: GreetRequest) -> Result<GreetReply, contract::Status> {
         …
     }
 }
@@ -121,7 +121,7 @@ Rules for both forms:
 - The request is taken by value. A bridge moves it without a clone; a
   caller that keeps the data clones it explicitly.
 - The reply is owned.
-- The error is `contratto::Status` (§5.1).
+- The error is `contract::Status` (§5.1).
 - Comments from the `.proto` become rustdoc.
 - There is no context parameter (§7).
 - Method names are snake_case, as `protoc-gen-connect-rust` makes them.
@@ -151,7 +151,7 @@ impl GreeterServiceAsync for DynGreeterServiceAsync { … }
 ```
 
 Behind it sits a private dyn-compatible trait whose methods return
-`contratto::BoxFuture` and `contratto::BoxStream`, with a blanket impl for
+`contract::BoxFuture` and `contract::BoxStream`, with a blanket impl for
 every `T: GreeterServiceAsync`. The trait lives in a private module
 `__dyn_greeter_service_async`, so a caller never sees two traits with the
 same method names. Only a call through the handle pays the allocation: one
@@ -174,11 +174,11 @@ All four kinds of methods are generated. A stream item is a `Result`:
 
 In the async form `R: Stream<Item = Result<Req, Status>> + Send + 'static`.
 
-- `contratto::BoxIter<'a, T>` is `Box<dyn Iterator<Item = T> + Send + 'a>`,
+- `contract::BoxIter<'a, T>` is `Box<dyn Iterator<Item = T> + Send + 'a>`,
   so the sync trait stays dyn-compatible at one allocation per stream. The
   sync form uses it with `'static`: no stream borrows the service, in
   either form (item 26).
-- `contratto::Stream` is `futures_core::Stream`, re-exported; std has no
+- `contract::Stream` is `futures_core::Stream`, re-exported; std has no
   stable async iterator.
 - The reply stream sits inside the call's `Result`: an `Err` before the
   first item fails the call (validation, permission), an `Err` item ends
@@ -204,9 +204,9 @@ impls for each service:
 | async impl | sync trait | `Blocking<T>` | `block_in_place` around `Handle::block_on` on a stored handle; `FAILED_PRECONDITION` inside a current-thread runtime (§8, O1) |
 
 ```rust
-impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for contratto::Offload<T> { … }
-impl<T: GreeterServiceSync> GreeterServiceAsync for contratto::Inline<T> { … }
-impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for contratto::Blocking<T> { … }
+impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for contract::Offload<T> { … }
+impl<T: GreeterServiceSync> GreeterServiceAsync for contract::Inline<T> { … }
+impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for contract::Blocking<T> { … }
 ```
 
 With `gate_tokio_feature`, the `Offload` and `Blocking` impls carry
@@ -255,12 +255,12 @@ plugins run with the same `buffa_module` and `extern_path`, and their output
 goes into the same Rust crate.
 
 - Server: `impl<T: GreeterServiceAsync> connect::GreeterService for
-  contratto::Served<T>`: `request.to_owned_message()`, call the impl,
+  contract::Served<T>`: `request.to_owned_message()`, call the impl,
   `Response::ok(reply)`; `Status` becomes `ConnectError`. Inbound streams
   map item by item to `Result<Req, Status>`; reply streams pass through,
   since they do not borrow the implementation.
 - Client: `impl<Tr: ClientTransport> GreeterServiceAsync for
-  contratto::Remote<connect::GreeterServiceClient<Tr>>`: call,
+  contract::Remote<connect::GreeterServiceClient<Tr>>`: call,
   `view().to_owned_message()`; `ConnectError` becomes `Status`.
 
 The client is wrapped, not given the trait directly: its inherent methods
@@ -279,7 +279,7 @@ the violations in `details`, and the impl is not called. The reply is not
 validated; a test can do that. It is a wrapper, not part of every call, so
 the cost stays visible where it is paid.
 
-## 5. Runtime crate `contratto`
+## 5. Runtime crate `contract`
 
 ### 5.1 `Status`
 
@@ -292,7 +292,7 @@ code), and `Status` implements `std::error::Error`. With the `connect` feature, 
 `ConnectError` and keeps code, message, and details; Connect metadata is
 dropped.
 
-Contratto does not use `ConnectError` directly, so that a component that
+Contract does not use `ConnectError` directly, so that a component that
 never leaves its process does not depend on `connectrpc` and its HTTP stack.
 
 ### 5.2 Features
@@ -307,7 +307,7 @@ never leaves its process does not depend on `connectrpc` and its HTTP stack.
 Versions follow what the consumers pin. Every external dependency obeys the
 two-day publish quarantine.
 
-## 6. Plugin `protoc-gen-contratto-rust`
+## 6. Plugin `protoc-gen-contract-rust`
 
 It mirrors `protoc-gen-connect-rust` (`connectrpc-codegen` 0.9.0, read on
 6 October 2026) wherever the two meet, so one `buf.gen.yaml` drives both
@@ -324,7 +324,7 @@ the same way:
   to `::buffa_types::google::protobuf::…` on their own.
 - Code is built with `quote`, checked with `syn`, and formatted with
   `prettyplease`. Each file starts with
-  `// @generated by protoc-gen-contratto-rust. DO NOT EDIT.`
+  `// @generated by protoc-gen-contract-rust. DO NOT EDIT.`
 - The response declares `FEATURE_PROTO3_OPTIONAL` and
   `FEATURE_SUPPORTS_EDITIONS`, editions 2023 to 2024.
 - Every method of a service is generated, streaming ones included (§4.4).
@@ -337,7 +337,7 @@ the same way:
 | `extern_path=<proto>=<rust>` | maps a proto package prefix to a Rust module; repeatable, longest prefix wins, one catch-all required | same |
 | `file_per_package` | one `<dotted.pkg>.rs` per package instead of per-proto files and a stitcher | same |
 | `element_memory_limit=<bytes\|unlimited>` | accepted; `decode_request` has applied it | same |
-| `runtime=<path>` | path of the runtime crate; default `::contratto` | — |
+| `runtime=<path>` | path of the runtime crate; default `::contract` | — |
 | `connect_module=<path>` | emit §4.6; where the connect-rust tree is mounted, the proto package appended as for `buffa_module` | — |
 | `gate_connect_feature[=<name>]` | §4.6 under `#[cfg(feature = "<name>")]`, default `connect` | as `gate_client_feature` |
 | `gate_tokio_feature[=<name>]` | `Offload` and `Blocking` impls under `#[cfg(feature = "<name>")]`, default `tokio` | as `gate_client_feature` |
@@ -350,18 +350,18 @@ run and lists the supported ones; a stage accepts only the parameters it
 implements.
 connect-rust's `no_json`, `no_register_fn`, `strict_utf8_mapping`, and
 `encodable_impls` are not accepted: they shape message types or
-connect-rust's own impls, and Contratto emits neither.
+connect-rust's own impls, and Contract emits neither.
 
 ### 6.2 Output and packaging
 
 The two layouts of connect-rust:
 
 - **Split (default).** For each `.proto` with at least one service,
-  `<stem>.__contratto.rs`. For each package with such a file, a
+  `<stem>.__contract.rs`. For each package with such a file, a
   `<pkg>.mod.rs` stitcher that `include!`s them. The stitcher has the name
   buffa's and connect-rust's stitchers have, so the plugin writes into its
   own `out` directory. `protoc-gen-buffa-packaging` with `filter=services`
-  writes the `mod.rs` for it: Contratto skips exactly the files without a
+  writes the `mod.rs` for it: Contract skips exactly the files without a
   service, the predicate that filter applies.
 - **`file_per_package`.** One `<dotted.pkg>.rs` per package, no stitcher, no
   packaging step. Own `out` directory, because buffa and connect-rust use
@@ -383,11 +383,11 @@ plugins:
     out: src/generated/connect
     strategy: all
     opt: [filter=services]
-  - local: protoc-gen-contratto-rust
-    out: src/generated/contratto
+  - local: protoc-gen-contract-rust
+    out: src/generated/contract
     opt: [buffa_module=crate::proto, connect_module=crate::connect]
   - local: protoc-gen-buffa-packaging
-    out: src/generated/contratto
+    out: src/generated/contract
     strategy: all
     opt: [filter=services]
 ```
@@ -397,8 +397,8 @@ plugins:
 pub mod proto;
 #[path = "generated/connect/mod.rs"]
 pub mod connect;
-#[path = "generated/contratto/mod.rs"]
-pub mod contract;
+#[path = "generated/contract/mod.rs"]
+pub mod traits;
 ```
 
 A crate may instead `include!` the per-proto files of all three generators
@@ -412,24 +412,24 @@ it is added when a consumer needs one.
 ### 6.3 Living next to connect-rust
 
 Both generators read the same `service` and write into the same crate,
-often into the same module. Contratto never takes a name or a file that
+often into the same module. Contract never takes a name or a file that
 connect-rust takes.
 
-| Item | connect-rust | Contratto |
+| Item | connect-rust | Contract |
 | - | - | - |
-| file per proto | `<stem>.__connect.rs` | `<stem>.__contratto.rs` |
+| file per proto | `<stem>.__connect.rs` | `<stem>.__contract.rs` |
 | stitcher | `<pkg>.mod.rs`, own `out` | `<pkg>.mod.rs`, own `out` |
 | per service | trait `<S>`, `<S>Ext`, `<S>RegisterMarker`, `<S>Server<T>`, `<S>Client<T>` | traits `<S>Sync`, `<S>Async`; struct `Dyn<S>Async`; private module `__dyn_<s>_async` |
 | constants | `<S>_SERVICE_NAME`, `<S>_<M>_SPEC` (upper snake case) | none |
 | per message | `Owned<M>View` aliases, `Encodable` impls for outputs | none |
 | other impls | — | on the runtime wrappers only: `Offload`, `Inline`, `Blocking`, `Served`, `Remote`, `Validated` |
 
-1. Contratto emits nothing that connect-rust emits, so both outputs can be
+1. Contract emits nothing that connect-rust emits, so both outputs can be
    mounted into one module without a duplicate name (E0428) or a
    conflicting impl (E0119).
 2. Before emitting, the plugin checks each of its names for a service
    against every name the package module holds: messages, enums, services,
-   connect-rust's names for each service, and Contratto's names for the
+   connect-rust's names for each service, and Contract's names for the
    other services. A clash (service `Foo` next to a
    message or service `FooSync`) fails the run and names both proto
    elements, as connect-rust does for its own method names.
@@ -485,14 +485,14 @@ connect-rust takes.
 
 Layout as `serde_markdown`: a Cargo workspace and a Bazel module
 (`MODULE.bazel`, `rust.MODULE.bazel`, `buf.MODULE.bazel`, through
-`bazel_utils`); `rust/contratto`, `rust/protoc-gen-contratto-rust`,
+`bazel_utils`); `rust/contract`, `rust/protoc-gen-contract-rust`,
 `proto/` with the test protos, and `rust/golden`, which compiles the golden
 output and runs the behaviour tests against it. Edition 2024, `rust-version = "1.99.0"`,
 Apache-2.0, English docs.
 
 Release: GitHub release binaries for `linux_amd64`, `linux_arm64`,
 `darwin_amd64`, `darwin_arm64`, and `windows_amd64`, named
-`protoc-gen-contratto-rust-{version}-{file}`. That is the shape the `kind: file`
+`protoc-gen-contract-rust-{version}-{file}`. That is the shape the `kind: file`
 catalog of `bazel_utils/protoc/plugins` expects. Then add a `registry.bzl`
 for it there. The runtime crate is published by git tag. Knowqore adds it to
 the named exceptions of its dependency quarantine, next to `scheda` and
@@ -522,7 +522,7 @@ the named exceptions of its dependency quarantine, next to `scheda` and
 - **T6. Cross-package paths.** A message from another package, or one under
   `extern_path`, resolves to the right Rust path.
 - **T7. Living next to connect-rust.** A test crate generates buffa,
-  connect-rust, and Contratto output for the same protos. It mounts them
+  connect-rust, and Contract output for the same protos. It mounts them
   once as separate trees and once into one module per package, builds both
   with each gate feature on and off, and runs a `Served`,
   `ServiceTransport`, and `Remote` round trip. A proto with a clashing name
@@ -532,8 +532,8 @@ the named exceptions of its dependency quarantine, next to `scheda` and
 
 | Stage | Content | Proof |
 | - | - | - |
-| C1 | Skeleton; `Status`, `Code`, `BoxFuture`, `BoxIter`, `BoxStream`, `Stream`; plugin emits both traits and the `Dyn…Async` handle for all four kinds of methods | T1, T2 (direct calls), T5, T6. Done 6 October 2026: `//proto:generate_test`, `//rust/golden:direct_test`, `//rust/golden:streaming_test`, `//rust/protoc-gen-contratto-rust:lib_test` |
-| C2 | Bridges `Inline`, `Offload`, `Blocking`, for all four kinds of methods | T2 complete; O1, O5 answered. Done 6 October 2026: `//rust/golden:bridges_test`; plus connect-rust's output and Contratto's mounted in one module per package (`//rust/golden`) and a `buf generate` with the release binary into a fresh crate outside Bazel |
+| C1 | Skeleton; `Status`, `Code`, `BoxFuture`, `BoxIter`, `BoxStream`, `Stream`; plugin emits both traits and the `Dyn…Async` handle for all four kinds of methods | T1, T2 (direct calls), T5, T6. Done 6 October 2026: `//proto:generate_test`, `//rust/golden:direct_test`, `//rust/golden:streaming_test`, `//rust/protoc-gen-contract-rust:lib_test` |
+| C2 | Bridges `Inline`, `Offload`, `Blocking`, for all four kinds of methods | T2 complete; O1, O5 answered. Done 6 October 2026: `//rust/golden:bridges_test`; plus connect-rust's output and Contract's mounted in one module per package (`//rust/golden`) and a `buf generate` with the release binary into a fresh crate outside Bazel |
 | C3 | Connect adapters | T3, T7 |
 | C4 | Validation wrapper | T4 |
 | C5 | Release binaries and the `bazel_utils` catalog entry | Knowqore generates through `protoc.plugin` |
@@ -548,11 +548,14 @@ accepted. The owner accepted items 1–13 on 6 October 2026, then revised
 item 6 and accepted items 14–25 the same day, and accepted items 26–31,
 which came up in C2 and its review, the same day.
 
-1. **Name.** Contratto: repository `sonalect/protoc-gen-contratto-rust`,
-   crate `contratto`, binary `protoc-gen-contratto-rust`. The `-rust`
+1. **Name.** Contract: repository `sonalect/protoc-gen-contract-rust`,
+   crate `contract`, binary `protoc-gen-contract-rust`. The `-rust`
    suffix names the target language, as in `protoc-gen-connect-rust`; a
    crate needs none. Both names are free on crates.io on 6 October 2026.
-   *Accepted 6 October 2026.*
+   *Accepted 6 October 2026; renamed by the owner the same day from
+   Contratto (`contratto`, `protoc-gen-contratto-rust`).* A consumer
+   mounts the generated traits in a module not named `contract`, which
+   would make `contract::…` ambiguous with the crate.
 2. **No options in `.proto`; both forms are always generated** (§3).
    *Accepted 6 October 2026.*
 3. **Request by value in both forms** (§4). *Accepted 6 October 2026.*
@@ -579,7 +582,7 @@ which came up in C2 and its review, the same day.
 14. **Sync streams are `BoxIter`**, so the sync trait stays dyn-compatible
     (§4.4). *Accepted 6 October 2026.*
 15. **Async streams are `futures_core::Stream`**, re-exported as
-    `contratto::Stream` (§4.4). *Accepted 6 October 2026.*
+    `contract::Stream` (§4.4). *Accepted 6 October 2026.*
 16. **A reply stream sits inside the call's `Result`** (§4.4).
     *Accepted 6 October 2026.*
 17. **Inbound items are `Result<Req, Status>`** (§4.4).

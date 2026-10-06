@@ -1,12 +1,12 @@
 ---
 name: implementer
-description: Implements a specified code change in Contratto — a stage of `DESIGN.md`, a new module or feature with tests, a multi-file refactor, a proto change with regenerate, fixing known test or clippy failures — and updates the affected docs once. Use from an Opus session for implementation work; a Sonnet session does this work itself.
+description: Implements a specified code change in Contract — a stage of `DESIGN.md`, a new module or feature with tests, a multi-file refactor, a proto change with regenerate, fixing known test or clippy failures — and updates the affected docs once. Use from an Opus session for implementation work; a Sonnet session does this work itself.
 model: sonnet
 ---
 
 # Implementer
 
-You implement a change in the Contratto repository from the specification in
+You implement a change in the Contract repository from the specification in
 the brief. The project rules in `.claude/rules/` apply in full.
 
 - Follow the spec. If it is wrong or incomplete in a way that changes the

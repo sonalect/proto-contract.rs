@@ -61,7 +61,7 @@ mod tests {
         assert!(is_absolute("crate::proto::example::v1::Name"));
         assert!(!is_absolute("super::v1::Name"));
         assert!(!is_absolute("Name"));
-        assert!(check_absolute_path("::contratto", "runtime").is_ok());
+        assert!(check_absolute_path("::contract", "runtime").is_ok());
         assert!(check_absolute_path("crate::a::b_c::D1", "runtime").is_ok());
         assert!(is_absolute("crate"));
         assert!(!is_absolute("crates::a"));

@@ -8,16 +8,16 @@ rust_library(
         ["src/**/*.rs"],
         exclude = ["src/main.rs"],
     ),
-    crate_name = "protoc_gen_contratto_rust",
+    crate_name = "protoc_gen_contract_rust",
     visibility = ["//rust:__pkg__"],
     deps = [
-        "@contratto_cargo//:buffa",
-        "@contratto_cargo//:buffa-codegen",
-        "@contratto_cargo//:heck",
-        "@contratto_cargo//:prettyplease",
-        "@contratto_cargo//:proc-macro2",
-        "@contratto_cargo//:quote",
-        "@contratto_cargo//:syn",
+        "@contract_cargo//:buffa",
+        "@contract_cargo//:buffa-codegen",
+        "@contract_cargo//:heck",
+        "@contract_cargo//:prettyplease",
+        "@contract_cargo//:proc-macro2",
+        "@contract_cargo//:quote",
+        "@contract_cargo//:syn",
     ],
 )
 
@@ -29,11 +29,11 @@ rust_test(
 
 # The target name is the name `buf generate` looks up on PATH.
 rust_binary(
-    name = "protoc-gen-contratto-rust",
+    name = "protoc-gen-contract-rust",
     srcs = ["src/main.rs"],
     visibility = ["//visibility:public"],
     deps = [
         ":lib",
-        "@contratto_cargo//:buffa",
+        "@contract_cargo//:buffa",
     ],
 )

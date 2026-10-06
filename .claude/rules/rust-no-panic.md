@@ -11,7 +11,7 @@ Allowed only: `todo!`, `unimplemented!`, `unreachable!`.
 
 Forbidden: `panic!`, `unwrap`, `expect`, `unwrap_err`, `unwrap_unchecked`,
 `assert!`, `assert_eq!`, `assert_ne!`. Recoverable failure is `Result`:
-`contratto::Status` in the runtime crate; in the plugin, an error that
+`contract::Status` in the runtime crate; in the plugin, an error that
 reaches protoc as `CodeGeneratorResponse.error` and names the proto
 element (file, service, method) it is about.
 

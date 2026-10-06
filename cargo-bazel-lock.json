@@ -1,5 +1,5 @@
 {
-  "checksum": "0201eb319c98ad4b6a9a74a607b0226a821f2d7959ecc6b4cb7199881a9caae8",
+  "checksum": "af6cdd9905487f3305d4118f8a60fe8e911581688384ccaf3169617468a4dab6",
   "conditions": {
     "aarch64-apple-darwin": [
       "aarch64-apple-darwin"
@@ -564,7 +564,7 @@
       ],
       "version": "0.9.1"
     },
-    "contratto 0.0.0": {
+    "contract 0.0.0": {
       "common_attrs": {
         "crate_features": [
           "tokio"
@@ -585,25 +585,25 @@
         ],
         "edition": "2024"
       },
-      "library_target_name": "contratto",
+      "library_target_name": "contract",
       "license": "Apache-2.0",
       "license_ids": [
         "Apache-2.0"
       ],
-      "name": "contratto",
-      "package_url": "https://github.com/sonalect/protoc-gen-contratto-rust",
+      "name": "contract",
+      "package_url": "https://github.com/sonalect/protoc-gen-contract-rust",
       "repository": null,
       "targets": [
         {
           "Library": {
-            "crate_name": "contratto",
+            "crate_name": "contract",
             "crate_root": "src/lib.rs"
           }
         }
       ],
       "version": "0.0.0"
     },
-    "contratto-golden 0.0.0": {
+    "contract-golden 0.0.0": {
       "common_attrs": {
         "crate_features": [
           "default",
@@ -631,18 +631,18 @@
         ],
         "edition": "2024"
       },
-      "library_target_name": "contratto_golden",
+      "library_target_name": "contract_golden",
       "license": "Apache-2.0",
       "license_ids": [
         "Apache-2.0"
       ],
-      "name": "contratto-golden",
-      "package_url": "https://github.com/sonalect/protoc-gen-contratto-rust",
+      "name": "contract-golden",
+      "package_url": "https://github.com/sonalect/protoc-gen-contract-rust",
       "repository": null,
       "targets": [
         {
           "Library": {
-            "crate_name": "contratto_golden",
+            "crate_name": "contract_golden",
             "crate_root": "src/lib.rs"
           }
         }
@@ -2179,7 +2179,7 @@
       ],
       "version": "1.0.107"
     },
-    "protoc-gen-contratto-rust 0.0.0": {
+    "protoc-gen-contract-rust 0.0.0": {
       "common_attrs": {
         "deps": [
           {
@@ -2213,18 +2213,18 @@
         ],
         "edition": "2024"
       },
-      "library_target_name": "protoc_gen_contratto_rust",
+      "library_target_name": "protoc_gen_contract_rust",
       "license": "Apache-2.0",
       "license_ids": [
         "Apache-2.0"
       ],
-      "name": "protoc-gen-contratto-rust",
-      "package_url": "https://github.com/sonalect/protoc-gen-contratto-rust",
+      "name": "protoc-gen-contract-rust",
+      "package_url": "https://github.com/sonalect/protoc-gen-contract-rust",
       "repository": null,
       "targets": [
         {
           "Library": {
-            "crate_name": "protoc_gen_contratto_rust",
+            "crate_name": "protoc_gen_contract_rust",
             "crate_root": "src/lib.rs"
           }
         }
@@ -3719,8 +3719,8 @@
   ],
   "direct_dev_deps": [],
   "workspace_members": {
-    "contratto 0.0.0": "rust/contratto",
-    "contratto-golden 0.0.0": "rust/golden",
-    "protoc-gen-contratto-rust 0.0.0": "rust/protoc-gen-contratto-rust"
+    "contract 0.0.0": "rust/contract",
+    "contract-golden 0.0.0": "rust/golden",
+    "protoc-gen-contract-rust 0.0.0": "rust/protoc-gen-contract-rust"
   }
 }

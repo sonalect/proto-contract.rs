@@ -1,7 +1,7 @@
 ---
 name: versioning
 description: >-
-  Bump the Contratto crates and Bazel module versions in lockstep
+  Bump the Contract crates and Bazel module versions in lockstep
   (Rust-style 0.x or SemVer after 1.0.0), update CHANGELOG.md, create the
   matching GitHub tag, and publish the GitHub Release with the plugin
   binaries. Use when releasing, tagging, publishing a GitHub release,
@@ -12,7 +12,7 @@ description: >-
 # Versioning
 
 One release version for the whole repository: the runtime crate
-`contratto`, the plugin crate `protoc-gen-contratto-rust`, and the Bazel
+`contract`, the plugin crate `protoc-gen-contract-rust`, and the Bazel
 module. The status line of `DESIGN.md` is **not** this number.
 
 ## Scheme
@@ -91,7 +91,7 @@ rm -f "$notes"
 
 The Release carries the plugin binaries for `linux_amd64`, `linux_arm64`,
 `darwin_amd64`, `darwin_arm64`, and `windows_amd64`, named
-`protoc-gen-contratto-rust-{version}-{file}` (`DESIGN.md` §9). Without
+`protoc-gen-contract-rust-{version}-{file}` (`DESIGN.md` §9). Without
 them the `bazel_utils` catalog cannot fetch the version, so a Release
 missing one is incomplete. The `registry.bzl` entry in `bazel_utils`
 (URL template and sha256 per platform) is a change in that repository:

@@ -16,7 +16,7 @@ use crate::Code;
 /// depending on an RPC stack.
 ///
 /// ```
-/// use contratto::{Code, Status};
+/// use contract::{Code, Status};
 ///
 /// let status = Status::not_found("no greeting for `ada`");
 /// assert_eq!(status.code(), Code::NotFound);

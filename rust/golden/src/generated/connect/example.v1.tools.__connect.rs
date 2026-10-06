@@ -36,7 +36,7 @@ pub const TOOLS_SERVICE_SERVER_STREAMING_SPEC: ::connectrpc::Spec = ::connectrpc
         ::connectrpc::StreamType::ServerStream,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
-/// Methods named like the helpers of Contratto's bridges: the generated
+/// Methods named like the helpers of Contract's bridges: the generated
 /// code must call the helpers, and callers must reach these methods.
 ///
 /// # Implementing handlers

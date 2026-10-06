@@ -9,12 +9,12 @@ use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::task::{Context, Poll};
 use std::time::{Duration, Instant};
 
-use contratto::{Blocking, BoxIter, Code, Inline, IterStream, Offload, Status, Stream};
-use contratto_golden::contract::example::v1::{
+use contract::{Blocking, BoxIter, Code, Inline, IterStream, Offload, Status, Stream};
+use contract_golden::proto::example::v1::{AddReply, AddRequest, Item, Summary, WatchRequest};
+use contract_golden::traits::example::v1::{
     CounterServiceAsync, CounterServiceSync, DynFeedServiceAsync, FeedServiceAsync,
     FeedServiceSync, ToolsServiceAsync, ToolsServiceSync,
 };
-use contratto_golden::proto::example::v1::{AddReply, AddRequest, Item, Summary, WatchRequest};
 use tokio::runtime::{Builder, Runtime};
 use tokio::sync::mpsc;
 

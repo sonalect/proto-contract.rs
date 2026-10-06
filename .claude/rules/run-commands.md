@@ -1,6 +1,6 @@
 # Run commands from this repository
 
-Every `bazel`, `cargo`, and `buf` command for Contratto **must** run in
+Every `bazel`, `cargo`, and `buf` command for Contract **must** run in
 this clone's root: the directory with `MODULE.bazel` and the workspace
 `Cargo.toml`. The Bash tool's working directory persists between calls and
 may have drifted (another repository may be the session's primary

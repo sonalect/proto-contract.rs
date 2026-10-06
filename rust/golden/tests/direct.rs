@@ -9,16 +9,16 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 
 use buffa_types::google::protobuf::Empty;
-use contratto::{Code, Status};
-use contratto_golden::contract::example::v1::{
+use contract::{Code, Status};
+use contract_golden::per_package;
+use contract_golden::proto::example::common::v1::Name;
+use contract_golden::proto::example::v1::greet_request::Options;
+use contract_golden::proto::example::v1::{AddReply, AddRequest, GreetReply, GreetRequest};
+use contract_golden::shared::v1::Label;
+use contract_golden::traits::example::v1::{
     CounterServiceAsync, CounterServiceSync, DynCounterServiceAsync, DynGreeterServiceAsync,
     GreeterServiceAsync, GreeterServiceSync,
 };
-use contratto_golden::per_package;
-use contratto_golden::proto::example::common::v1::Name;
-use contratto_golden::proto::example::v1::greet_request::Options;
-use contratto_golden::proto::example::v1::{AddReply, AddRequest, GreetReply, GreetRequest};
-use contratto_golden::shared::v1::Label;
 
 /// Drive a future that never waits, as the in-memory implementations here
 /// do; no async runtime is needed for them.

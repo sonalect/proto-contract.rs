@@ -4,7 +4,7 @@ package example.v1;
 
 import "example/v1/counter.proto";
 
-// Methods named like the helpers of Contratto's bridges: the generated
+// Methods named like the helpers of Contract's bridges: the generated
 // code must call the helpers, and callers must reach these methods.
 service ToolsService {
   rpc Call(AddRequest) returns (AddReply);

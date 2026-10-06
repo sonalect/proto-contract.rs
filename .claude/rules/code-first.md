@@ -7,7 +7,7 @@ first, the gates run, and only then the documents move — **once**.
 
 1. Code and tests.
 2. `cargo test` and `cargo clippy` green.
-3. Documents: one pass, in the same commit or the next one. In Contratto
+3. Documents: one pass, in the same commit or the next one. In Contract
    the normative text is `DESIGN.md`, README, and CHANGELOG: mark a stage
    of `DESIGN.md` done only when its proof passes under `bazel test //...`.
 
