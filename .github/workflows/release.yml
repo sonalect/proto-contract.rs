@@ -10,8 +10,8 @@ name: Release
 #      and checksums-sha256.txt (as buffa publishes it; bazel_utils'
 #      registry.bzl takes each platform's sha256 from it), titled with the tag message's subject, the
 #      message's body as notes.
-# A manual run (workflow_dispatch) does step 2 without step 3: a dry run
-# before tagging. Run on main, it also saves the Bazel caches.
+# A manual run (workflow_dispatch) is the dry run before tagging: steps 2
+# and 3 without the publish. Run on main, it also saves the Bazel caches.
 #
 # Bazel caches: only --disk_cache and --repository_cache (never the output
 # root, which holds a live server). A run may restore caches of its own ref
@@ -309,17 +309,19 @@ jobs:
           cp "target/${{ matrix.target }}/dist/${PLUGIN}${{ matrix.exe }}" \
             "dist/${PLUGIN}-${version}-${{ matrix.file }}"
 
+      # The binary itself, not a zip: the artifact takes the file's name.
       - name: Upload the binary
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: binary-${{ matrix.platform }}
           path: dist/*
+          archive: false
           if-no-files-found: error
 
+  # Runs in the dry run too, up to the publish step, so the hand-over of
+  # the binaries and their checksums is tested before a tag.
   release:
     name: Release
     needs: platform
-    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -333,13 +335,11 @@ jobs:
       - name: Download the binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          pattern: binary-*
+          pattern: ${{ env.PLUGIN }}-*
           path: dist
           merge-multiple: true
 
-      - name: Publish the release
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Checksums
         run: |
           set -euo pipefail
           # One checksum file for all six, in `sha256sum` format.
@@ -349,8 +349,16 @@ jobs:
             test "${#binaries[@]}" -eq 6
             sha256sum -- "${binaries[@]}" > checksums-sha256.txt
             sha256sum -c checksums-sha256.txt
+            cat checksums-sha256.txt
           )
           test "$(find dist -type f | wc -l)" -eq 7
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
           tag="${GITHUB_REF_NAME}"
           git fetch --force origin "+refs/tags/${tag}:refs/tags/${tag}"
           # The tag message: its subject is the title, its body the notes.
