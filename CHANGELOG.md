@@ -40,6 +40,9 @@ crate `contract`, plugin `protoc-gen-contract-rust`, generated files
   associated functions, so an RPC named `Call` or `Feed` stays reachable
   with method syntax, and every bridge ends a stream after its first `Err`.
 - `Dyn<Service>Async` implements `Debug`.
+- README: the three generated items with the `Dyn<Service>Async`
+  handle's API, an implementation, how to depend on the runtime (its
+  `tokio` feature, or `gate_tokio_feature`), and the bridges' limits.
 - Release binaries of the plugin for Linux, macOS, and Windows on amd64
   and arm64, static where the platform allows (macOS links only system
   libraries), with `SHA256SUMS`; a version tag builds, tests, and
