@@ -1,5 +1,5 @@
 {
-  "checksum": "ef4d660b4c768b4d089c1196c7c339185d3fdf03183fc0269d02d0823b037501",
+  "checksum": "7dd255854648a7a6389f86ca6e10d062819e38ad314322e2e5b6b3e0e31813ac",
   "conditions": {
     "aarch64-apple-darwin": [
       "aarch64-apple-darwin"
@@ -564,7 +564,7 @@
       ],
       "version": "0.9.1"
     },
-    "contract 0.0.0": {
+    "contract 0.1.0": {
       "common_attrs": {
         "crate_features": [
           "tokio"
@@ -601,9 +601,9 @@
           }
         }
       ],
-      "version": "0.0.0"
+      "version": "0.1.0"
     },
-    "contract-golden 0.0.0": {
+    "contract-golden 0.1.0": {
       "common_attrs": {
         "crate_features": [
           "default",
@@ -647,7 +647,7 @@
           }
         }
       ],
-      "version": "0.0.0"
+      "version": "0.1.0"
     },
     "defmt 1.1.1": {
       "build_script_attrs": {
@@ -2179,7 +2179,7 @@
       ],
       "version": "1.0.107"
     },
-    "protoc-gen-contract-rust 0.0.0": {
+    "protoc-gen-contract-rust 0.1.0": {
       "common_attrs": {
         "deps": [
           {
@@ -2229,7 +2229,7 @@
           }
         }
       ],
-      "version": "0.0.0"
+      "version": "0.1.0"
     },
     "quote 1.0.47": {
       "build_script_attrs": {},
@@ -3719,8 +3719,8 @@
   ],
   "direct_dev_deps": [],
   "workspace_members": {
-    "contract 0.0.0": "rust/contract",
-    "contract-golden 0.0.0": "rust/golden",
-    "protoc-gen-contract-rust 0.0.0": "rust/protoc-gen-contract-rust"
+    "contract 0.1.0": "rust/contract",
+    "contract-golden 0.1.0": "rust/golden",
+    "protoc-gen-contract-rust 0.1.0": "rust/protoc-gen-contract-rust"
   }
 }
