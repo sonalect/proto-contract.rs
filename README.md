@@ -153,12 +153,14 @@ bazel test //...            # the gate: golden files, clippy, lint, markdown
 bazel run //proto:generate  # refresh the golden files after a plugin change
 
 # a static release binary of the plugin, as the release workflow builds it
-cargo build --locked --profile dist --target x86_64-unknown-linux-musl -p protoc-gen-contract-rust
+# (RUSTFLAGS unset: it would replace the static flags of .cargo/config.toml)
+env -u RUSTFLAGS cargo build --locked --profile dist --target x86_64-unknown-linux-musl -p protoc-gen-contract-rust
 ```
 
-A version tag `vX.Y.Z` runs the release workflow: Bazel build and tests on
-Linux, macOS, and Windows, each on amd64 and arm64, then a GitHub Release
-with the static plugin binary for each platform and their `SHA256SUMS`.
+An annotated version tag `vX.Y.Z` on `main` runs the release workflow:
+Bazel build and tests on Linux, macOS, and Windows, each on amd64 and
+arm64, then a GitHub Release with the static plugin binary for each
+platform and their `SHA256SUMS`; the tag's message is the release notes.
 
 ## License
 

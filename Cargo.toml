@@ -41,10 +41,10 @@ strip = "symbols"
 
 # Release binaries of the plugin:
 #   cargo build --locked --profile dist --target <triple> -p protoc-gen-contract-rust
-# The binaries are static per target: the Linux musl targets link
-# statically by themselves, the Windows MSVC targets get a static C runtime
-# from .cargo/config.toml, and macOS links only the system libraries
-# (Apple supports no fully static binary).
+# The binaries are static per target (.cargo/config.toml): Linux on the
+# musl targets, Windows with a static C runtime; macOS links only the
+# system libraries (Apple supports no fully static binary). Build with
+# RUSTFLAGS unset: it replaces the flags of .cargo/config.toml.
 [profile.dist]
 inherits = "release"
 lto = "fat"

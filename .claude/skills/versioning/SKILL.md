@@ -59,33 +59,40 @@ Refresh `MODULE.bazel.lock` if it changes.
 
 ## Release
 
-After the version commit is on the default branch, create an annotated tag
-and push it (only when the owner asked to release). Do not backfill older
-tags.
+Only when the owner asked to release, and only from `main`:
 
-```bash
-git tag -a "vMAJOR.MINOR.PATCH" -m "vMAJOR.MINOR.PATCH"
-git push origin "vMAJOR.MINOR.PATCH"
-```
+1. Commit the version bump and `CHANGELOG.md` on `main` and push it.
+2. Run the workflow by hand on `main` and wait for it: the same six
+   platforms and binaries, no Release, and it saves the Bazel caches the
+   tag run will restore.
+
+   ```bash
+   gh workflow run Release --ref main
+   gh run watch "$(gh run list --workflow Release --branch main --limit 1 --json databaseId -q '.[0].databaseId')"
+   ```
+
+3. Create the annotated tag with the release notes as its message and push
+   it, exactly as `.claude/rules/release-tag.md` says (a file,
+   `--cleanup=verbatim`, read back before the push). Do not backfill older
+   tags.
 
 The tag starts `.github/workflows/release.yml`; nothing else does. It:
 
-1. fails at once unless the tag is `v` plus the version in `Cargo.toml`
-   and `MODULE.bazel`, and `CHANGELOG.md` has `## [MAJOR.MINOR.PATCH]`;
+1. fails at once unless the tag is annotated, points at a commit on
+   `main`, has a message body, and is `v` plus the version in `Cargo.toml`
+   and `MODULE.bazel`, with `## [MAJOR.MINOR.PATCH]` in `CHANGELOG.md`;
 2. runs `bazel build //...` and `bazel test //...` on six platforms
    (`linux_amd64`, `linux_arm64`, `darwin_amd64`, `darwin_arm64`,
    `windows_amd64`, `windows_arm64`), and on each builds the plugin's
    static release binary with Cargo (`--profile dist`);
 3. when all six pass, publishes the GitHub Release for the tag: the six
    binaries, named `protoc-gen-contract-rust-{tag}-{file}` (`DESIGN.md`
-   §9), a `SHA256SUMS` file, and as notes the `CHANGELOG.md` body of the
-   version. Not a draft, not a prerelease.
+   §9), and a `SHA256SUMS` file; the tag message's subject is the title,
+   its body the notes. Not a draft, not a prerelease.
 
 Do not run `gh release create` by hand. A tag whose workflow failed has no
-Release: fix the cause on the default branch, delete the tag locally and
-on `origin`, and tag the fixed commit. Before a release, the owner may run
-the workflow by hand (`workflow_dispatch`): the same six platforms and
-binaries, no Release.
+Release: fix the cause on `main`, delete the tag locally and on `origin`,
+and tag the fixed commit.
 
 Watch the run with `gh run watch` and return the Release URL when it
 succeeds. The `registry.bzl` entry in `bazel_utils` (URL template and the

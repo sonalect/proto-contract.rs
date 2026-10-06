@@ -1,9 +1,25 @@
-# Windows MSVC targets link the C runtime statically, so the plugin's
-# release binaries (`cargo build --profile dist`) need no Visual C++
-# redistributable. Linux release binaries use the musl targets, which are
-# static without a flag.
+# Static linking of the plugin's release binaries
+# (`cargo build --locked --profile dist --target <triple>`), per target.
+# A Cargo profile cannot set target features, so they live here; the
+# release workflow checks each binary.
+
+# Linux: the musl targets link libc statically. `+crt-static` is their
+# default; it is spelled out so a toolchain change cannot drop it.
+[target.x86_64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.aarch64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+# Windows: the MSVC targets link the C runtime statically, so the binaries
+# need no Visual C++ redistributable.
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-C", "target-feature=+crt-static"]
 
 [target.aarch64-pc-windows-msvc]
 rustflags = ["-C", "target-feature=+crt-static"]
+
+# macOS (x86_64-apple-darwin, aarch64-apple-darwin): nothing to set. Apple
+# supports no static libSystem, so a binary links the system libraries
+# dynamically and nothing else; Rust's own dependencies are always linked
+# in. The minimum macOS version is rustc's default for each target.

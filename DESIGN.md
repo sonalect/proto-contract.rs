@@ -492,13 +492,23 @@ Apache-2.0, English docs.
 
 Release: a version tag, and nothing else, starts
 `.github/workflows/release.yml` (decided by the owner, 6 October 2026). It
-checks the tag against `Cargo.toml`, `MODULE.bazel`, and `CHANGELOG.md`;
-runs `bazel build //...` and `bazel test //...` on `linux_amd64`,
-`linux_arm64`, `darwin_amd64`, `darwin_arm64`, `windows_amd64`, and
-`windows_arm64`; builds the plugin on each with Cargo
+checks that the tag is annotated, points at a commit on `main`, has a
+message body, and matches `Cargo.toml`, `MODULE.bazel`, and
+`CHANGELOG.md`; runs `bazel build //...` and `bazel test //...` on
+`linux_amd64`, `linux_arm64`, `darwin_amd64`, `darwin_arm64`,
+`windows_amd64`, and `windows_arm64`; builds the plugin on each with Cargo
 (`--profile dist`); and, when all six pass, publishes the GitHub Release
-with the six binaries, a `SHA256SUMS` file, and the version's `CHANGELOG.md`
-body as notes. A manual run is the dry run: the same work, no Release.
+with the six binaries and a `SHA256SUMS` file. The tag message is the
+release: its subject the title, its body the notes
+(`.claude/rules/release-tag.md`). A manual run is the dry run: the same
+work, no Release.
+
+Bazel caches (`--disk_cache`, `--repository_cache`) are kept per platform,
+keyed by `.bazelversion`, `MODULE.bazel.lock`, and `Cargo.lock`. GitHub
+lets a run restore caches of its own ref or of the default branch, never of
+another tag, so a tag run only restores, and the dry run on `main` saves.
+Tagging right after a dry run on `main` finds every key; without it, the
+tag run is cold.
 
 The binaries are named `protoc-gen-contract-rust-{tag}-{file}`, `file`
 being `linux-x86_64`, `linux-aarch64`, `darwin-x86_64`, `darwin-aarch64`,
