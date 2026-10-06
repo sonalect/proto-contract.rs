@@ -1,0 +1,3 @@
+# LF in every checkout, Windows included: the golden test compares the
+# checked-in generated files byte for byte with the plugin's output.
+* text=auto eol=lf

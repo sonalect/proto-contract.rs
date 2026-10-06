@@ -1,8 +1,11 @@
 {
-  "checksum": "7dd255854648a7a6389f86ca6e10d062819e38ad314322e2e5b6b3e0e31813ac",
+  "checksum": "be3f7174e3789a86fc82586e2e5a3d3a54d63f0097e641fbe3dbf12bb388f3e7",
   "conditions": {
     "aarch64-apple-darwin": [
       "aarch64-apple-darwin"
+    ],
+    "aarch64-pc-windows-msvc": [
+      "aarch64-pc-windows-msvc"
     ],
     "aarch64-unknown-linux-gnu": [
       "aarch64-unknown-linux-gnu"
@@ -10,25 +13,15 @@
     "cfg(all(target_os = \"emscripten\", wasm_bindgen_unstable_tokio))": [],
     "cfg(any())": [],
     "cfg(not(target_has_atomic = \"ptr\"))": [],
-    "cfg(target_arch = \"wasm32\")": [
-      "wasm32-unknown-unknown",
-      "wasm32-wasip1"
-    ],
-    "wasm32-unknown-unknown": [
-      "wasm32-unknown-unknown"
-    ],
-    "wasm32-wasip1": [
-      "wasm32-wasip1"
+    "cfg(target_arch = \"wasm32\")": [],
+    "x86_64-apple-darwin": [
+      "x86_64-apple-darwin"
     ],
     "x86_64-pc-windows-msvc": [
       "x86_64-pc-windows-msvc"
     ],
     "x86_64-unknown-linux-gnu": [
-      "x86_64-unknown-linux-gnu",
-      "x86_64-unknown-nixos-gnu"
-    ],
-    "x86_64-unknown-nixos-gnu": [
-      "x86_64-unknown-nixos-gnu"
+      "x86_64-unknown-linux-gnu"
     ]
   },
   "crates": {
@@ -1618,17 +1611,10 @@
     },
     "js-sys 0.3.106": {
       "common_attrs": {
-        "crate_features": [
-          "std"
-        ],
         "deps": [
           {
             "id": "cfg-if 1.0.5",
             "target": "cfg_if"
-          },
-          {
-            "id": "futures-util 0.3.34",
-            "target": "futures_util"
           },
           {
             "id": "wasm-bindgen 0.2.129",
@@ -2651,39 +2637,17 @@
     },
     "syn 2.0.119": {
       "common_attrs": {
-        "crate_features": {
-          "common": [
-            "clone-impls",
-            "default",
-            "derive",
-            "full",
-            "parsing",
-            "printing",
-            "proc-macro"
-          ],
-          "selects": {
-            "aarch64-apple-darwin": [
-              "extra-traits",
-              "visit-mut"
-            ],
-            "aarch64-unknown-linux-gnu": [
-              "extra-traits",
-              "visit-mut"
-            ],
-            "x86_64-pc-windows-msvc": [
-              "extra-traits",
-              "visit-mut"
-            ],
-            "x86_64-unknown-linux-gnu": [
-              "extra-traits",
-              "visit-mut"
-            ],
-            "x86_64-unknown-nixos-gnu": [
-              "extra-traits",
-              "visit-mut"
-            ]
-          }
-        },
+        "crate_features": [
+          "clone-impls",
+          "default",
+          "derive",
+          "extra-traits",
+          "full",
+          "parsing",
+          "printing",
+          "proc-macro",
+          "visit-mut"
+        ],
         "deps": [
           {
             "id": "proc-macro2 1.0.107",
@@ -2727,44 +2691,18 @@
     },
     "syn 3.0.6": {
       "common_attrs": {
-        "crate_features": {
-          "common": [
-            "clone-impls",
-            "default",
-            "derive",
-            "full",
-            "parsing",
-            "printing",
-            "proc-macro"
-          ],
-          "selects": {
-            "aarch64-apple-darwin": [
-              "extra-traits",
-              "visit",
-              "visit-mut"
-            ],
-            "aarch64-unknown-linux-gnu": [
-              "extra-traits",
-              "visit",
-              "visit-mut"
-            ],
-            "x86_64-pc-windows-msvc": [
-              "extra-traits",
-              "visit",
-              "visit-mut"
-            ],
-            "x86_64-unknown-linux-gnu": [
-              "extra-traits",
-              "visit",
-              "visit-mut"
-            ],
-            "x86_64-unknown-nixos-gnu": [
-              "extra-traits",
-              "visit",
-              "visit-mut"
-            ]
-          }
-        },
+        "crate_features": [
+          "clone-impls",
+          "default",
+          "derive",
+          "extra-traits",
+          "full",
+          "parsing",
+          "printing",
+          "proc-macro",
+          "visit",
+          "visit-mut"
+        ],
         "deps": [
           {
             "id": "proc-macro2 1.0.107",
@@ -3066,13 +3004,13 @@
                 "target": "libc"
               }
             ],
-            "x86_64-unknown-linux-gnu": [
+            "x86_64-apple-darwin": [
               {
                 "id": "libc 0.2.190",
                 "target": "libc"
               }
             ],
-            "x86_64-unknown-nixos-gnu": [
+            "x86_64-unknown-linux-gnu": [
               {
                 "id": "libc 0.2.190",
                 "target": "libc"
@@ -3416,9 +3354,6 @@
         ]
       },
       "common_attrs": {
-        "crate_features": [
-          "std"
-        ],
         "deps": [
           {
             "id": "cfg-if 1.0.5",
@@ -3477,10 +3412,6 @@
     },
     "wasm-bindgen-futures 0.4.79": {
       "common_attrs": {
-        "crate_features": [
-          "default",
-          "std"
-        ],
         "deps": {
           "common": [
             {
