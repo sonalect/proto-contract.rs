@@ -9,32 +9,32 @@ exports_files([
 rust_library(
     name = "golden",
     srcs = glob(["src/**/*.rs"]),
+    crate_features = ["tokio"],
     crate_name = "contratto_golden",
     visibility = ["//rust:__pkg__"],
     deps = [
         "//rust/contratto",
         "@contratto_cargo//:buffa",
         "@contratto_cargo//:buffa-types",
+        "@contratto_cargo//:connectrpc",
     ],
 )
 
-rust_test(
-    name = "direct_test",
-    srcs = ["tests/direct.rs"],
-    visibility = ["//rust:__pkg__"],
-    deps = [
-        ":golden",
-        "//rust/contratto",
-        "@contratto_cargo//:buffa-types",
-    ],
-)
-
-rust_test(
-    name = "streaming_test",
-    srcs = ["tests/streaming.rs"],
-    visibility = ["//rust:__pkg__"],
-    deps = [
-        ":golden",
-        "//rust/contratto",
-    ],
-)
+[
+    rust_test(
+        name = test + "_test",
+        srcs = ["tests/" + test + ".rs"],
+        visibility = ["//rust:__pkg__"],
+        deps = [
+            ":golden",
+            "//rust/contratto",
+            "@contratto_cargo//:buffa-types",
+            "@contratto_cargo//:tokio",
+        ],
+    )
+    for test in [
+        "bridges",
+        "direct",
+        "streaming",
+    ]
+]

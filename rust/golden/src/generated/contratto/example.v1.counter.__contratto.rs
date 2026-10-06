@@ -5,7 +5,7 @@
 ///
 /// Blocking form of `example.v1.CounterService`: each method returns when the call is done. Streams are iterators.
 ///
-/// Implement it for work that computes; implement `CounterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn CounterServiceSync>` to choose it at run time.
+/// Implement it for work that computes; implement `CounterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn CounterServiceSync>` to choose it at run time. `Blocking` gives an `CounterServiceAsync` implementation this form.
 pub trait CounterServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Add a number to the total and return the new total.
     fn add(
@@ -20,7 +20,7 @@ pub trait CounterServiceSync: ::core::marker::Send + ::core::marker::Sync {
 ///
 /// Async form of `example.v1.CounterService`: each method returns a future of the result. Streams are `Stream`s.
 ///
-/// Implement it with plain `async fn` for work that waits on I/O; implement `CounterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl CounterServiceAsync`) call it without boxing; `DynCounterServiceAsync` holds an implementation chosen at run time.
+/// Implement it with plain `async fn` for work that waits on I/O; implement `CounterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl CounterServiceAsync`) call it without boxing; `DynCounterServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `CounterServiceSync` implementation this form.
 pub trait CounterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Add a number to the total and return the new total.
     fn add(
@@ -96,5 +96,40 @@ mod __dyn_counter_service_async {
         > {
             ::std::boxed::Box::pin(<T as super::CounterServiceAsync>::add(self, request))
         }
+    }
+}
+impl<T: CounterServiceSync> CounterServiceAsync for ::contratto::Inline<T> {
+    async fn add(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::AddReply,
+        ::contratto::Status,
+    > {
+        <T as CounterServiceSync>::add(self.get_ref(), request)
+    }
+}
+impl<T: CounterServiceSync + 'static> CounterServiceAsync for ::contratto::Offload<T> {
+    fn add(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            ::contratto::Status,
+        >,
+    > + ::core::marker::Send {
+        self.call(move |service| <T as CounterServiceSync>::add(service, request))
+    }
+}
+impl<T: CounterServiceAsync + 'static> CounterServiceSync for ::contratto::Blocking<T> {
+    fn add(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::AddReply,
+        ::contratto::Status,
+    > {
+        self.block_on(<T as CounterServiceAsync>::add(self.get_ref(), request))
     }
 }

@@ -2,15 +2,14 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use buffa_codegen::generated::descriptor::{
-    FileDescriptorProto, MethodDescriptorProto, ServiceDescriptorProto,
-};
+use buffa_codegen::generated::descriptor::{FileDescriptorProto, ServiceDescriptorProto};
 use buffa_codegen::idents::make_field_ident;
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 use crate::Error;
 use crate::docs::{doc_attrs, method_comment, service_comment};
+use crate::methods::{Kind, Method};
 use crate::names::{ServiceNames, method_name, qualified};
 use crate::options::Options;
 use crate::paths::path_tokens;
@@ -34,7 +33,9 @@ pub(crate) fn file_code(
     let rt = path_tokens(&options.runtime)?;
     let mut tokens = TokenStream::new();
     for (index, service) in file.service.iter().enumerate() {
-        tokens.extend(service_tokens(file, index, service, resolver, &rt)?);
+        tokens.extend(service_tokens(
+            file, index, service, resolver, &rt, options,
+        )?);
     }
     let parsed = syn::parse2::<syn::File>(tokens).map_err(|error| {
         Error::new(format!(
@@ -95,218 +96,13 @@ pub(crate) fn layout(
     files
 }
 
-/// How a method streams.
-#[derive(Clone, Copy)]
-enum Kind {
-    Unary,
-    ServerStreaming,
-    ClientStreaming,
-    Bidirectional,
-}
-
-impl Kind {
-    fn of(method: &MethodDescriptorProto) -> Kind {
-        match (
-            method.client_streaming.unwrap_or(false),
-            method.server_streaming.unwrap_or(false),
-        ) {
-            (false, false) => Kind::Unary,
-            (false, true) => Kind::ServerStreaming,
-            (true, false) => Kind::ClientStreaming,
-            (true, true) => Kind::Bidirectional,
-        }
-    }
-}
-
-/// The tokens one method contributes to each generated item.
-struct MethodTokens {
-    sync: TokenStream,
-    asynchronous: TokenStream,
-    erased: TokenStream,
-    erased_impl: TokenStream,
-    dyn_impl: TokenStream,
-}
-
-fn method_tokens(
-    kind: Kind,
-    doc: &TokenStream,
-    ident: &Ident,
-    request: &TokenStream,
-    reply: &TokenStream,
-    async_ident: &Ident,
-    rt: &TokenStream,
-) -> MethodTokens {
-    let result = quote!(::core::result::Result);
-    let send = quote!(::core::marker::Send);
-    let future = quote!(::core::future::Future);
-    let boxed = quote!(::std::boxed::Box::pin);
-    let reply_result = quote!(#result<#reply, #rt::Status>);
-    let request_item = quote!(#result<#request, #rt::Status>);
-    // `R`: the type of an inbound request stream of the async form.
-    let inbound = quote! {
-        where R: #rt::Stream<Item = #request_item> + #send + 'static
-    };
-    // The erased form boxes a reply stream after the call resolves.
-    let box_stream_after = quote! {
-        #boxed(async move {
-            let stream = <T as super::#async_ident>::#ident(self, requests).await?;
-            #result::Ok(::std::boxed::Box::pin(stream) as #rt::BoxStream<'static, #reply_result>)
-        })
-    };
-    match kind {
-        Kind::Unary => MethodTokens {
-            sync: quote! {
-                #doc
-                fn #ident(&self, request: #request) -> #reply_result;
-            },
-            asynchronous: quote! {
-                #doc
-                fn #ident(&self, request: #request)
-                    -> impl #future<Output = #reply_result> + #send;
-            },
-            erased: quote! {
-                fn #ident(&self, request: #request) -> #rt::BoxFuture<'_, #reply_result>;
-            },
-            erased_impl: quote! {
-                fn #ident(&self, request: #request) -> #rt::BoxFuture<'_, #reply_result> {
-                    #boxed(<T as super::#async_ident>::#ident(self, request))
-                }
-            },
-            dyn_impl: quote! {
-                fn #ident(&self, request: #request)
-                    -> impl #future<Output = #reply_result> + #send {
-                    self.inner.#ident(request)
-                }
-            },
-        },
-        Kind::ServerStreaming => MethodTokens {
-            sync: quote! {
-                #doc
-                fn #ident(&self, request: #request)
-                    -> #result<#rt::BoxIter<'_, #reply_result>, #rt::Status>;
-            },
-            asynchronous: quote! {
-                #doc
-                fn #ident(&self, request: #request) -> impl #future<
-                    Output = #result<
-                        impl #rt::Stream<Item = #reply_result> + #send + use<Self>,
-                        #rt::Status,
-                    >,
-                > + #send;
-            },
-            erased: quote! {
-                fn #ident(&self, request: #request) -> #rt::BoxFuture<
-                    '_,
-                    #result<#rt::BoxStream<'static, #reply_result>, #rt::Status>,
-                >;
-            },
-            erased_impl: {
-                let body = quote! {
-                    #boxed(async move {
-                        let stream = <T as super::#async_ident>::#ident(self, request).await?;
-                        #result::Ok(::std::boxed::Box::pin(stream) as #rt::BoxStream<'static, #reply_result>)
-                    })
-                };
-                quote! {
-                    fn #ident(&self, request: #request) -> #rt::BoxFuture<
-                        '_,
-                        #result<#rt::BoxStream<'static, #reply_result>, #rt::Status>,
-                    > {
-                        #body
-                    }
-                }
-            },
-            dyn_impl: quote! {
-                fn #ident(&self, request: #request) -> impl #future<
-                    Output = #result<
-                        impl #rt::Stream<Item = #reply_result> + #send + use<>,
-                        #rt::Status,
-                    >,
-                > + #send {
-                    self.inner.#ident(request)
-                }
-            },
-        },
-        Kind::ClientStreaming => MethodTokens {
-            sync: quote! {
-                #doc
-                fn #ident(&self, requests: #rt::BoxIter<'_, #request_item>) -> #reply_result;
-            },
-            asynchronous: quote! {
-                #doc
-                fn #ident<R>(&self, requests: R) -> impl #future<Output = #reply_result> + #send
-                #inbound;
-            },
-            erased: quote! {
-                fn #ident(&self, requests: #rt::BoxStream<'static, #request_item>)
-                    -> #rt::BoxFuture<'_, #reply_result>;
-            },
-            erased_impl: quote! {
-                fn #ident(&self, requests: #rt::BoxStream<'static, #request_item>)
-                    -> #rt::BoxFuture<'_, #reply_result> {
-                    #boxed(<T as super::#async_ident>::#ident(self, requests))
-                }
-            },
-            dyn_impl: quote! {
-                fn #ident<R>(&self, requests: R) -> impl #future<Output = #reply_result> + #send
-                #inbound
-                {
-                    self.inner.#ident(::std::boxed::Box::pin(requests))
-                }
-            },
-        },
-        Kind::Bidirectional => MethodTokens {
-            sync: quote! {
-                #doc
-                fn #ident<'a>(&'a self, requests: #rt::BoxIter<'a, #request_item>)
-                    -> #result<#rt::BoxIter<'a, #reply_result>, #rt::Status>;
-            },
-            asynchronous: quote! {
-                #doc
-                fn #ident<R>(&self, requests: R) -> impl #future<
-                    Output = #result<
-                        impl #rt::Stream<Item = #reply_result> + #send + use<Self, R>,
-                        #rt::Status,
-                    >,
-                > + #send
-                #inbound;
-            },
-            erased: quote! {
-                fn #ident(&self, requests: #rt::BoxStream<'static, #request_item>) -> #rt::BoxFuture<
-                    '_,
-                    #result<#rt::BoxStream<'static, #reply_result>, #rt::Status>,
-                >;
-            },
-            erased_impl: quote! {
-                fn #ident(&self, requests: #rt::BoxStream<'static, #request_item>) -> #rt::BoxFuture<
-                    '_,
-                    #result<#rt::BoxStream<'static, #reply_result>, #rt::Status>,
-                > {
-                    #box_stream_after
-                }
-            },
-            dyn_impl: quote! {
-                fn #ident<R>(&self, requests: R) -> impl #future<
-                    Output = #result<
-                        impl #rt::Stream<Item = #reply_result> + #send + use<R>,
-                        #rt::Status,
-                    >,
-                > + #send
-                #inbound
-                {
-                    self.inner.#ident(::std::boxed::Box::pin(requests))
-                }
-            },
-        },
-    }
-}
-
 fn service_tokens(
     file: &FileDescriptorProto,
     index: usize,
     service: &ServiceDescriptorProto,
     resolver: &TypeResolver<'_>,
     rt: &TokenStream,
+    options: &Options,
 ) -> Result<TokenStream, Error> {
     let package = file.package.as_deref().unwrap_or_default();
     let service_name = qualified(package, service.name.as_deref().unwrap_or_default());
@@ -322,7 +118,8 @@ fn service_tokens(
          call is done. Streams are iterators.\n\nImplement it for work that \
          computes; implement `{async_name}` for work that waits on I/O. The trait \
          is dyn-compatible: hold an implementation as `Arc<dyn {sync_name}>` to \
-         choose it at run time."
+         choose it at run time. `Blocking` gives an `{async_name}` implementation \
+         this form."
     ));
     let async_doc = doc_attrs(&format!(
         "{comment}Async form of `{service_name}`: each method returns a future of \
@@ -330,7 +127,8 @@ fn service_tokens(
          for work that waits on I/O; implement `{sync_name}` for work that \
          computes. A reply stream must not borrow `self`. Generic callers \
          (`impl {async_name}`) call it without boxing; `{dyn_name}` holds an \
-         implementation chosen at run time."
+         implementation chosen at run time. `Inline` and `Offload` give a \
+         `{sync_name}` implementation this form."
     ));
     let dyn_doc = doc_attrs(&format!(
         "Any `{async_name}` implementation behind dynamic dispatch, for an \
@@ -340,47 +138,51 @@ fn service_tokens(
          the implementation."
     ));
 
-    let async_ident = format_ident!("{}", async_name);
-    let mut tokens: Vec<MethodTokens> = Vec::with_capacity(service.method.len());
+    let sync_trait = format_ident!("{}", sync_name);
+    let async_trait = format_ident!("{}", async_name);
+    let mut methods = Vec::with_capacity(service.method.len());
     for (method_index, method) in service.method.iter().enumerate() {
         let rpc = method.name.as_deref().unwrap_or_default();
-        let ident = make_field_ident(&method_name(rpc));
-        let request = resolver.rust_type(method.input_type.as_deref().unwrap_or_default())?;
-        let reply = resolver.rust_type(method.output_type.as_deref().unwrap_or_default())?;
-        let doc = doc_attrs(
-            &method_comment(file, index, method_index)
-                .unwrap_or_else(|| format!("Call `{service_name}.{rpc}`.")),
-        );
-        tokens.push(method_tokens(
-            Kind::of(method),
-            &doc,
-            &ident,
-            &request,
-            &reply,
-            &async_ident,
+        methods.push(Method {
+            kind: Kind::of(method),
+            doc: doc_attrs(
+                &method_comment(file, index, method_index)
+                    .unwrap_or_else(|| format!("Call `{service_name}.{rpc}`.")),
+            ),
+            ident: make_field_ident(&method_name(rpc)),
+            request: resolver.rust_type(method.input_type.as_deref().unwrap_or_default())?,
+            reply: resolver.rust_type(method.output_type.as_deref().unwrap_or_default())?,
             rt,
-        ));
+            sync_trait: &sync_trait,
+            async_trait: &async_trait,
+        });
     }
-    let sync_methods = tokens.iter().map(|m| &m.sync);
-    let async_methods = tokens.iter().map(|m| &m.asynchronous);
-    let erased_methods = tokens.iter().map(|m| &m.erased);
-    let erased_impls = tokens.iter().map(|m| &m.erased_impl);
-    let dyn_impls = tokens.iter().map(|m| &m.dyn_impl);
+    let sync_decls = methods.iter().map(Method::sync_decl);
+    let async_decls = methods.iter().map(Method::async_decl);
+    let erased_decls = methods.iter().map(Method::erased_decl);
+    let erased_impls = methods.iter().map(Method::erased_impl);
+    let dyn_impls = methods.iter().map(Method::dyn_impl);
+    let inline_impls = methods.iter().map(Method::inline_impl);
+    let offload_impls = methods.iter().map(Method::offload_impl);
+    let blocking_impls = methods.iter().map(Method::blocking_impl);
 
-    let sync_ident = format_ident!("{}", sync_name);
     let dyn_ident = format_ident!("{}", dyn_name);
     let erased_module = format_ident!("{}", names.erased_module);
+    let tokio_gate = match &options.tokio_gate {
+        Some(feature) => quote!(#[cfg(feature = #feature)]),
+        None => TokenStream::new(),
+    };
     let send = quote!(::core::marker::Send);
     let sync = quote!(::core::marker::Sync);
     Ok(quote! {
         #sync_doc
-        pub trait #sync_ident: #send + #sync {
-            #(#sync_methods)*
+        pub trait #sync_trait: #send + #sync {
+            #(#sync_decls)*
         }
 
         #async_doc
-        pub trait #async_ident: #send + #sync {
-            #(#async_methods)*
+        pub trait #async_trait: #send + #sync {
+            #(#async_decls)*
         }
 
         #dyn_doc
@@ -391,17 +193,17 @@ fn service_tokens(
 
         impl #dyn_ident {
             /// Put `service` behind dynamic dispatch.
-            pub fn new<T: #async_ident + 'static>(service: T) -> Self {
+            pub fn new<T: #async_trait + 'static>(service: T) -> Self {
                 Self { inner: ::std::sync::Arc::new(service) }
             }
 
             /// Put a shared `service` behind dynamic dispatch.
-            pub fn from_arc<T: #async_ident + 'static>(service: ::std::sync::Arc<T>) -> Self {
+            pub fn from_arc<T: #async_trait + 'static>(service: ::std::sync::Arc<T>) -> Self {
                 Self { inner: service }
             }
         }
 
-        impl #async_ident for #dyn_ident {
+        impl #async_trait for #dyn_ident {
             #(#dyn_impls)*
         }
 
@@ -410,12 +212,26 @@ fn service_tokens(
         #[allow(clippy::type_complexity)]
         mod #erased_module {
             pub trait Erased: #send + #sync {
-                #(#erased_methods)*
+                #(#erased_decls)*
             }
 
-            impl<T: super::#async_ident + 'static> Erased for T {
+            impl<T: super::#async_trait + 'static> Erased for T {
                 #(#erased_impls)*
             }
+        }
+
+        impl<T: #sync_trait> #async_trait for #rt::Inline<T> {
+            #(#inline_impls)*
+        }
+
+        #tokio_gate
+        impl<T: #sync_trait + 'static> #async_trait for #rt::Offload<T> {
+            #(#offload_impls)*
+        }
+
+        #tokio_gate
+        impl<T: #async_trait + 'static> #sync_trait for #rt::Blocking<T> {
+            #(#blocking_impls)*
         }
     })
 }

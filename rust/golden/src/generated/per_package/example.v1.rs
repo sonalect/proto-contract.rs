@@ -6,7 +6,7 @@
 ///
 /// Blocking form of `example.v1.CounterService`: each method returns when the call is done. Streams are iterators.
 ///
-/// Implement it for work that computes; implement `CounterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn CounterServiceSync>` to choose it at run time.
+/// Implement it for work that computes; implement `CounterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn CounterServiceSync>` to choose it at run time. `Blocking` gives an `CounterServiceAsync` implementation this form.
 pub trait CounterServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Add a number to the total and return the new total.
     fn add(
@@ -21,7 +21,7 @@ pub trait CounterServiceSync: ::core::marker::Send + ::core::marker::Sync {
 ///
 /// Async form of `example.v1.CounterService`: each method returns a future of the result. Streams are `Stream`s.
 ///
-/// Implement it with plain `async fn` for work that waits on I/O; implement `CounterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl CounterServiceAsync`) call it without boxing; `DynCounterServiceAsync` holds an implementation chosen at run time.
+/// Implement it with plain `async fn` for work that waits on I/O; implement `CounterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl CounterServiceAsync`) call it without boxing; `DynCounterServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `CounterServiceSync` implementation this form.
 pub trait CounterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Add a number to the total and return the new total.
     fn add(
@@ -99,6 +99,43 @@ mod __dyn_counter_service_async {
         }
     }
 }
+impl<T: CounterServiceSync> CounterServiceAsync for ::contratto::Inline<T> {
+    async fn add(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::AddReply,
+        ::contratto::Status,
+    > {
+        <T as CounterServiceSync>::add(self.get_ref(), request)
+    }
+}
+#[cfg(feature = "tokio")]
+impl<T: CounterServiceSync + 'static> CounterServiceAsync for ::contratto::Offload<T> {
+    fn add(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::AddReply,
+            ::contratto::Status,
+        >,
+    > + ::core::marker::Send {
+        self.call(move |service| <T as CounterServiceSync>::add(service, request))
+    }
+}
+#[cfg(feature = "tokio")]
+impl<T: CounterServiceAsync + 'static> CounterServiceSync for ::contratto::Blocking<T> {
+    fn add(
+        &self,
+        request: crate::proto::example::v1::AddRequest,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::AddReply,
+        ::contratto::Status,
+    > {
+        self.block_on(<T as CounterServiceAsync>::add(self.get_ref(), request))
+    }
+}
 
 // source: example/v1/feed.proto
 
@@ -106,7 +143,7 @@ mod __dyn_counter_service_async {
 ///
 /// Blocking form of `example.v1.FeedService`: each method returns when the call is done. Streams are iterators.
 ///
-/// Implement it for work that computes; implement `FeedServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn FeedServiceSync>` to choose it at run time.
+/// Implement it for work that computes; implement `FeedServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn FeedServiceSync>` to choose it at run time. `Blocking` gives an `FeedServiceAsync` implementation this form.
 pub trait FeedServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Stream the first `count` items of the feed, one reply per item.
     fn watch(
@@ -114,7 +151,7 @@ pub trait FeedServiceSync: ::core::marker::Send + ::core::marker::Sync {
         request: crate::proto::example::v1::WatchRequest,
     ) -> ::core::result::Result<
         ::contratto::BoxIter<
-            '_,
+            'static,
             ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
         >,
         ::contratto::Status,
@@ -123,20 +160,20 @@ pub trait FeedServiceSync: ::core::marker::Send + ::core::marker::Sync {
     fn collect(
         &self,
         requests: ::contratto::BoxIter<
-            '_,
+            'static,
             ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
         >,
     ) -> ::core::result::Result<crate::proto::example::v1::Summary, ::contratto::Status>;
     /// Echo each item back as it arrives.
-    fn echo<'a>(
-        &'a self,
+    fn echo(
+        &self,
         requests: ::contratto::BoxIter<
-            'a,
+            'static,
             ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
         >,
     ) -> ::core::result::Result<
         ::contratto::BoxIter<
-            'a,
+            'static,
             ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
         >,
         ::contratto::Status,
@@ -146,7 +183,7 @@ pub trait FeedServiceSync: ::core::marker::Send + ::core::marker::Sync {
 ///
 /// Async form of `example.v1.FeedService`: each method returns a future of the result. Streams are `Stream`s.
 ///
-/// Implement it with plain `async fn` for work that waits on I/O; implement `FeedServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl FeedServiceAsync`) call it without boxing; `DynFeedServiceAsync` holds an implementation chosen at run time.
+/// Implement it with plain `async fn` for work that waits on I/O; implement `FeedServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl FeedServiceAsync`) call it without boxing; `DynFeedServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `FeedServiceSync` implementation this form.
 pub trait FeedServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Stream the first `count` items of the feed, one reply per item.
     fn watch(
@@ -434,6 +471,171 @@ mod __dyn_feed_service_async {
         }
     }
 }
+impl<T: FeedServiceSync> FeedServiceAsync for ::contratto::Inline<T> {
+    async fn watch(
+        &self,
+        request: crate::proto::example::v1::WatchRequest,
+    ) -> ::core::result::Result<
+        impl ::contratto::Stream<
+            Item = ::core::result::Result<
+                crate::proto::example::v1::Item,
+                ::contratto::Status,
+            >,
+        > + ::core::marker::Send + use<T>,
+        ::contratto::Status,
+    > {
+        <T as FeedServiceSync>::watch(self.get_ref(), request)
+            .map(::contratto::IterStream::new)
+    }
+    async fn collect<R>(
+        &self,
+        requests: R,
+    ) -> ::core::result::Result<crate::proto::example::v1::Summary, ::contratto::Status>
+    where
+        R: ::contratto::Stream<
+                Item = ::core::result::Result<
+                    crate::proto::example::v1::Item,
+                    ::contratto::Status,
+                >,
+            > + ::core::marker::Send + 'static,
+    {
+        let requests = Self::buffer(requests).await;
+        <T as FeedServiceSync>::collect(self.get_ref(), requests)
+    }
+    async fn echo<R>(
+        &self,
+        requests: R,
+    ) -> ::core::result::Result<
+        impl ::contratto::Stream<
+            Item = ::core::result::Result<
+                crate::proto::example::v1::Item,
+                ::contratto::Status,
+            >,
+        > + ::core::marker::Send + use<T, R>,
+        ::contratto::Status,
+    >
+    where
+        R: ::contratto::Stream<
+                Item = ::core::result::Result<
+                    crate::proto::example::v1::Item,
+                    ::contratto::Status,
+                >,
+            > + ::core::marker::Send + 'static,
+    {
+        let requests = Self::buffer(requests).await;
+        <T as FeedServiceSync>::echo(self.get_ref(), requests)
+            .map(::contratto::IterStream::new)
+    }
+}
+#[cfg(feature = "tokio")]
+impl<T: FeedServiceSync + 'static> FeedServiceAsync for ::contratto::Offload<T> {
+    fn watch(
+        &self,
+        request: crate::proto::example::v1::WatchRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            impl ::contratto::Stream<
+                Item = ::core::result::Result<
+                    crate::proto::example::v1::Item,
+                    ::contratto::Status,
+                >,
+            > + ::core::marker::Send + use<T>,
+            ::contratto::Status,
+        >,
+    > + ::core::marker::Send {
+        self.server_streaming(move |service| <T as FeedServiceSync>::watch(
+            service,
+            request,
+        ))
+    }
+    fn collect<R>(
+        &self,
+        requests: R,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::Summary,
+            ::contratto::Status,
+        >,
+    > + ::core::marker::Send
+    where
+        R: ::contratto::Stream<
+                Item = ::core::result::Result<
+                    crate::proto::example::v1::Item,
+                    ::contratto::Status,
+                >,
+            > + ::core::marker::Send + 'static,
+    {
+        self.client_streaming(requests, <T as FeedServiceSync>::collect)
+    }
+    fn echo<R>(
+        &self,
+        requests: R,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            impl ::contratto::Stream<
+                Item = ::core::result::Result<
+                    crate::proto::example::v1::Item,
+                    ::contratto::Status,
+                >,
+            > + ::core::marker::Send + use<T, R>,
+            ::contratto::Status,
+        >,
+    > + ::core::marker::Send
+    where
+        R: ::contratto::Stream<
+                Item = ::core::result::Result<
+                    crate::proto::example::v1::Item,
+                    ::contratto::Status,
+                >,
+            > + ::core::marker::Send + 'static,
+    {
+        self.bidirectional(requests, <T as FeedServiceSync>::echo)
+    }
+}
+#[cfg(feature = "tokio")]
+impl<T: FeedServiceAsync + 'static> FeedServiceSync for ::contratto::Blocking<T> {
+    fn watch(
+        &self,
+        request: crate::proto::example::v1::WatchRequest,
+    ) -> ::core::result::Result<
+        ::contratto::BoxIter<
+            'static,
+            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+        >,
+        ::contratto::Status,
+    > {
+        self.block_on_stream(<T as FeedServiceAsync>::watch(self.get_ref(), request))
+    }
+    fn collect(
+        &self,
+        requests: ::contratto::BoxIter<
+            'static,
+            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+        >,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::Summary,
+        ::contratto::Status,
+    > {
+        let requests = self.feed(requests);
+        self.block_on(<T as FeedServiceAsync>::collect(self.get_ref(), requests))
+    }
+    fn echo(
+        &self,
+        requests: ::contratto::BoxIter<
+            'static,
+            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+        >,
+    ) -> ::core::result::Result<
+        ::contratto::BoxIter<
+            'static,
+            ::core::result::Result<crate::proto::example::v1::Item, ::contratto::Status>,
+        >,
+        ::contratto::Status,
+    > {
+        let requests = self.feed(requests);
+        self.block_on_stream(<T as FeedServiceAsync>::echo(self.get_ref(), requests))
+    }
+}
 
 // source: example/v1/greeter.proto
 
@@ -441,7 +643,7 @@ mod __dyn_feed_service_async {
 ///
 /// Blocking form of `example.v1.GreeterService`: each method returns when the call is done. Streams are iterators.
 ///
-/// Implement it for work that computes; implement `GreeterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn GreeterServiceSync>` to choose it at run time.
+/// Implement it for work that computes; implement `GreeterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn GreeterServiceSync>` to choose it at run time. `Blocking` gives an `GreeterServiceAsync` implementation this form.
 pub trait GreeterServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Greet a person by name.
     fn greet(
@@ -485,7 +687,7 @@ pub trait GreeterServiceSync: ::core::marker::Send + ::core::marker::Sync {
 ///
 /// Async form of `example.v1.GreeterService`: each method returns a future of the result. Streams are `Stream`s.
 ///
-/// Implement it with plain `async fn` for work that waits on I/O; implement `GreeterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl GreeterServiceAsync`) call it without boxing; `DynGreeterServiceAsync` holds an implementation chosen at run time.
+/// Implement it with plain `async fn` for work that waits on I/O; implement `GreeterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl GreeterServiceAsync`) call it without boxing; `DynGreeterServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `GreeterServiceSync` implementation this form.
 pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Greet a person by name.
     fn greet(
@@ -731,5 +933,152 @@ mod __dyn_greeter_service_async {
                 <T as super::GreeterServiceAsync>::reset(self, request),
             )
         }
+    }
+}
+impl<T: GreeterServiceSync> GreeterServiceAsync for ::contratto::Inline<T> {
+    async fn greet(
+        &self,
+        request: crate::proto::example::v1::GreetRequest,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::GreetReply,
+        ::contratto::Status,
+    > {
+        <T as GreeterServiceSync>::greet(self.get_ref(), request)
+    }
+    async fn greet_name(
+        &self,
+        request: crate::proto::example::common::v1::Name,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::GreetReply,
+        ::contratto::Status,
+    > {
+        <T as GreeterServiceSync>::greet_name(self.get_ref(), request)
+    }
+    async fn get_options(
+        &self,
+        request: ::buffa_types::google::protobuf::Empty,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::greet_request::Options,
+        ::contratto::Status,
+    > {
+        <T as GreeterServiceSync>::get_options(self.get_ref(), request)
+    }
+    async fn echo_label(
+        &self,
+        request: crate::shared::v1::Label,
+    ) -> ::core::result::Result<crate::shared::v1::Label, ::contratto::Status> {
+        <T as GreeterServiceSync>::echo_label(self.get_ref(), request)
+    }
+    async fn reset(
+        &self,
+        request: ::buffa_types::google::protobuf::Empty,
+    ) -> ::core::result::Result<
+        ::buffa_types::google::protobuf::Empty,
+        ::contratto::Status,
+    > {
+        <T as GreeterServiceSync>::reset(self.get_ref(), request)
+    }
+}
+#[cfg(feature = "tokio")]
+impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contratto::Offload<T> {
+    fn greet(
+        &self,
+        request: crate::proto::example::v1::GreetRequest,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::GreetReply,
+            ::contratto::Status,
+        >,
+    > + ::core::marker::Send {
+        self.call(move |service| <T as GreeterServiceSync>::greet(service, request))
+    }
+    fn greet_name(
+        &self,
+        request: crate::proto::example::common::v1::Name,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::GreetReply,
+            ::contratto::Status,
+        >,
+    > + ::core::marker::Send {
+        self.call(move |service| <T as GreeterServiceSync>::greet_name(service, request))
+    }
+    fn get_options(
+        &self,
+        request: ::buffa_types::google::protobuf::Empty,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            crate::proto::example::v1::greet_request::Options,
+            ::contratto::Status,
+        >,
+    > + ::core::marker::Send {
+        self.call(move |service| <T as GreeterServiceSync>::get_options(
+            service,
+            request,
+        ))
+    }
+    fn echo_label(
+        &self,
+        request: crate::shared::v1::Label,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<crate::shared::v1::Label, ::contratto::Status>,
+    > + ::core::marker::Send {
+        self.call(move |service| <T as GreeterServiceSync>::echo_label(service, request))
+    }
+    fn reset(
+        &self,
+        request: ::buffa_types::google::protobuf::Empty,
+    ) -> impl ::core::future::Future<
+        Output = ::core::result::Result<
+            ::buffa_types::google::protobuf::Empty,
+            ::contratto::Status,
+        >,
+    > + ::core::marker::Send {
+        self.call(move |service| <T as GreeterServiceSync>::reset(service, request))
+    }
+}
+#[cfg(feature = "tokio")]
+impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for ::contratto::Blocking<T> {
+    fn greet(
+        &self,
+        request: crate::proto::example::v1::GreetRequest,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::GreetReply,
+        ::contratto::Status,
+    > {
+        self.block_on(<T as GreeterServiceAsync>::greet(self.get_ref(), request))
+    }
+    fn greet_name(
+        &self,
+        request: crate::proto::example::common::v1::Name,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::GreetReply,
+        ::contratto::Status,
+    > {
+        self.block_on(<T as GreeterServiceAsync>::greet_name(self.get_ref(), request))
+    }
+    fn get_options(
+        &self,
+        request: ::buffa_types::google::protobuf::Empty,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::greet_request::Options,
+        ::contratto::Status,
+    > {
+        self.block_on(<T as GreeterServiceAsync>::get_options(self.get_ref(), request))
+    }
+    fn echo_label(
+        &self,
+        request: crate::shared::v1::Label,
+    ) -> ::core::result::Result<crate::shared::v1::Label, ::contratto::Status> {
+        self.block_on(<T as GreeterServiceAsync>::echo_label(self.get_ref(), request))
+    }
+    fn reset(
+        &self,
+        request: ::buffa_types::google::protobuf::Empty,
+    ) -> ::core::result::Result<
+        ::buffa_types::google::protobuf::Empty,
+        ::contratto::Status,
+    > {
+        self.block_on(<T as GreeterServiceAsync>::reset(self.get_ref(), request))
     }
 }

@@ -23,24 +23,52 @@
 //!
 //! | Method | `<Service>Sync` | `<Service>Async` |
 //! | - | - | - |
-//! | server streaming | `Result<BoxIter<Result<Reply, Status>>, Status>` | `Result<impl Stream<Item = Result<Reply, Status>>, Status>` |
-//! | client streaming | takes `BoxIter<Result<Request, Status>>` | takes `impl Stream<Item = Result<Request, Status>>` |
+//! | server streaming | `Result<BoxIter<'static, Result<Reply, Status>>, Status>` | `Result<impl Stream<Item = Result<Reply, Status>>, Status>` |
+//! | client streaming | takes `BoxIter<'static, Result<Request, Status>>` | takes `impl Stream<Item = Result<Request, Status>>` |
 //! | bidirectional | both | both |
 //!
 //! An `Err` before the first item fails the whole call; an `Err` item ends
 //! a stream with that failure. Inbound items are `Result`s because a stream
 //! that crosses a process boundary can break, and the implementation must
-//! see that rather than a stream that merely ends early.
+//! see that rather than a stream that merely ends early. No stream borrows
+//! the service, so a stream can outlive the call and move between threads.
+//!
+//! # Bridges
+//!
+//! The plugin also implements each form for wrappers around the other:
+//!
+//! | Have | Need | Wrapper | How |
+//! | - | - | - | - |
+//! | sync impl | async form | [`Inline`] | runs the sync call inside `poll`; for calls of microseconds |
+//! | sync impl | async form | `Offload` (feature `tokio`) | runs the sync call on tokio's blocking pool |
+//! | async impl | sync form | `Blocking` (feature `tokio`) | blocks the calling thread on a stored runtime handle |
+//!
+//! Each wrapper implements the form itself, so it fits in a
+//! `Dyn<Service>Async` handle or an `Arc<dyn <Service>Sync>`.
 
+#[cfg(feature = "tokio")]
+mod blocking;
 mod code;
+mod inline;
+#[cfg(feature = "tokio")]
+mod offload;
 mod status;
+mod stream;
 
 use std::future::Future;
 use std::pin::Pin;
 
+#[cfg(feature = "tokio")]
+pub use blocking::Blocking;
 pub use code::Code;
 pub use futures_core::Stream;
+pub use inline::Inline;
+#[cfg(feature = "tokio")]
+pub use offload::Offload;
 pub use status::Status;
+#[cfg(feature = "tokio")]
+pub use stream::ChannelStream;
+pub use stream::IterStream;
 
 /// The future a call through a `Dyn<Service>Async` handle returns: boxed,
 /// `Send`, and borrowing for at most `'a`.

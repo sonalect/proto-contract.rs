@@ -1,5 +1,7 @@
 # Golden generate for the test protos (`bazel run //proto:generate`).
-# buffa writes the messages; Contratto writes both layouts of its traits.
+# buffa writes the messages, connect-rust its service items, and Contratto
+# both layouts of its traits; rust/golden mounts them as separate trees and
+# once into one module per package.
 # `extern_path` maps one package away from `buffa_module` so the golden
 # output also covers a path that does not follow the proto package.
 version: v2
@@ -30,3 +32,11 @@ plugins:
       - buffa_module=crate::proto
       - extern_path=.example.shared=crate::shared
       - file_per_package
+      - gate_tokio_feature
+  - local: protoc-gen-connect-rust
+    out: rust/golden/src/generated/connect
+    strategy: all
+    opt:
+      - buffa_module=crate::proto
+      - extern_path=.example.shared=crate::shared
+      - gate_client_feature

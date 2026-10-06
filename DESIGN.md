@@ -1,6 +1,6 @@
 # Design: Contratto
 
-Status: accepted by the owner (6 October 2026); stage C1 done (6 October 2026)
+Status: accepted by the owner (6 October 2026); stages C1 and C2 done (6 October 2026)
 Repository: `github.com/sonalect/protoc-gen-contratto-rust`
 Crates: `contratto` (runtime), `protoc-gen-contratto-rust` (protoc plugin)
 License: Apache-2.0
@@ -167,15 +167,16 @@ All four kinds of methods are generated. A stream item is a `Result`:
 
 | Method | `<Service>Sync` | `<Service>Async` |
 | - | - | - |
-| server streaming | `fn watch(&self, request: Req) -> Result<BoxIter<'_, Result<Rep, Status>>, Status>` | `fn watch(&self, request: Req) -> impl Future<Output = Result<impl Stream<Item = Result<Rep, Status>> + Send + use<Self>, Status>> + Send` |
-| client streaming | `fn collect(&self, requests: BoxIter<'_, Result<Req, Status>>) -> Result<Rep, Status>` | `fn collect<R>(&self, requests: R) -> impl Future<Output = Result<Rep, Status>> + Send` |
-| bidirectional | `fn echo<'a>(&'a self, requests: BoxIter<'a, Result<Req, Status>>) -> Result<BoxIter<'a, Result<Rep, Status>>, Status>` | `fn echo<R>(&self, requests: R) -> impl Future<Output = Result<impl Stream<Item = Result<Rep, Status>> + Send + use<Self, R>, Status>> + Send` |
+| server streaming | `fn watch(&self, request: Req) -> Result<BoxIter<'static, Result<Rep, Status>>, Status>` | `fn watch(&self, request: Req) -> impl Future<Output = Result<impl Stream<Item = Result<Rep, Status>> + Send + use<Self>, Status>> + Send` |
+| client streaming | `fn collect(&self, requests: BoxIter<'static, Result<Req, Status>>) -> Result<Rep, Status>` | `fn collect<R>(&self, requests: R) -> impl Future<Output = Result<Rep, Status>> + Send` |
+| bidirectional | `fn echo(&self, requests: BoxIter<'static, Result<Req, Status>>) -> Result<BoxIter<'static, Result<Rep, Status>>, Status>` | `fn echo<R>(&self, requests: R) -> impl Future<Output = Result<impl Stream<Item = Result<Rep, Status>> + Send + use<Self, R>, Status>> + Send` |
 
 In the async form `R: Stream<Item = Result<Req, Status>> + Send + 'static`.
 
 - `contratto::BoxIter<'a, T>` is `Box<dyn Iterator<Item = T> + Send + 'a>`,
-  so the sync trait stays dyn-compatible at one allocation per stream. A
-  sync reply stream may borrow the service.
+  so the sync trait stays dyn-compatible at one allocation per stream. The
+  sync form uses it with `'static`: no stream borrows the service, in
+  either form (item 26).
 - `contratto::Stream` is `futures_core::Stream`, re-exported; std has no
   stable async iterator.
 - The reply stream sits inside the call's `Result`: an `Err` before the
@@ -197,9 +198,9 @@ impls for each service:
 
 | Have | Need | Wrapper | How |
 | - | - | - | - |
-| sync impl | async trait | `Offload<T>` | `tokio::task::spawn_blocking`; a join error becomes `Status::internal` |
+| sync impl | async trait | `Offload<T>` | the sync call on the blocking pool of a stored `tokio::runtime::Handle`; a panic becomes `Status::internal` |
 | sync impl | async trait | `Inline<T>` | runs the sync call inside `poll`; only for calls of microseconds |
-| async impl | sync trait | `Blocking<T>` | `Handle::block_on` on a stored `tokio::runtime::Handle`; never on a runtime worker thread (§8, O1) |
+| async impl | sync trait | `Blocking<T>` | `block_in_place` around `Handle::block_on` on a stored handle; `FAILED_PRECONDITION` inside a current-thread runtime (§8, O1) |
 
 ```rust
 impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for contratto::Offload<T> { … }
@@ -217,9 +218,26 @@ would be hidden.
 
 The bridges implement the static traits, so a bridge adds no boxing, and
 any bridge can be put in a `Dyn…Async` handle. They cover all four kinds
-of methods: `Offload` drives a sync stream on the blocking pool and hands
-its items over to the async side; `Blocking` turns an async stream into an
-iterator that blocks per item.
+of methods:
+
+| Kind | `Inline` | `Offload` | `Blocking` |
+| - | - | - | - |
+| unary | sync call in `poll` | sync call on the blocking pool | blocks on the async call |
+| reply stream | iterator read in `poll` (`IterStream`) | iterator pulled on the blocking pool into a channel of 16 items (`ChannelStream`); dropping the stream stops the pull | stream read by an iterator that blocks per item, each `next` checked as a call |
+| inbound stream | read to its end first, then handed over | read item by item on the blocking thread (`block_on` per item) | iterator pulled on the blocking pool into a channel of 16 items |
+
+A bidirectional call through `Offload` or `Blocking` is a conversation:
+each request is answered as it arrives. Through `Inline` it is not, since a
+sync method cannot wait in `poll`: the whole inbound stream is read first,
+so a caller that waits for a reply before its next request would wait
+forever. `Inline` documents that limit.
+
+A panic of the sync method under `Offload` happens on another thread; it
+becomes `Status::internal`, for the call or as the last stream item. Under
+`Blocking` the async method runs on the caller's thread, so its panic
+reaches the caller as a direct call's would. The work of an `Offload` call
+starts at its first poll and, once on the blocking pool, runs to its end
+even if the future is dropped.
 
 ### 4.6 Connect adapters (parameter `connect_module`)
 
@@ -273,8 +291,8 @@ never leaves its process does not depend on `connectrpc` and its HTTP stack.
 
 | Feature | Adds | Dependencies |
 | - | - | - |
-| default | `Status`, `Code`, `BoxFuture`, `BoxIter`, `BoxStream`, `Stream`, `Inline` | `buffa-types`, `futures-core` |
-| `tokio` | `Offload`, `Blocking` | `tokio` |
+| default | `Status`, `Code`, `BoxFuture`, `BoxIter`, `BoxStream`, `Stream`, `IterStream`, `Inline` | `buffa-types`, `futures-core` |
+| `tokio` | `Offload`, `Blocking`, `ChannelStream` | `tokio` (`rt`, `rt-multi-thread`, `sync`) |
 | `connect` | `Served`, `Remote`, `Status` ↔ `ConnectError` | `connectrpc` |
 | `validate` | `Validated` | `protovalidate-buffa` |
 
@@ -421,10 +439,25 @@ connect-rust takes.
 
 ## 8. Open questions the implementation answers
 
-- **O1.** `Handle::block_on` panics on a runtime worker thread. Find a
-  reliable check (candidates: `tokio::task::try_id()`, `Handle::try_current()`
-  with the runtime flavour) and return `Status::failed_precondition` instead.
-  If there is none, state the precondition and test it.
+- **O1.** Answered 6 October 2026 against tokio 1.53.2. No public API tells
+  a runtime thread from a blocking-pool thread: `task::try_id()` and
+  `Handle::try_current()` read the same inside a worker task (where
+  `Handle::block_on` panics) and inside `spawn_blocking` (where it works),
+  and the same inside `block_on`'s own future and after `Handle::enter`.
+  Measured:
+
+  | Context | `Handle::block_on` | `block_in_place` + `block_on` |
+  | - | - | - |
+  | no runtime, `std::thread`, `Handle::enter` | works | works |
+  | worker task or `block_on` future, multi-thread | panics | works |
+  | `spawn_blocking`, either flavour | works | works |
+  | worker task or `block_on` future, current-thread | panics | panics |
+
+  So `Blocking` calls `block_in_place(|| handle.block_on(…))`, and returns
+  `FAILED_PRECONDITION` whenever the current runtime is a current-thread
+  one. That also refuses that runtime's `spawn_blocking` threads, which
+  could block safely; the rustdoc says so and points to a `std::thread`.
+  Tests: `//rust/golden:bridges_test`.
 - **O2.** Answered 6 October 2026: `buffa-types` 0.9.2 has `Any` (`Clone`,
   `PartialEq`, `Debug`, `pack` / `unpack_if`) with its default `std` feature
   alone.
@@ -433,8 +466,12 @@ connect-rust takes.
 - **O4.** Answered 6 October 2026: own `out` directory, stitcher, and
   `protoc-gen-buffa-packaging` with `filter=services`, or `file_per_package`
   (§6.2).
-- **O5.** Cost of `Offload` per call (thread hop) against `Inline`, measured
-  on the toy service and recorded in this document.
+- **O5.** Answered 6 October 2026: a unary call on the toy counter costs
+  about 5 ns direct, 6 ns through `Inline`, and 21–23 µs through `Offload`
+  (release build, sequential calls, multi-thread runtime with 2 workers,
+  28-core WSL2 host; the ignored test `offload_cost`). `Offload` pays for
+  itself once a call blocks for tens of microseconds; below that, `Inline`
+  or a direct sync call.
 
 ## 9. Repository
 
@@ -461,8 +498,10 @@ the named exceptions of its dependency quarantine, next to `scheda` and
   async, for every kind of method: direct calls through a generic caller,
   `Arc<dyn …Sync>`, and the `Dyn…Async` handle, errors before and inside a
   stream, a reply stream that outlives the service; then `Inline`,
-  `Offload`, and `Blocking` from a plain thread and from a worker thread
-  (O1).
+  `Offload`, and `Blocking` for every kind, a bidirectional conversation
+  through `Offload` and `Blocking`, a panic under `Offload`, and `Blocking`
+  from a plain thread, a worker task, `block_on`'s future, `spawn_blocking`,
+  and a current-thread runtime (O1).
 - **T3. Connect round trip in process.** `Served`, `ServiceTransport`, and the
   client adapter. `Status` ↔ `ConnectError` keeps code, message, and
   details.
@@ -484,7 +523,7 @@ the named exceptions of its dependency quarantine, next to `scheda` and
 | Stage | Content | Proof |
 | - | - | - |
 | C1 | Skeleton; `Status`, `Code`, `BoxFuture`, `BoxIter`, `BoxStream`, `Stream`; plugin emits both traits and the `Dyn…Async` handle for all four kinds of methods | T1, T2 (direct calls), T5, T6. Done 6 October 2026: `//proto:generate_test`, `//rust/golden:direct_test`, `//rust/golden:streaming_test`, `//rust/protoc-gen-contratto-rust:lib_test` |
-| C2 | Bridges `Inline`, `Offload`, `Blocking`, for all four kinds of methods | T2 complete; O1, O5 answered |
+| C2 | Bridges `Inline`, `Offload`, `Blocking`, for all four kinds of methods | T2 complete; O1, O5 answered. Done 6 October 2026: `//rust/golden:bridges_test`; plus connect-rust's output and Contratto's mounted in one module per package (`//rust/golden`) and a `buf generate` with the release binary into a fresh crate outside Bazel |
 | C3 | Connect adapters | T3, T7 |
 | C4 | Validation wrapper | T4 |
 | C5 | Release binaries and the `bazel_utils` catalog entry | Knowqore generates through `protoc.plugin` |
@@ -496,7 +535,8 @@ which is sync and stays in process. That pilot is planned in Knowqore.
 
 Each item has a recommendation. An item the owner does not mention is
 accepted. The owner accepted items 1–13 on 6 October 2026, then revised
-item 6 and accepted items 14–25 the same day.
+item 6 and accepted items 14–25 the same day. Items 26–28 came up in C2
+and wait for the owner.
 
 1. **Name.** Contratto: repository `sonalect/protoc-gen-contratto-rust`,
    crate `contratto`, binary `protoc-gen-contratto-rust`. The `-rust`
@@ -551,3 +591,18 @@ item 6 and accepted items 14–25 the same day.
     *Accepted 6 October 2026.*
 25. **Streaming and the new async form land in C1**; the bridges stay in C2
     (§10). *Accepted 6 October 2026.*
+26. **Sync streams do not borrow the service either** (`BoxIter<'static, …>`
+    in and out) (§4.4). Found while building C2: a sync reply stream that
+    borrows the service cannot become an async stream that does not, short
+    of a thread that owns the service for the stream's life, and a borrowed
+    inbound iterator cannot be handed to an async method that needs a
+    `'static` stream. The sync implementation clones what its stream needs,
+    as the async one does. *Proposed 6 October 2026 and implemented; the
+    owner may revise.*
+27. **`Inline` reads an inbound stream to its end before the sync call**
+    (§4.5). The alternative is to refuse streaming methods in `Inline`.
+    *Proposed 6 October 2026 and implemented; the owner may revise.*
+28. **`Blocking` refuses inside any current-thread runtime** (§8, O1),
+    including its `spawn_blocking` threads, rather than risk a deadlock or
+    a panic. *Proposed 6 October 2026 and implemented; the owner may
+    revise.*

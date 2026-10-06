@@ -52,10 +52,10 @@ service FeedService {
 ```rust
 pub trait FeedServiceSync: Send + Sync {
     fn watch(&self, request: WatchRequest)
-        -> Result<BoxIter<'_, Result<Item, Status>>, Status>;
-    fn collect(&self, requests: BoxIter<'_, Result<Item, Status>>) -> Result<Summary, Status>;
-    fn echo<'a>(&'a self, requests: BoxIter<'a, Result<Item, Status>>)
-        -> Result<BoxIter<'a, Result<Item, Status>>, Status>;
+        -> Result<BoxIter<'static, Result<Item, Status>>, Status>;
+    fn collect(&self, requests: BoxIter<'static, Result<Item, Status>>) -> Result<Summary, Status>;
+    fn echo(&self, requests: BoxIter<'static, Result<Item, Status>>)
+        -> Result<BoxIter<'static, Result<Item, Status>>, Status>;
 }
 
 pub trait FeedServiceAsync: Send + Sync {
@@ -74,7 +74,27 @@ pub trait FeedServiceAsync: Send + Sync {
 ```
 
 An `Err` before the first item fails the call; an `Err` item ends the
-stream. An async reply stream does not borrow the service.
+stream. No stream borrows the service.
+
+## Bridges
+
+Each form is also implemented for wrappers around the other, so a caller
+of one form can use an implementation of the other:
+
+| Wrapper | Gives | How |
+| - | - | - |
+| `contratto::Inline<T>` | a sync impl the async form | runs the call inside `poll`; for calls of microseconds |
+| `contratto::Offload<T>` | a sync impl the async form | runs the call on tokio's blocking pool (about 20 µs a call) |
+| `contratto::Blocking<T>` | an async impl the sync form | blocks the caller on a tokio runtime handle |
+
+`Offload` and `Blocking` need the runtime crate's `tokio` feature; the
+plugin parameter `gate_tokio_feature` puts their impls behind a feature of
+the consuming crate.
+
+```rust
+let service = DynGreeterServiceAsync::new(Offload::new(MySyncGreeter, handle.clone()));
+let sync = Blocking::new(service.clone(), handle);
+```
 
 ## Generate
 
@@ -115,6 +135,7 @@ The crate depends on `contratto` and on what buffa's output needs
 | `file_per_package` | one `<dotted.pkg>.rs` per package instead of per-proto files and a stitcher |
 | `element_memory_limit=<bytes\|unlimited>` | decode bound of the request, as for `protoc-gen-buffa` |
 | `runtime=<path>` | path of the runtime crate; default `::contratto` |
+| `gate_tokio_feature[=<name>]` | `Offload` and `Blocking` impls under `#[cfg(feature = "<name>")]`; default `tokio` |
 
 Paths are absolute (`::…` or `crate::…`). Any other parameter fails the
 run.
@@ -122,7 +143,7 @@ run.
 ## Status
 
 Under development; the design and its stages are in [DESIGN.md](DESIGN.md).
-Bridges between the two forms, Connect adapters, and validation come next.
+Connect adapters and validation come next.
 
 ## Build
 

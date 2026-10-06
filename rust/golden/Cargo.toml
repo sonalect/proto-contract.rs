@@ -8,10 +8,22 @@ repository.workspace = true
 publish = false
 description = "The golden output of protoc-gen-contratto-rust for proto/, compiled and exercised."
 
+[features]
+default = ["tokio"]
+# connect-rust's clients, gated by `gate_client_feature`; never enabled.
+client = []
+# Contratto's `Offload` and `Blocking` impls of the `file_per_package`
+# layout, gated by `gate_tokio_feature`.
+tokio = []
+
 [dependencies]
 buffa = { workspace = true }
 buffa-types = { workspace = true }
-contratto = { workspace = true }
+connectrpc = { workspace = true }
+contratto = { workspace = true, features = ["tokio"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "rt-multi-thread", "sync"] }
 
 [lints]
 workspace = true

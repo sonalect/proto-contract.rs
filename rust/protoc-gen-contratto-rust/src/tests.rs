@@ -315,14 +315,13 @@ fn streaming_methods_in_every_form() {
         // sync
         format!(
             "fnwatch(&self,request:{req})\
-             ->::core::result::Result<::contratto::BoxIter<'_,{reply}>,::contratto::Status>;"
+             ->::core::result::Result<::contratto::BoxIter<'static,{reply}>,::contratto::Status>;"
         ),
-        format!("fncollect(&self,requests:::contratto::BoxIter<'_,{item}>)->{reply};"),
+        format!("fncollect(&self,requests:::contratto::BoxIter<'static,{item}>)->{reply};"),
         format!(
-            "fnchat<'a>(&'a self,requests:::contratto::BoxIter<'a,{item}>)\
-             ->::core::result::Result<::contratto::BoxIter<'a,{reply}>,::contratto::Status>;"
-        )
-        .replace(' ', ""),
+            "fnchat(&self,requests:::contratto::BoxIter<'static,{item}>)\
+             ->::core::result::Result<::contratto::BoxIter<'static,{reply}>,::contratto::Status>;"
+        ),
         // async
         format!(
             "fnwatch(&self,request:{req})->impl::core::future::Future<Output=::core::result::Result<\
@@ -343,6 +342,61 @@ fn streaming_methods_in_every_form() {
     ] {
         assert!(code.contains(&expected), "missing {expected}\nin {code}");
     }
+}
+
+/// The bridges: each method of each kind forwards to the other form.
+#[test]
+fn bridges_for_every_kind() {
+    let streaming = |name: &str, client: bool, server: bool| MethodDescriptorProto {
+        client_streaming: Some(client),
+        server_streaming: Some(server),
+        ..method(name, ".example.v1.GreetRequest", ".example.v1.GreetReply")
+    };
+    let mut methods = greeter_methods();
+    methods.push(streaming("Watch", false, true));
+    methods.push(streaming("Collect", true, false));
+    methods.push(streaming("Chat", true, true));
+    let response = generate(&request(greeter_files(methods), PARAMETER)).unwrap();
+    let code = squeeze(outputs(&response)[0].1);
+
+    for expected in [
+        "impl<T:GreeterServiceSync>GreeterServiceAsyncfor::contratto::Inline<T>{",
+        "impl<T:GreeterServiceSync+'static>GreeterServiceAsyncfor::contratto::Offload<T>{",
+        "impl<T:GreeterServiceAsync+'static>GreeterServiceSyncfor::contratto::Blocking<T>{",
+        // Inline
+        "asyncfngreet(&self,request:crate::proto::example::v1::GreetRequest)\
+         ->::core::result::Result<crate::proto::example::v1::GreetReply,::contratto::Status>\
+         {<TasGreeterServiceSync>::greet(self.get_ref(),request)}",
+        "{<TasGreeterServiceSync>::watch(self.get_ref(),request).map(::contratto::IterStream::new)}",
+        "{letrequests=Self::buffer(requests).await;<TasGreeterServiceSync>::collect(self.get_ref(),requests)}",
+        // Offload
+        "self.call(move|service|<TasGreeterServiceSync>::greet(service,request))",
+        "self.server_streaming(move|service|<TasGreeterServiceSync>::watch(service,request))",
+        "self.client_streaming(requests,<TasGreeterServiceSync>::collect)",
+        "self.bidirectional(requests,<TasGreeterServiceSync>::chat)",
+        // Blocking
+        "self.block_on(<TasGreeterServiceAsync>::greet(self.get_ref(),request))",
+        "self.block_on_stream(<TasGreeterServiceAsync>::watch(self.get_ref(),request))",
+        "letrequests=self.feed(requests);self.block_on(<TasGreeterServiceAsync>::collect(self.get_ref(),requests))",
+        "letrequests=self.feed(requests);self.block_on_stream(<TasGreeterServiceAsync>::chat(self.get_ref(),requests))",
+    ] {
+        assert!(code.contains(expected), "missing {expected}\nin {code}");
+    }
+    assert!(!code.contains("#[cfg("));
+}
+
+#[test]
+fn tokio_gate_covers_offload_and_blocking_only() {
+    let parameter = format!("{PARAMETER},gate_tokio_feature=bridges");
+    let response = generate(&request(greeter_files(greeter_methods()), &parameter)).unwrap();
+    let code = squeeze(outputs(&response)[0].1);
+    assert!(code.contains(
+        "#[cfg(feature=\"bridges\")]impl<T:GreeterServiceSync+'static>GreeterServiceAsyncfor::contratto::Offload<T>"
+    ));
+    assert!(code.contains(
+        "#[cfg(feature=\"bridges\")]impl<T:GreeterServiceAsync+'static>GreeterServiceSyncfor::contratto::Blocking<T>"
+    ));
+    assert_eq!(code.matches("#[cfg(").count(), 2);
 }
 
 #[test]

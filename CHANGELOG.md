@@ -22,13 +22,20 @@ changes to the generated code or the runtime bump the minor.
   Requests are taken by value and replies returned owned. Comments in the
   `.proto` become rustdoc.
 - Streaming methods of every kind: server, client, and bidirectional. The
-  sync form takes and returns `contratto::BoxIter`, the async form
-  `impl contratto::Stream`; items are `Result<_, Status>`, and a reply
-  stream sits inside the call's `Result`. Async reply streams do not borrow
-  the service.
+  sync form takes and returns `contratto::BoxIter<'static, _>`, the async
+  form `impl contratto::Stream`; items are `Result<_, Status>`, and a reply
+  stream sits inside the call's `Result`. No stream borrows the service.
+- Bridges between the forms, for every kind of method: `contratto::Inline`
+  (a sync implementation's async form, run inside `poll`),
+  `contratto::Offload` (the same on tokio's blocking pool), and
+  `contratto::Blocking` (an async implementation's sync form). `Offload`
+  and `Blocking` come with the runtime's `tokio` feature; the plugin
+  parameter `gate_tokio_feature[=<name>]` puts their impls behind a Cargo
+  feature. `Blocking` inside a current-thread runtime fails with
+  `FAILED_PRECONDITION` instead of panicking.
 - Plugin parameters `buffa_module=`, `extern_path=`, `file_per_package`,
   and `element_memory_limit=`, as `protoc-gen-connect-rust` reads them, plus
-  `runtime=` for the path of the runtime crate. Message paths are absolute
+  `runtime=` for the path of the runtime crate and `gate_tokio_feature`. Message paths are absolute
   and match `protoc-gen-buffa` 0.9.2. Output is a `<stem>.__contratto.rs`
   per proto and a `<pkg>.mod.rs` stitcher per package for
   `protoc-gen-buffa-packaging` (`filter=services`), or one
@@ -39,8 +46,8 @@ changes to the generated code or the runtime bump the minor.
   connect-rust, or Contratto) already has, and any unknown parameter.
 - Runtime crate `contratto`: `Status` (code, message, `Any` details; a
   mirror of `google.rpc.Status`), `Code` (the 17 `google.rpc.Code` values),
-  `BoxFuture`, `BoxIter`, `BoxStream`, and `Stream` (re-exported from
-  `futures-core`).
+  `BoxFuture`, `BoxIter`, `BoxStream`, `Stream` (re-exported from
+  `futures-core`), `IterStream`, and with `tokio` `ChannelStream`.
 
 ## Links
 

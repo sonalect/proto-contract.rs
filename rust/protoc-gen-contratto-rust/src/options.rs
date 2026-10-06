@@ -6,7 +6,11 @@ use crate::paths::check_absolute_path;
 /// Every parameter the plugin accepts, for the message that rejects an
 /// unknown one.
 const SUPPORTED: &str = "buffa_module=<rust_path>, extern_path=<proto>=<rust_path>, \
-     file_per_package, element_memory_limit=<bytes|unlimited>, runtime=<rust_path>";
+     file_per_package, element_memory_limit=<bytes|unlimited>, runtime=<rust_path>, \
+     gate_tokio_feature, gate_tokio_feature=<name>";
+
+/// The Cargo feature `gate_tokio_feature` names when it has no value.
+const DEFAULT_TOKIO_FEATURE: &str = "tokio";
 
 /// The runtime crate path when `runtime=` is not given.
 const DEFAULT_RUNTIME: &str = "::contratto";
@@ -22,6 +26,9 @@ pub(crate) struct Options {
     pub(crate) file_per_package: bool,
     /// Absolute path of the runtime crate.
     pub(crate) runtime: String,
+    /// The Cargo feature that gates the `Offload` and `Blocking` impls, if
+    /// any.
+    pub(crate) tokio_gate: Option<String>,
 }
 
 impl Options {
@@ -31,6 +38,7 @@ impl Options {
             extern_paths: Vec::new(),
             file_per_package: false,
             runtime: DEFAULT_RUNTIME.to_string(),
+            tokio_gate: None,
         };
         let mut runtime_given = false;
         let parameter = parameter.unwrap_or_default();
@@ -61,6 +69,16 @@ impl Options {
                     runtime_given = true;
                 }
                 ("file_per_package", None) => options.file_per_package = true,
+                ("gate_tokio_feature", feature) => {
+                    let feature = feature.unwrap_or(DEFAULT_TOKIO_FEATURE);
+                    if !buffa_codegen::FeatureGateNames::is_valid_name(feature) {
+                        return Err(Error::new(format!(
+                            "plugin parameter `gate_tokio_feature`: {feature:?} is not a valid \
+                             Cargo feature name"
+                        )));
+                    }
+                    options.tokio_gate = Some(feature.to_string());
+                }
                 // `buffa_codegen::decode_request` read and applied it while
                 // decoding the request; nothing is left to do here.
                 (buffa_codegen::ELEMENT_MEMORY_LIMIT_OPT, Some(_)) => {}
@@ -119,6 +137,7 @@ mod tests {
         assert!(options.extern_paths.is_empty());
         assert!(!options.file_per_package);
         assert_eq!(options.runtime, "::contratto");
+        assert_eq!(options.tokio_gate, None);
     }
 
     #[test]
@@ -137,6 +156,20 @@ mod tests {
         );
         assert!(options.file_per_package);
         assert_eq!(options.runtime, "crate::rt");
+        assert_eq!(options.tokio_gate, None);
+    }
+
+    #[test]
+    fn tokio_gate() {
+        let options = Options::parse(Some("gate_tokio_feature")).unwrap();
+        assert_eq!(options.tokio_gate.as_deref(), Some("tokio"));
+        let options = Options::parse(Some("gate_tokio_feature=bridges")).unwrap();
+        assert_eq!(options.tokio_gate.as_deref(), Some("bridges"));
+        let error = Options::parse(Some("gate_tokio_feature=no good")).unwrap_err();
+        assert!(
+            error.message().contains("not a valid Cargo feature name"),
+            "{error}"
+        );
     }
 
     #[test]

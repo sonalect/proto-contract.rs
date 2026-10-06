@@ -109,31 +109,35 @@ fn check_count(count: i32) -> Result<(), Status> {
     }
 }
 
-// ---- the sync form: iterators, which may borrow the service ----
+// ---- the sync form: iterators that do not borrow the service ----
 
 struct SyncFeed {
     prefix: String,
 }
 
 impl FeedServiceSync for SyncFeed {
-    fn watch(&self, request: WatchRequest) -> Result<BoxIter<'_, Result<Item, Status>>, Status> {
+    fn watch(
+        &self,
+        request: WatchRequest,
+    ) -> Result<BoxIter<'static, Result<Item, Status>>, Status> {
         check_count(request.count)?;
-        let prefix = &self.prefix;
+        let prefix = self.prefix.clone();
         Ok(Box::new(
             (0..request.count).map(move |i| Ok(item(&format!("{prefix}{i}")))),
         ))
     }
 
-    fn collect(&self, requests: BoxIter<'_, Result<Item, Status>>) -> Result<Summary, Status> {
+    fn collect(&self, requests: BoxIter<'static, Result<Item, Status>>) -> Result<Summary, Status> {
         summary(requests)
     }
 
-    fn echo<'a>(
-        &'a self,
-        requests: BoxIter<'a, Result<Item, Status>>,
-    ) -> Result<BoxIter<'a, Result<Item, Status>>, Status> {
+    fn echo(
+        &self,
+        requests: BoxIter<'static, Result<Item, Status>>,
+    ) -> Result<BoxIter<'static, Result<Item, Status>>, Status> {
+        let prefix = self.prefix.clone();
         Ok(Box::new(requests.map(move |request| {
-            request.map(|request| item(&format!("{}{}", self.prefix, request.text)))
+            request.map(|request| item(&format!("{prefix}{}", request.text)))
         })))
     }
 }

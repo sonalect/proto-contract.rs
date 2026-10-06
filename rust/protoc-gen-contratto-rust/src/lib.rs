@@ -51,6 +51,7 @@
 mod docs;
 mod emit;
 mod error;
+mod methods;
 mod names;
 mod options;
 mod paths;
