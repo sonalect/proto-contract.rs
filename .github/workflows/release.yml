@@ -137,10 +137,12 @@ jobs:
           mkdir -p "${bin}"
           curl -fsSL -o "${bin}/bazel${{ matrix.exe }}" \
             "https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/${{ matrix.bazelisk }}"
-          if command -v sha256sum >/dev/null; then
-            echo "${{ matrix.bazelisk_sha256 }}  ${bin}/bazel${{ matrix.exe }}" | sha256sum -c
-          else
+          # By OS, not by what is on PATH: macOS ships a BSD `sha256sum`
+          # that does not read a checksum list from stdin.
+          if [[ "${RUNNER_OS}" == "macOS" ]]; then
             echo "${{ matrix.bazelisk_sha256 }}  ${bin}/bazel${{ matrix.exe }}" | shasum -a 256 -c
+          else
+            echo "${{ matrix.bazelisk_sha256 }}  ${bin}/bazel${{ matrix.exe }}" | sha256sum -c
           fi
           chmod +x "${bin}/bazel${{ matrix.exe }}"
           if [[ "${RUNNER_OS}" == "Windows" ]]; then
