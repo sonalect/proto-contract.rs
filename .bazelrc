@@ -6,3 +6,8 @@ common --enable_platform_specific_config
 build --symlink_prefix=.bazel/
 # rules_rust tests need runfiles; Windows defaults this off.
 common --enable_runfiles
+# rules_cc asks link.exe whether it supports /DEBUG:FASTLINK by reading its
+# help, which Visual Studio 2026 still prints although the linker dropped
+# the flag (LNK4315 on every link). The fastbuild feature only adds that
+# flag and /Od /Z7 for C/C++, which this repository does not compile.
+build:windows --features=-fastbuild

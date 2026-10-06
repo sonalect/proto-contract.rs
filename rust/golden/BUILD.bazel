@@ -38,6 +38,7 @@ rust_library(
 [
     rust_test(
         name = test + "_test",
+        size = "small",
         srcs = ["tests/" + test + ".rs"],
         visibility = ["//rust:__pkg__"],
         deps = [
