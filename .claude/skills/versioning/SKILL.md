@@ -87,8 +87,7 @@ The tag starts `.github/workflows/release.yml`; nothing else does. It:
    static release binary with Cargo (`--profile dist`);
 3. when all six pass, publishes the GitHub Release for the tag: the six
    binaries, named `protoc-gen-contract-rust-{tag}-{file}` (`DESIGN.md`
-   §9), a `<binary>.sha256` next to each, and a `SHA256SUMS` file for all
-   six; the tag message's subject is the title,
+   §9), and `checksums-sha256.txt` for all six; the tag message's subject is the title,
    its body the notes. Not a draft, not a prerelease.
 
 Do not run `gh release create` by hand. A tag whose workflow failed has no
@@ -97,7 +96,7 @@ and tag the fixed commit.
 
 Watch the run with `gh run watch` and return the Release URL when it
 succeeds. The `registry.bzl` entry in `bazel_utils` (URL template and the
-sha256 of each platform, from `SHA256SUMS`) is a change in that
+sha256 of each platform, from `checksums-sha256.txt`) is a change in that
 repository: prepare it only when the owner asks.
 
 Examples: `v0.0.1`, `v0.0.2`, `v0.1.0`.
