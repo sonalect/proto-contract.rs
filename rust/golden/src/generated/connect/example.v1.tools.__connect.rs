@@ -39,6 +39,10 @@ pub const TOOLS_SERVICE_SERVER_STREAMING_SPEC: ::connectrpc::Spec = ::connectrpc
 /// Methods named like the helpers of Contract's bridges: the generated
 /// code must call the helpers, and callers must reach these methods.
 ///
+/// The service keeps the `Service` suffix on purpose: with the enum
+/// `ToolsErrorCode`, it covers the `<Service>ErrorCode` alias the plugin
+/// emits for such a service (`ToolsServiceErrorCode`).
+///
 /// # Implementing handlers
 ///
 /// Implement methods with plain `async fn`; the returned future satisfies
@@ -100,11 +104,11 @@ pub trait ToolsService: Send + Sync + 'static {
     fn call<'a>(
         &'a self,
         ctx: ::connectrpc::RequestContext,
-        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::AddRequest>,
+        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::Delta>,
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             impl ::connectrpc::Encodable<
-                crate::proto::example::v1::AddReply,
+                crate::proto::example::v1::Total,
             > + Send + use<'a, Self>,
         >,
     > + Send;
@@ -120,11 +124,11 @@ pub trait ToolsService: Send + Sync + 'static {
     fn feed<'a>(
         &'a self,
         ctx: ::connectrpc::RequestContext,
-        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::AddRequest>,
+        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::Delta>,
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             impl ::connectrpc::Encodable<
-                crate::proto::example::v1::AddReply,
+                crate::proto::example::v1::Total,
             > + Send + use<'a, Self>,
         >,
     > + Send;
@@ -140,11 +144,11 @@ pub trait ToolsService: Send + Sync + 'static {
     fn get_ref<'a>(
         &'a self,
         ctx: ::connectrpc::RequestContext,
-        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::AddRequest>,
+        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::Delta>,
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             impl ::connectrpc::Encodable<
-                crate::proto::example::v1::AddReply,
+                crate::proto::example::v1::Total,
             > + Send + use<'a, Self>,
         >,
     > + Send;
@@ -160,11 +164,11 @@ pub trait ToolsService: Send + Sync + 'static {
     fn block_on<'a>(
         &'a self,
         ctx: ::connectrpc::RequestContext,
-        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::AddRequest>,
+        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::Delta>,
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             impl ::connectrpc::Encodable<
-                crate::proto::example::v1::AddReply,
+                crate::proto::example::v1::Total,
             > + Send + use<'a, Self>,
         >,
     > + Send;
@@ -180,11 +184,11 @@ pub trait ToolsService: Send + Sync + 'static {
     fn into_inner<'a>(
         &'a self,
         ctx: ::connectrpc::RequestContext,
-        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::AddRequest>,
+        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::Delta>,
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             impl ::connectrpc::Encodable<
-                crate::proto::example::v1::AddReply,
+                crate::proto::example::v1::Total,
             > + Send + use<'a, Self>,
         >,
     > + Send;
@@ -198,12 +202,12 @@ pub trait ToolsService: Send + Sync + 'static {
     fn server_streaming(
         &self,
         ctx: ::connectrpc::RequestContext,
-        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::AddRequest>,
+        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::Delta>,
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             ::connectrpc::ServiceStream<
                 impl ::connectrpc::Encodable<
-                    crate::proto::example::v1::AddReply,
+                    crate::proto::example::v1::Total,
                 > + Send + use<Self>,
             >,
         >,
@@ -248,20 +252,18 @@ impl<S: ToolsService> ToolsServiceExt for S {
                     ::connectrpc::view_handler_fn(move |
                         ctx,
                         req: ::buffa::view::OwnedView<
-                            crate::proto::example::v1::__buffa::view::AddRequestView<
-                                'static,
-                            >,
+                            crate::proto::example::v1::__buffa::view::DeltaView<'static>,
                         >,
                         format|
                     {
                         let svc = ::std::sync::Arc::clone(&svc);
                         async move {
                             let sreq = ::connectrpc::ServiceRequest::<
-                                crate::proto::example::v1::AddRequest,
+                                crate::proto::example::v1::Delta,
                             >::from_parts(req.reborrow(), req.bytes());
                             svc.call(ctx, sreq)
                                 .await?
-                                .encode::<crate::proto::example::v1::AddReply>(format)
+                                .encode::<crate::proto::example::v1::Total>(format)
                         }
                     })
                 },
@@ -275,20 +277,18 @@ impl<S: ToolsService> ToolsServiceExt for S {
                     ::connectrpc::view_handler_fn(move |
                         ctx,
                         req: ::buffa::view::OwnedView<
-                            crate::proto::example::v1::__buffa::view::AddRequestView<
-                                'static,
-                            >,
+                            crate::proto::example::v1::__buffa::view::DeltaView<'static>,
                         >,
                         format|
                     {
                         let svc = ::std::sync::Arc::clone(&svc);
                         async move {
                             let sreq = ::connectrpc::ServiceRequest::<
-                                crate::proto::example::v1::AddRequest,
+                                crate::proto::example::v1::Delta,
                             >::from_parts(req.reborrow(), req.bytes());
                             svc.feed(ctx, sreq)
                                 .await?
-                                .encode::<crate::proto::example::v1::AddReply>(format)
+                                .encode::<crate::proto::example::v1::Total>(format)
                         }
                     })
                 },
@@ -302,20 +302,18 @@ impl<S: ToolsService> ToolsServiceExt for S {
                     ::connectrpc::view_handler_fn(move |
                         ctx,
                         req: ::buffa::view::OwnedView<
-                            crate::proto::example::v1::__buffa::view::AddRequestView<
-                                'static,
-                            >,
+                            crate::proto::example::v1::__buffa::view::DeltaView<'static>,
                         >,
                         format|
                     {
                         let svc = ::std::sync::Arc::clone(&svc);
                         async move {
                             let sreq = ::connectrpc::ServiceRequest::<
-                                crate::proto::example::v1::AddRequest,
+                                crate::proto::example::v1::Delta,
                             >::from_parts(req.reborrow(), req.bytes());
                             svc.get_ref(ctx, sreq)
                                 .await?
-                                .encode::<crate::proto::example::v1::AddReply>(format)
+                                .encode::<crate::proto::example::v1::Total>(format)
                         }
                     })
                 },
@@ -329,20 +327,18 @@ impl<S: ToolsService> ToolsServiceExt for S {
                     ::connectrpc::view_handler_fn(move |
                         ctx,
                         req: ::buffa::view::OwnedView<
-                            crate::proto::example::v1::__buffa::view::AddRequestView<
-                                'static,
-                            >,
+                            crate::proto::example::v1::__buffa::view::DeltaView<'static>,
                         >,
                         format|
                     {
                         let svc = ::std::sync::Arc::clone(&svc);
                         async move {
                             let sreq = ::connectrpc::ServiceRequest::<
-                                crate::proto::example::v1::AddRequest,
+                                crate::proto::example::v1::Delta,
                             >::from_parts(req.reborrow(), req.bytes());
                             svc.block_on(ctx, sreq)
                                 .await?
-                                .encode::<crate::proto::example::v1::AddReply>(format)
+                                .encode::<crate::proto::example::v1::Total>(format)
                         }
                     })
                 },
@@ -356,20 +352,18 @@ impl<S: ToolsService> ToolsServiceExt for S {
                     ::connectrpc::view_handler_fn(move |
                         ctx,
                         req: ::buffa::view::OwnedView<
-                            crate::proto::example::v1::__buffa::view::AddRequestView<
-                                'static,
-                            >,
+                            crate::proto::example::v1::__buffa::view::DeltaView<'static>,
                         >,
                         format|
                     {
                         let svc = ::std::sync::Arc::clone(&svc);
                         async move {
                             let sreq = ::connectrpc::ServiceRequest::<
-                                crate::proto::example::v1::AddRequest,
+                                crate::proto::example::v1::Delta,
                             >::from_parts(req.reborrow(), req.bytes());
                             svc.into_inner(ctx, sreq)
                                 .await?
-                                .encode::<crate::proto::example::v1::AddReply>(format)
+                                .encode::<crate::proto::example::v1::Total>(format)
                         }
                     })
                 },
@@ -378,7 +372,7 @@ impl<S: ToolsService> ToolsServiceExt for S {
             .route_view_server_stream::<
                 _,
                 _,
-                crate::proto::example::v1::AddReply,
+                crate::proto::example::v1::Total,
             >(
                 TOOLS_SERVICE_SERVICE_NAME,
                 "ServerStreaming",
@@ -387,15 +381,13 @@ impl<S: ToolsService> ToolsServiceExt for S {
                     move |
                         ctx,
                         req: ::buffa::view::OwnedView<
-                            crate::proto::example::v1::__buffa::view::AddRequestView<
-                                'static,
-                            >,
+                            crate::proto::example::v1::__buffa::view::DeltaView<'static>,
                         >|
                     {
                         let svc = ::std::sync::Arc::clone(&svc);
                         async move {
                             let sreq = ::connectrpc::ServiceRequest::<
-                                crate::proto::example::v1::AddRequest,
+                                crate::proto::example::v1::Delta,
                             >::from_parts(req.reborrow(), req.bytes());
                             svc.server_streaming(ctx, sreq).await
                         }
@@ -512,100 +504,90 @@ impl<T: ToolsService> ::connectrpc::Dispatcher for ToolsServiceServer<T> {
                 let svc = ::std::sync::Arc::clone(&self.inner);
                 Box::pin(async move {
                     let body = ::connectrpc::dispatcher::codegen::request_proto_bytes::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >(request.encoded()?, format)?;
-                    let req: crate::proto::example::v1::__buffa::view::AddRequestView<
-                        '_,
-                    > = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
+                    let req: crate::proto::example::v1::__buffa::view::DeltaView<'_> = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
                         &body,
                         ctx.decode_options(),
                     )?;
                     let req = ::connectrpc::ServiceRequest::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >::from_parts(&req, &body);
                     svc.call(ctx, req)
                         .await?
-                        .encode::<crate::proto::example::v1::AddReply>(format)
+                        .encode::<crate::proto::example::v1::Total>(format)
                 })
             }
             "Feed" => {
                 let svc = ::std::sync::Arc::clone(&self.inner);
                 Box::pin(async move {
                     let body = ::connectrpc::dispatcher::codegen::request_proto_bytes::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >(request.encoded()?, format)?;
-                    let req: crate::proto::example::v1::__buffa::view::AddRequestView<
-                        '_,
-                    > = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
+                    let req: crate::proto::example::v1::__buffa::view::DeltaView<'_> = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
                         &body,
                         ctx.decode_options(),
                     )?;
                     let req = ::connectrpc::ServiceRequest::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >::from_parts(&req, &body);
                     svc.feed(ctx, req)
                         .await?
-                        .encode::<crate::proto::example::v1::AddReply>(format)
+                        .encode::<crate::proto::example::v1::Total>(format)
                 })
             }
             "GetRef" => {
                 let svc = ::std::sync::Arc::clone(&self.inner);
                 Box::pin(async move {
                     let body = ::connectrpc::dispatcher::codegen::request_proto_bytes::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >(request.encoded()?, format)?;
-                    let req: crate::proto::example::v1::__buffa::view::AddRequestView<
-                        '_,
-                    > = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
+                    let req: crate::proto::example::v1::__buffa::view::DeltaView<'_> = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
                         &body,
                         ctx.decode_options(),
                     )?;
                     let req = ::connectrpc::ServiceRequest::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >::from_parts(&req, &body);
                     svc.get_ref(ctx, req)
                         .await?
-                        .encode::<crate::proto::example::v1::AddReply>(format)
+                        .encode::<crate::proto::example::v1::Total>(format)
                 })
             }
             "BlockOn" => {
                 let svc = ::std::sync::Arc::clone(&self.inner);
                 Box::pin(async move {
                     let body = ::connectrpc::dispatcher::codegen::request_proto_bytes::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >(request.encoded()?, format)?;
-                    let req: crate::proto::example::v1::__buffa::view::AddRequestView<
-                        '_,
-                    > = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
+                    let req: crate::proto::example::v1::__buffa::view::DeltaView<'_> = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
                         &body,
                         ctx.decode_options(),
                     )?;
                     let req = ::connectrpc::ServiceRequest::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >::from_parts(&req, &body);
                     svc.block_on(ctx, req)
                         .await?
-                        .encode::<crate::proto::example::v1::AddReply>(format)
+                        .encode::<crate::proto::example::v1::Total>(format)
                 })
             }
             "IntoInner" => {
                 let svc = ::std::sync::Arc::clone(&self.inner);
                 Box::pin(async move {
                     let body = ::connectrpc::dispatcher::codegen::request_proto_bytes::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >(request.encoded()?, format)?;
-                    let req: crate::proto::example::v1::__buffa::view::AddRequestView<
-                        '_,
-                    > = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
+                    let req: crate::proto::example::v1::__buffa::view::DeltaView<'_> = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
                         &body,
                         ctx.decode_options(),
                     )?;
                     let req = ::connectrpc::ServiceRequest::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >::from_parts(&req, &body);
                     svc.into_inner(ctx, req)
                         .await?
-                        .encode::<crate::proto::example::v1::AddReply>(format)
+                        .encode::<crate::proto::example::v1::Total>(format)
                 })
             }
             _ => ::connectrpc::dispatcher::codegen::unimplemented_unary(path),
@@ -627,22 +609,20 @@ impl<T: ToolsService> ::connectrpc::Dispatcher for ToolsServiceServer<T> {
                 let svc = ::std::sync::Arc::clone(&self.inner);
                 Box::pin(async move {
                     let body = ::connectrpc::dispatcher::codegen::request_proto_bytes::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >(request, format)?;
-                    let req: crate::proto::example::v1::__buffa::view::AddRequestView<
-                        '_,
-                    > = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
+                    let req: crate::proto::example::v1::__buffa::view::DeltaView<'_> = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
                         &body,
                         ctx.decode_options(),
                     )?;
                     let req = ::connectrpc::ServiceRequest::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >::from_parts(&req, &body);
                     let resp = svc.server_streaming(ctx, req).await?;
                     Ok(
                         resp
                             .map_body(|s| ::connectrpc::dispatcher::codegen::encode_response_stream::<
-                                crate::proto::example::v1::AddReply,
+                                crate::proto::example::v1::Total,
                                 _,
                                 _,
                             >(s, format)),
@@ -767,11 +747,11 @@ where
     /// Call the Call RPC. Sends a request to /example.v1.ToolsService/Call.
     pub async fn call(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -782,12 +762,12 @@ where
     /// Call the Call RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
     pub async fn call_with_options(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
         options: ::connectrpc::client::CallOptions,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -804,11 +784,11 @@ where
     /// Call the Feed RPC. Sends a request to /example.v1.ToolsService/Feed.
     pub async fn feed(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -819,12 +799,12 @@ where
     /// Call the Feed RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
     pub async fn feed_with_options(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
         options: ::connectrpc::client::CallOptions,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -841,11 +821,11 @@ where
     /// Call the GetRef RPC. Sends a request to /example.v1.ToolsService/GetRef.
     pub async fn get_ref(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -856,12 +836,12 @@ where
     /// Call the GetRef RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
     pub async fn get_ref_with_options(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
         options: ::connectrpc::client::CallOptions,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -878,11 +858,11 @@ where
     /// Call the BlockOn RPC. Sends a request to /example.v1.ToolsService/BlockOn.
     pub async fn block_on(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -893,12 +873,12 @@ where
     /// Call the BlockOn RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
     pub async fn block_on_with_options(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
         options: ::connectrpc::client::CallOptions,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -916,11 +896,11 @@ where
     /// Call the IntoInner RPC. Sends a request to /example.v1.ToolsService/IntoInner.
     pub async fn into_inner(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -934,12 +914,12 @@ where
     /// Call the IntoInner RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
     pub async fn into_inner_with_options(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
         options: ::connectrpc::client::CallOptions,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -957,11 +937,11 @@ where
     /// Call the ServerStreaming RPC. Sends a request to /example.v1.ToolsService/ServerStreaming.
     pub async fn server_streaming(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
     ) -> Result<
         ::connectrpc::client::ServerStream<
             T::ResponseBody,
-            crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+            crate::proto::example::v1::__buffa::view::TotalView<'static>,
         >,
         ::connectrpc::ConnectError,
     > {
@@ -974,12 +954,12 @@ where
     /// Call the ServerStreaming RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
     pub async fn server_streaming_with_options(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
         options: ::connectrpc::client::CallOptions,
     ) -> Result<
         ::connectrpc::client::ServerStream<
             T::ResponseBody,
-            crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+            crate::proto::example::v1::__buffa::view::TotalView<'static>,
         >,
         ::connectrpc::ConnectError,
     > {

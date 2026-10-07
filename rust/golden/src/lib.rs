@@ -111,4 +111,4 @@ pub use proto::example::shared;
 
 /// The runtime crate, as the `file_per_package` run names it
 /// (`runtime=crate::rt`).
-pub use contract as rt;
+pub use protocontract as rt;

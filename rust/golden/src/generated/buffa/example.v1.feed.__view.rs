@@ -3,15 +3,15 @@
 
 /// How many items to stream.
 #[derive(Clone, Debug, Default)]
-pub struct WatchRequestView<'a> {
+pub struct LimitView<'a> {
     /// The number of items.
     ///
     /// Field 1: `count`
     pub count: i32,
     pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
 }
-impl<'a> ::buffa::MessageView<'a> for WatchRequestView<'a> {
-    type Owned = super::super::WatchRequest;
+impl<'a> ::buffa::MessageView<'a> for LimitView<'a> {
+    type Owned = super::super::Limit;
     fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
         let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
@@ -57,25 +57,25 @@ impl<'a> ::buffa::MessageView<'a> for WatchRequestView<'a> {
     }
     fn to_owned_message(
         &self,
-    ) -> ::core::result::Result<super::super::WatchRequest, ::buffa::DecodeError> {
+    ) -> ::core::result::Result<super::super::Limit, ::buffa::DecodeError> {
         self.to_owned_from_source(None)
     }
     #[allow(clippy::useless_conversion, clippy::needless_update)]
     fn to_owned_from_source(
         &self,
         __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
-    ) -> ::core::result::Result<super::super::WatchRequest, ::buffa::DecodeError> {
+    ) -> ::core::result::Result<super::super::Limit, ::buffa::DecodeError> {
         #[allow(unused_imports)]
         use ::buffa::alloc::string::ToString as _;
         let _ = __buffa_src;
-        ::core::result::Result::Ok(super::super::WatchRequest {
+        ::core::result::Result::Ok(super::super::Limit {
             count: self.count,
             __buffa_unknown_fields: self.__buffa_unknown_fields.to_owned()?.into(),
             ..::core::default::Default::default()
         })
     }
 }
-impl<'a> ::buffa::ViewEncode<'a> for WatchRequestView<'a> {
+impl<'a> ::buffa::ViewEncode<'a> for LimitView<'a> {
     #[allow(clippy::needless_borrow, clippy::let_and_return)]
     fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
         #[allow(unused_imports)]
@@ -101,22 +101,22 @@ impl<'a> ::buffa::ViewEncode<'a> for WatchRequestView<'a> {
         self.__buffa_unknown_fields.write_to(buf);
     }
 }
-impl<'a> ::buffa::MessageName for WatchRequestView<'a> {
+impl<'a> ::buffa::MessageName for LimitView<'a> {
     const PACKAGE: &'static str = "example.v1";
-    const NAME: &'static str = "WatchRequest";
-    const FULL_NAME: &'static str = "example.v1.WatchRequest";
-    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.WatchRequest";
+    const NAME: &'static str = "Limit";
+    const FULL_NAME: &'static str = "example.v1.Limit";
+    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.Limit";
 }
-::buffa::impl_default_view_instance!(WatchRequestView);
-::buffa::impl_view_reborrow!(WatchRequestView);
-/** Self-contained, `'static` owned view of a `WatchRequest` message.
+::buffa::impl_default_view_instance!(LimitView);
+::buffa::impl_view_reborrow!(LimitView);
+/** Self-contained, `'static` owned view of a `Limit` message.
 
- Wraps [`::buffa::OwnedView`]`<`[`WatchRequestView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+ Wraps [`::buffa::OwnedView`]`<`[`LimitView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
 
- Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`WatchRequestView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`LimitView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
 #[derive(Clone, Debug)]
-pub struct WatchRequestOwnedView(::buffa::OwnedView<WatchRequestView<'static>>);
-impl WatchRequestOwnedView {
+pub struct LimitOwnedView(::buffa::OwnedView<LimitView<'static>>);
+impl LimitOwnedView {
     /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
     ///
     /// The view borrows directly from the buffer's data; the buffer is
@@ -129,9 +129,7 @@ impl WatchRequestOwnedView {
     pub fn decode(
         bytes: ::buffa::bytes::Bytes,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-        ::core::result::Result::Ok(
-            WatchRequestOwnedView(::buffa::OwnedView::decode(bytes)?),
-        )
+        ::core::result::Result::Ok(LimitOwnedView(::buffa::OwnedView::decode(bytes)?))
     }
     /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
     /// max message size).
@@ -145,7 +143,7 @@ impl WatchRequestOwnedView {
         opts: &::buffa::DecodeOptions,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         ::core::result::Result::Ok(
-            WatchRequestOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
+            LimitOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
         )
     }
     /// Build from an owned message via an encode → decode round-trip.
@@ -157,15 +155,13 @@ impl WatchRequestOwnedView {
     /// another [`::buffa::DecodeError`] if the re-encoded bytes are
     /// somehow invalid (should not happen for well-formed messages).
     pub fn from_owned(
-        msg: &super::super::WatchRequest,
+        msg: &super::super::Limit,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-        ::core::result::Result::Ok(
-            WatchRequestOwnedView(::buffa::OwnedView::from_owned(msg)?),
-        )
+        ::core::result::Result::Ok(LimitOwnedView(::buffa::OwnedView::from_owned(msg)?))
     }
-    /// Borrow the full [`WatchRequestView`] with its lifetime tied to `&self`.
+    /// Borrow the full [`LimitView`] with its lifetime tied to `&self`.
     #[must_use]
-    pub fn view(&self) -> &WatchRequestView<'_> {
+    pub fn view(&self) -> &LimitView<'_> {
         self.0.reborrow()
     }
     /// Convert to the owned message type.
@@ -176,7 +172,7 @@ impl WatchRequestOwnedView {
     /// whose contract also governs handles converted from a raw
     /// [`::buffa::OwnedView`].
     #[must_use]
-    pub fn to_owned_message(&self) -> super::super::WatchRequest {
+    pub fn to_owned_message(&self) -> super::super::Limit {
         self.0.to_owned_message()
     }
     /// The underlying bytes buffer.
@@ -197,27 +193,24 @@ impl WatchRequestOwnedView {
         self.0.reborrow().count
     }
 }
-impl ::core::convert::From<::buffa::OwnedView<WatchRequestView<'static>>>
-for WatchRequestOwnedView {
-    fn from(inner: ::buffa::OwnedView<WatchRequestView<'static>>) -> Self {
-        WatchRequestOwnedView(inner)
+impl ::core::convert::From<::buffa::OwnedView<LimitView<'static>>> for LimitOwnedView {
+    fn from(inner: ::buffa::OwnedView<LimitView<'static>>) -> Self {
+        LimitOwnedView(inner)
     }
 }
-impl ::core::convert::From<WatchRequestOwnedView>
-for ::buffa::OwnedView<WatchRequestView<'static>> {
-    fn from(wrapper: WatchRequestOwnedView) -> Self {
+impl ::core::convert::From<LimitOwnedView> for ::buffa::OwnedView<LimitView<'static>> {
+    fn from(wrapper: LimitOwnedView) -> Self {
         wrapper.0
     }
 }
-impl ::core::convert::AsRef<::buffa::OwnedView<WatchRequestView<'static>>>
-for WatchRequestOwnedView {
-    fn as_ref(&self) -> &::buffa::OwnedView<WatchRequestView<'static>> {
+impl ::core::convert::AsRef<::buffa::OwnedView<LimitView<'static>>> for LimitOwnedView {
+    fn as_ref(&self) -> &::buffa::OwnedView<LimitView<'static>> {
         &self.0
     }
 }
-impl ::buffa::HasMessageView for super::super::WatchRequest {
-    type View<'a> = WatchRequestView<'a>;
-    type ViewHandle = WatchRequestOwnedView;
+impl ::buffa::HasMessageView for super::super::Limit {
+    type View<'a> = LimitView<'a>;
+    type ViewHandle = LimitOwnedView;
 }
 /// One item of a feed.
 #[derive(Clone, Debug, Default)]

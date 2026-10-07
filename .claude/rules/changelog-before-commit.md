@@ -34,5 +34,5 @@ wrong, edit it.
 - The owner explicitly waived the changelog for this commit.
 
 Do not skip for "small" changes to generated code, plugin parameters,
-`Status` codes, or bridge behaviour. A lint fix that changes generated
+error codes, or bridge behaviour. A lint fix that changes generated
 output or what the caller sees is not lint-only.

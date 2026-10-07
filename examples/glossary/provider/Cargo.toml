@@ -1,0 +1,15 @@
+[package]
+name = "glossary-provider"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+description = "Glossary example: a provider that implements the contract over terms held in memory."
+
+[dependencies]
+glossary-api = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,15 @@
+[package]
+name = "glossary-consumer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+description = "Glossary example: a consumer that annotates text through the contract, whoever provides it."
+
+[dependencies]
+glossary-api = { workspace = true }
+
+[lints]
+workspace = true

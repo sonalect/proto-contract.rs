@@ -4,7 +4,11 @@
 /// Methods named like the helpers of Contract's bridges: the generated
 /// code must call the helpers, and callers must reach these methods.
 ///
-/// Blocking form of `example.v1.ToolsService`: each method returns when the call is done. Streams are iterators.
+/// The service keeps the `Service` suffix on purpose: with the enum
+/// `ToolsErrorCode`, it covers the `<Service>ErrorCode` alias the plugin
+/// emits for such a service (`ToolsServiceErrorCode`).
+///
+/// Blocking form of `example.v1.ToolsService`: each method returns when the call is done. Streams are iterators. It fails with the codes of `ToolsServiceErrorCode` (`example.v1.ToolsErrorCode`): branch on them with `Error::is` or `Error::code_as`.
 ///
 /// Implement it for work that computes; implement `ToolsServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn ToolsServiceSync>` to choose it at run time. `Blocking` gives an `ToolsServiceAsync` implementation this form.
 #[allow(clippy::wrong_self_convention)]
@@ -12,47 +16,66 @@ pub trait ToolsServiceSync: ::core::marker::Send + ::core::marker::Sync {
     /// Call `example.v1.ToolsService.Call`.
     fn call(
         &self,
-        request: crate::proto::example::v1::AddRequest,
-    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, ::contract::Status>;
+        delta: crate::proto::example::v1::Delta,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
+    >;
     /// Call `example.v1.ToolsService.Feed`.
     fn feed(
         &self,
-        request: crate::proto::example::v1::AddRequest,
-    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, ::contract::Status>;
+        delta: crate::proto::example::v1::Delta,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
+    >;
     /// Call `example.v1.ToolsService.GetRef`.
     fn get_ref(
         &self,
-        request: crate::proto::example::v1::AddRequest,
-    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, ::contract::Status>;
+        delta: crate::proto::example::v1::Delta,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
+    >;
     /// Call `example.v1.ToolsService.BlockOn`.
     fn block_on(
         &self,
-        request: crate::proto::example::v1::AddRequest,
-    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, ::contract::Status>;
+        delta: crate::proto::example::v1::Delta,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
+    >;
     /// Call `example.v1.ToolsService.IntoInner`.
     fn into_inner(
         &self,
-        request: crate::proto::example::v1::AddRequest,
-    ) -> ::core::result::Result<crate::proto::example::v1::AddReply, ::contract::Status>;
+        delta: crate::proto::example::v1::Delta,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
+    >;
     /// Call `example.v1.ToolsService.ServerStreaming`.
     fn server_streaming(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        ::contract::BoxIter<
+        ::protocontract::BoxIter<
             'static,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         >,
-        ::contract::Status,
+        ::protocontract::Error,
     >;
 }
 /// Methods named like the helpers of Contract's bridges: the generated
 /// code must call the helpers, and callers must reach these methods.
 ///
-/// Async form of `example.v1.ToolsService`: each method returns a future of the result. Streams are `Stream`s.
+/// The service keeps the `Service` suffix on purpose: with the enum
+/// `ToolsErrorCode`, it covers the `<Service>ErrorCode` alias the plugin
+/// emits for such a service (`ToolsServiceErrorCode`).
+///
+/// Async form of `example.v1.ToolsService`: each method returns a future of the result. Streams are `Stream`s. It fails with the codes of `ToolsServiceErrorCode` (`example.v1.ToolsErrorCode`): branch on them with `Error::is` or `Error::code_as`.
 ///
 /// Implement it with plain `async fn` for work that waits on I/O; implement `ToolsServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl ToolsServiceAsync`) call it without boxing; `DynToolsServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `ToolsServiceSync` implementation this form.
 #[allow(clippy::wrong_self_convention)]
@@ -60,69 +83,71 @@ pub trait ToolsServiceAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Call `example.v1.ToolsService.Call`.
     fn call(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
     /// Call `example.v1.ToolsService.Feed`.
     fn feed(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
     /// Call `example.v1.ToolsService.GetRef`.
     fn get_ref(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
     /// Call `example.v1.ToolsService.BlockOn`.
     fn block_on(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
     /// Call `example.v1.ToolsService.IntoInner`.
     fn into_inner(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
     /// Call `example.v1.ToolsService.ServerStreaming`.
     fn server_streaming(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contract::Stream<
+            impl ::protocontract::Stream<
                 Item = ::core::result::Result<
-                    crate::proto::example::v1::AddReply,
-                    ::contract::Status,
+                    crate::proto::example::v1::Total,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + use<Self>,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
 }
+/// The error codes of `example.v1.ToolsService`: `example.v1.ToolsErrorCode`, the enum named after the service. Every implementation reports its failures with them; a caller branches on them with `Error::is` or `Error::code_as`.
+pub type ToolsServiceErrorCode = crate::proto::example::v1::ToolsErrorCode;
 /// Any `ToolsServiceAsync` implementation behind dynamic dispatch, for an implementation chosen at run time. It implements `ToolsServiceAsync` itself, so generic code takes it like any other implementation.
 ///
 /// Each call boxes its future, and its reply stream if there is one. Cloning shares the implementation.
@@ -152,74 +177,74 @@ impl DynToolsServiceAsync {
 impl ToolsServiceAsync for DynToolsServiceAsync {
     fn call(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.call(request)
+        self.inner.call(delta)
     }
     fn feed(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.feed(request)
+        self.inner.feed(delta)
     }
     fn get_ref(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.get_ref(request)
+        self.inner.get_ref(delta)
     }
     fn block_on(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.block_on(request)
+        self.inner.block_on(delta)
     }
     fn into_inner(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.into_inner(request)
+        self.inner.into_inner(delta)
     }
     fn server_streaming(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contract::Stream<
+            impl ::protocontract::Stream<
                 Item = ::core::result::Result<
-                    crate::proto::example::v1::AddReply,
-                    ::contract::Status,
+                    crate::proto::example::v1::Total,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + use<>,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.server_streaming(request)
+        self.inner.server_streaming(delta)
     }
 }
 /// The dyn-compatible face behind the handle: every future and reply
@@ -229,167 +254,165 @@ mod __dyn_tools_service_async {
     pub trait Erased: ::core::marker::Send + ::core::marker::Sync {
         fn call(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         >;
         fn feed(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         >;
         fn get_ref(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         >;
         fn block_on(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         >;
         fn into_inner(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         >;
         fn server_streaming(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                ::contract::BoxStream<
+                ::protocontract::BoxStream<
                     'static,
                     ::core::result::Result<
-                        crate::proto::example::v1::AddReply,
-                        ::contract::Status,
+                        crate::proto::example::v1::Total,
+                        ::protocontract::Error,
                     >,
                 >,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         >;
     }
     impl<T: super::ToolsServiceAsync + 'static> Erased for T {
         fn call(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         > {
-            ::std::boxed::Box::pin(<T as super::ToolsServiceAsync>::call(self, request))
+            ::std::boxed::Box::pin(<T as super::ToolsServiceAsync>::call(self, delta))
         }
         fn feed(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         > {
-            ::std::boxed::Box::pin(<T as super::ToolsServiceAsync>::feed(self, request))
+            ::std::boxed::Box::pin(<T as super::ToolsServiceAsync>::feed(self, delta))
         }
         fn get_ref(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         > {
-            ::std::boxed::Box::pin(
-                <T as super::ToolsServiceAsync>::get_ref(self, request),
-            )
+            ::std::boxed::Box::pin(<T as super::ToolsServiceAsync>::get_ref(self, delta))
         }
         fn block_on(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         > {
             ::std::boxed::Box::pin(
-                <T as super::ToolsServiceAsync>::block_on(self, request),
+                <T as super::ToolsServiceAsync>::block_on(self, delta),
             )
         }
         fn into_inner(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         > {
             ::std::boxed::Box::pin(
-                <T as super::ToolsServiceAsync>::into_inner(self, request),
+                <T as super::ToolsServiceAsync>::into_inner(self, delta),
             )
         }
         fn server_streaming(
             &self,
-            request: crate::proto::example::v1::AddRequest,
-        ) -> ::contract::BoxFuture<
+            delta: crate::proto::example::v1::Delta,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                ::contract::BoxStream<
+                ::protocontract::BoxStream<
                     'static,
                     ::core::result::Result<
-                        crate::proto::example::v1::AddReply,
-                        ::contract::Status,
+                        crate::proto::example::v1::Total,
+                        ::protocontract::Error,
                     >,
                 >,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         > {
             ::std::boxed::Box::pin(async move {
                 let stream = <T as super::ToolsServiceAsync>::server_streaming(
                         self,
-                        request,
+                        delta,
                     )
                     .await?;
                 ::core::result::Result::Ok(
                     ::std::boxed::Box::pin(stream)
-                        as ::contract::BoxStream<
+                        as ::protocontract::BoxStream<
                             'static,
                             ::core::result::Result<
-                                crate::proto::example::v1::AddReply,
-                                ::contract::Status,
+                                crate::proto::example::v1::Total,
+                                ::protocontract::Error,
                             >,
                         >,
                 )
@@ -397,230 +420,221 @@ mod __dyn_tools_service_async {
         }
     }
 }
-impl<T: ToolsServiceSync> ToolsServiceAsync for ::contract::Inline<T> {
+impl<T: ToolsServiceSync> ToolsServiceAsync for ::protocontract::Inline<T> {
     async fn call(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contract::Status,
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
     > {
-        <T as ToolsServiceSync>::call(Self::get_ref(self), request)
+        <T as ToolsServiceSync>::call(Self::get_ref(self), delta)
     }
     async fn feed(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contract::Status,
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
     > {
-        <T as ToolsServiceSync>::feed(Self::get_ref(self), request)
+        <T as ToolsServiceSync>::feed(Self::get_ref(self), delta)
     }
     async fn get_ref(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contract::Status,
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
     > {
-        <T as ToolsServiceSync>::get_ref(Self::get_ref(self), request)
+        <T as ToolsServiceSync>::get_ref(Self::get_ref(self), delta)
     }
     async fn block_on(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contract::Status,
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
     > {
-        <T as ToolsServiceSync>::block_on(Self::get_ref(self), request)
+        <T as ToolsServiceSync>::block_on(Self::get_ref(self), delta)
     }
     async fn into_inner(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contract::Status,
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
     > {
-        <T as ToolsServiceSync>::into_inner(Self::get_ref(self), request)
+        <T as ToolsServiceSync>::into_inner(Self::get_ref(self), delta)
     }
     async fn server_streaming(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        impl ::contract::Stream<
+        impl ::protocontract::Stream<
             Item = ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         > + ::core::marker::Send + use<T>,
-        ::contract::Status,
+        ::protocontract::Error,
     > {
-        <T as ToolsServiceSync>::server_streaming(Self::get_ref(self), request)
+        <T as ToolsServiceSync>::server_streaming(Self::get_ref(self), delta)
             .map(Self::reply_stream)
     }
 }
-impl<T: ToolsServiceSync + 'static> ToolsServiceAsync for ::contract::Offload<T> {
+impl<T: ToolsServiceSync + 'static> ToolsServiceAsync for ::protocontract::Offload<T> {
     fn call(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        Self::call(self, move |service| <T as ToolsServiceSync>::call(service, request))
+        Self::call(self, move |service| <T as ToolsServiceSync>::call(service, delta))
     }
     fn feed(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        Self::call(self, move |service| <T as ToolsServiceSync>::feed(service, request))
+        Self::call(self, move |service| <T as ToolsServiceSync>::feed(service, delta))
     }
     fn get_ref(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        Self::call(
-            self,
-            move |service| <T as ToolsServiceSync>::get_ref(service, request),
-        )
+        Self::call(self, move |service| <T as ToolsServiceSync>::get_ref(service, delta))
     }
     fn block_on(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
         Self::call(
             self,
-            move |service| <T as ToolsServiceSync>::block_on(service, request),
+            move |service| <T as ToolsServiceSync>::block_on(service, delta),
         )
     }
     fn into_inner(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::AddReply,
-            ::contract::Status,
+            crate::proto::example::v1::Total,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
         Self::call(
             self,
-            move |service| <T as ToolsServiceSync>::into_inner(service, request),
+            move |service| <T as ToolsServiceSync>::into_inner(service, delta),
         )
     }
     fn server_streaming(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contract::Stream<
+            impl ::protocontract::Stream<
                 Item = ::core::result::Result<
-                    crate::proto::example::v1::AddReply,
-                    ::contract::Status,
+                    crate::proto::example::v1::Total,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + use<T>,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
         Self::server_streaming(
             self,
-            move |service| <T as ToolsServiceSync>::server_streaming(service, request),
+            move |service| <T as ToolsServiceSync>::server_streaming(service, delta),
         )
     }
 }
-impl<T: ToolsServiceAsync + 'static> ToolsServiceSync for ::contract::Blocking<T> {
+impl<T: ToolsServiceAsync + 'static> ToolsServiceSync for ::protocontract::Blocking<T> {
     fn call(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contract::Status,
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
     > {
-        Self::block_on(
-            self,
-            <T as ToolsServiceAsync>::call(Self::get_ref(self), request),
-        )
+        Self::block_on(self, <T as ToolsServiceAsync>::call(Self::get_ref(self), delta))
     }
     fn feed(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contract::Status,
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
     > {
-        Self::block_on(
-            self,
-            <T as ToolsServiceAsync>::feed(Self::get_ref(self), request),
-        )
+        Self::block_on(self, <T as ToolsServiceAsync>::feed(Self::get_ref(self), delta))
     }
     fn get_ref(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contract::Status,
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
     > {
         Self::block_on(
             self,
-            <T as ToolsServiceAsync>::get_ref(Self::get_ref(self), request),
+            <T as ToolsServiceAsync>::get_ref(Self::get_ref(self), delta),
         )
     }
     fn block_on(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contract::Status,
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
     > {
         Self::block_on(
             self,
-            <T as ToolsServiceAsync>::block_on(Self::get_ref(self), request),
+            <T as ToolsServiceAsync>::block_on(Self::get_ref(self), delta),
         )
     }
     fn into_inner(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::AddReply,
-        ::contract::Status,
+        crate::proto::example::v1::Total,
+        ::protocontract::Error,
     > {
         Self::block_on(
             self,
-            <T as ToolsServiceAsync>::into_inner(Self::get_ref(self), request),
+            <T as ToolsServiceAsync>::into_inner(Self::get_ref(self), delta),
         )
     }
     fn server_streaming(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        delta: crate::proto::example::v1::Delta,
     ) -> ::core::result::Result<
-        ::contract::BoxIter<
+        ::protocontract::BoxIter<
             'static,
             ::core::result::Result<
-                crate::proto::example::v1::AddReply,
-                ::contract::Status,
+                crate::proto::example::v1::Total,
+                ::protocontract::Error,
             >,
         >,
-        ::contract::Status,
+        ::protocontract::Error,
     > {
         Self::block_on_stream(
             self,
-            <T as ToolsServiceAsync>::server_streaming(Self::get_ref(self), request),
+            <T as ToolsServiceAsync>::server_streaming(Self::get_ref(self), delta),
         )
     }
 }

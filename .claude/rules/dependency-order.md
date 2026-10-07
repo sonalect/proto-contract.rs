@@ -7,17 +7,24 @@ Do not append at the bottom.
 
 - `[workspace.members]`: alphabetical by path.
 - `[workspace.dependencies]`, `[dependencies]`, `[dev-dependencies]`,
-  `[build-dependencies]`, per-target tables: alphabetical by package name,
-  the path crates (`contract`, `protoc-gen-contract-rust`) sorted in
-  with the rest. Optional crates stay in that same sort.
+  `[build-dependencies]`, per-target tables: two zones, decided by the
+  owner (7 October 2026):
+  1. this repository's path crates (`glossary-*`, `protocontract`),
+     alphabetical;
+  2. third-party crates, alphabetical by package name.
+
+  Optional crates stay in the same sort, not in a block at the end.
 
 ```toml
-# BAD — connectrpc dumped at the bottom
+# BAD — protocontract sorted in among the third-party crates, and
+# connectrpc dumped at the bottom
 buffa = { workspace = true }
+protocontract = { workspace = true }
 tokio = { workspace = true, optional = true }
 connectrpc = { workspace = true, optional = true }
 
 # GOOD
+protocontract = { workspace = true }
 buffa = { workspace = true }
 connectrpc = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }

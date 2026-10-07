@@ -2,27 +2,32 @@
 //! `service` into plain Rust traits over the message structs
 //! `protoc-gen-buffa` generates.
 //!
-//! For `service GreeterService { rpc Greet(GreetRequest) returns (GreetReply); }`
+//! For `service Greeter { rpc Greet(Person) returns (Greeting); }`
 //! it emits:
 //!
 //! ```rust,ignore
-//! pub trait GreeterServiceSync: Send + Sync {
-//!     fn greet(&self, request: GreetRequest) -> Result<GreetReply, contract::Status>;
+//! pub trait GreeterSync: Send + Sync {
+//!     fn greet(&self, person: Person) -> Result<Greeting, protocontract::Error>;
 //! }
 //!
-//! pub trait GreeterServiceAsync: Send + Sync {
-//!     fn greet(&self, request: GreetRequest)
-//!         -> impl Future<Output = Result<GreetReply, contract::Status>> + Send;
+//! pub trait GreeterAsync: Send + Sync {
+//!     fn greet(&self, person: Person)
+//!         -> impl Future<Output = Result<Greeting, protocontract::Error>> + Send;
 //! }
 //!
-//! /// Any `GreeterServiceAsync` behind dynamic dispatch; implements it too.
+//! /// Any `GreeterAsync` behind dynamic dispatch; implements it too.
 //! #[derive(Clone)]
-//! pub struct DynGreeterServiceAsync { /* … */ }
+//! pub struct DynGreeterAsync { /* … */ }
 //! ```
 //!
+//! When the package has an enum named after the service
+//! (`GreeterErrorCode` or `GreeterServiceErrorCode`), it also emits the
+//! alias `GreeterServiceErrorCode` and names it in the traits' rustdoc: the
+//! codes the service fails with.
+//!
 //! An async implementation writes plain `async fn`. Streaming methods take
-//! and return `contract::BoxIter` in the sync form and `impl Stream` in
-//! the async form; see the `contract` crate for each kind.
+//! and return `protocontract::BoxIter` in the sync form and `impl Stream` in
+//! the async form; see the `protocontract` crate for each kind.
 //!
 //! The request is taken by value and the reply is owned. Message paths are
 //! absolute (`buffa_module=` / `extern_path=`), so the output compiles
@@ -41,7 +46,7 @@
 //! - `element_memory_limit=<bytes|unlimited>`: the decode bound of the
 //!   request, as for `protoc-gen-buffa`.
 //! - `runtime=<rust_path>`: path of the runtime crate; default
-//!   `::contract`.
+//!   `::protocontract`.
 //! - `gate_tokio_feature[=<name>]`: put the `Offload` and `Blocking` impls
 //!   under `#[cfg(feature = "<name>")]`; default name `tokio`.
 //!
@@ -128,7 +133,11 @@ pub fn generate(request: &CodeGeneratorRequest) -> Result<CodeGeneratorResponse,
             check_clashes(&request.proto_file, &package)?;
             checked_packages.push(package.clone());
         }
-        code.push((name.clone(), package, file_code(file, &resolver, &options)?));
+        code.push((
+            name.clone(),
+            package,
+            file_code(&request.proto_file, file, &resolver, &options)?,
+        ));
     }
 
     let file = layout(code, options.file_per_package)

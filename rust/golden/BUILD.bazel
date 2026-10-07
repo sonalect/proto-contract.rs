@@ -13,7 +13,7 @@ rust_library(
     crate_name = "contract_golden",
     visibility = ["//rust:__pkg__"],
     deps = [
-        "//rust/contract",
+        "//rust/protocontract",
         "@contract_cargo//:buffa",
         "@contract_cargo//:buffa-types",
         "@contract_cargo//:connectrpc",
@@ -28,7 +28,7 @@ rust_library(
     crate_name = "contract_golden",
     visibility = ["//rust:__pkg__"],
     deps = [
-        "//rust/contract",
+        "//rust/protocontract",
         "@contract_cargo//:buffa",
         "@contract_cargo//:buffa-types",
         "@contract_cargo//:connectrpc",
@@ -43,7 +43,7 @@ rust_library(
         visibility = ["//rust:__pkg__"],
         deps = [
             ":golden",
-            "//rust/contract",
+            "//rust/protocontract",
             "@contract_cargo//:buffa-types",
             "@contract_cargo//:tokio",
         ],

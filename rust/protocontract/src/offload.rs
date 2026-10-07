@@ -11,7 +11,7 @@ use tokio::runtime::Handle;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::stream::next;
-use crate::{BoxIter, ChannelStream, Status};
+use crate::{BoxIter, ChannelStream, Error, Failure, RuntimeCode};
 
 /// How many items a stream moved between threads holds ahead of its
 /// reader.
@@ -28,7 +28,7 @@ pub(crate) const STREAM_BUFFER: usize = 16;
 ///   waits on the blocking thread, so a bidirectional call can answer each
 ///   request as it arrives.
 ///
-/// A panic in the sync method becomes `Status::internal`: the call fails,
+/// A panic in the sync method becomes [`RuntimeCode::Panicked`]: the call fails,
 /// or the stream ends with that item. The work starts when the future is
 /// first polled; once started, dropping the future does not stop a call
 /// that is already running on the blocking pool.
@@ -75,9 +75,9 @@ impl<T: Send + Sync + 'static> Offload<T> {
     pub fn call<R, F>(
         this: &Offload<T>,
         call: F,
-    ) -> impl Future<Output = Result<R, Status>> + Send + 'static
+    ) -> impl Future<Output = Result<R, Error>> + Send + 'static
     where
-        F: FnOnce(&T) -> Result<R, Status> + Send + 'static,
+        F: FnOnce(&T) -> Result<R, Error> + Send + 'static,
         R: Send + 'static,
     {
         let (service, handle) = (Arc::clone(&this.service), this.handle.clone());
@@ -86,9 +86,7 @@ impl<T: Send + Sync + 'static> Offload<T> {
                 catch_unwind(AssertUnwindSafe(|| call(&service)))
                     .unwrap_or_else(|panic| Err(panicked(&panic)))
             });
-            task.await.unwrap_or_else(|error| {
-                Err(Status::internal(format!("blocking call failed: {error}")))
-            })
+            task.await.unwrap_or_else(|error| Err(join_failed(error)))
         }
     }
 
@@ -97,9 +95,9 @@ impl<T: Send + Sync + 'static> Offload<T> {
     pub fn server_streaming<X, F>(
         this: &Offload<T>,
         call: F,
-    ) -> impl Future<Output = Result<ChannelStream<Result<X, Status>>, Status>> + Send + 'static
+    ) -> impl Future<Output = Result<ChannelStream<Result<X, Error>>, Error>> + Send + 'static
     where
-        F: FnOnce(&T) -> Result<BoxIter<'static, Result<X, Status>>, Status> + Send + 'static,
+        F: FnOnce(&T) -> Result<BoxIter<'static, Result<X, Error>>, Error> + Send + 'static,
         X: Send + 'static,
     {
         let (service, handle) = (Arc::clone(&this.service), this.handle.clone());
@@ -112,11 +110,11 @@ impl<T: Send + Sync + 'static> Offload<T> {
         this: &Offload<T>,
         requests: S,
         call: F,
-    ) -> impl Future<Output = Result<R, Status>> + Send + 'static
+    ) -> impl Future<Output = Result<R, Error>> + Send + 'static
     where
-        S: Stream<Item = Result<X, Status>> + Send + 'static,
+        S: Stream<Item = Result<X, Error>> + Send + 'static,
         X: Send + 'static,
-        F: FnOnce(&T, BoxIter<'static, Result<X, Status>>) -> Result<R, Status> + Send + 'static,
+        F: FnOnce(&T, BoxIter<'static, Result<X, Error>>) -> Result<R, Error> + Send + 'static,
         R: Send + 'static,
     {
         let inbound = this.handle.clone();
@@ -131,15 +129,15 @@ impl<T: Send + Sync + 'static> Offload<T> {
         this: &Offload<T>,
         requests: S,
         call: F,
-    ) -> impl Future<Output = Result<ChannelStream<Result<Y, Status>>, Status>> + Send + 'static
+    ) -> impl Future<Output = Result<ChannelStream<Result<Y, Error>>, Error>> + Send + 'static
     where
-        S: Stream<Item = Result<X, Status>> + Send + 'static,
+        S: Stream<Item = Result<X, Error>> + Send + 'static,
         X: Send + 'static,
         Y: Send + 'static,
         F: FnOnce(
                 &T,
-                BoxIter<'static, Result<X, Status>>,
-            ) -> Result<BoxIter<'static, Result<Y, Status>>, Status>
+                BoxIter<'static, Result<X, Error>>,
+            ) -> Result<BoxIter<'static, Result<Y, Error>>, Error>
             + Send
             + 'static,
     {
@@ -153,12 +151,9 @@ impl<T: Send + Sync + 'static> Offload<T> {
 
 /// Run `start` on the blocking pool; if it returns a stream, pull it there
 /// into a channel and return the channel's reading end.
-async fn streaming<X, F>(
-    handle: Handle,
-    start: F,
-) -> Result<ChannelStream<Result<X, Status>>, Status>
+async fn streaming<X, F>(handle: Handle, start: F) -> Result<ChannelStream<Result<X, Error>>, Error>
 where
-    F: FnOnce() -> Result<BoxIter<'static, Result<X, Status>>, Status> + Send + 'static,
+    F: FnOnce() -> Result<BoxIter<'static, Result<X, Error>>, Error> + Send + 'static,
     X: Send + 'static,
 {
     let (sender, receiver) = mpsc::channel(STREAM_BUFFER);
@@ -168,8 +163,8 @@ where
     drop(handle.spawn_blocking(move || {
         let items = match catch_unwind(AssertUnwindSafe(start)) {
             Ok(Ok(items)) => items,
-            Ok(Err(status)) => {
-                let _ = started.send(Err(status));
+            Ok(Err(error)) => {
+                let _ = started.send(Err(error));
                 return;
             }
             Err(panic) => {
@@ -183,17 +178,20 @@ where
     }));
     match start_result.await {
         Ok(Ok(())) => Ok(ChannelStream::new(receiver)),
-        Ok(Err(status)) => Err(status),
-        Err(_) => Err(Status::internal("blocking call ended without a result")),
+        Ok(Err(error)) => Err(error),
+        Err(_) => Err(Error::new(
+            RuntimeCode::Cancelled,
+            "the blocking call ended without a result",
+        )),
     }
 }
 
 /// Send each item of `items` until it ends, an `Err` item has been sent
 /// (an `Err` ends a stream), the reader goes away, or `next` panics (sent
-/// as a last `Status::internal` item).
+/// as a last [`RuntimeCode::Panicked`] item).
 pub(crate) fn pump<X>(
-    mut items: BoxIter<'static, Result<X, Status>>,
-    sender: &mpsc::Sender<Result<X, Status>>,
+    mut items: BoxIter<'static, Result<X, Error>>,
+    sender: &mpsc::Sender<Result<X, Error>>,
 ) {
     loop {
         let item = match catch_unwind(AssertUnwindSafe(|| items.next())) {
@@ -211,14 +209,31 @@ pub(crate) fn pump<X>(
     }
 }
 
-/// `Status::internal` for a caught panic, with its message when it has one.
-pub(crate) fn panicked(panic: &Box<dyn Any + Send>) -> Status {
+/// A failed blocking task: [`RuntimeCode::Panicked`] or
+/// [`RuntimeCode::Cancelled`], with tokio's error as the source.
+fn join_failed(error: tokio::task::JoinError) -> Error {
+    let code = if error.is_panic() {
+        RuntimeCode::Panicked
+    } else {
+        RuntimeCode::Cancelled
+    };
+    Failure::new(code, "the blocking call failed")
+        .with_source(error)
+        .into()
+}
+
+/// [`RuntimeCode::Panicked`] for a caught panic, with its message when it
+/// has one.
+pub(crate) fn panicked(panic: &Box<dyn Any + Send>) -> Error {
     let message = panic
         .downcast_ref::<&str>()
         .copied()
         .or_else(|| panic.downcast_ref::<String>().map(String::as_str))
         .unwrap_or("no message");
-    Status::internal(format!("the implementation panicked: {message}"))
+    Error::new(
+        RuntimeCode::Panicked,
+        format!("the implementation panicked: {message}"),
+    )
 }
 
 /// An async stream read as an iterator on a blocking-pool thread: each

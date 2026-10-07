@@ -174,12 +174,12 @@ fn split_layout_emits_both_traits_and_a_stitcher() {
         code.contains("pubtraitGreeterServiceAsync:::core::marker::Send+::core::marker::Sync{")
     );
     assert!(code.contains(
-        "fngreet(&self,request:crate::proto::example::v1::GreetRequest)\
-         ->::core::result::Result<crate::proto::example::v1::GreetReply,::contract::Status>;"
+        "fngreet(&self,greet_request:crate::proto::example::v1::GreetRequest)\
+         ->::core::result::Result<crate::proto::example::v1::GreetReply,::protocontract::Error>;"
     ));
     assert!(code.contains(
-        "fngreet(&self,request:crate::proto::example::v1::GreetRequest)\
-         ->impl::core::future::Future<Output=::core::result::Result<crate::proto::example::v1::GreetReply,::contract::Status>>+::core::marker::Send;"
+        "fngreet(&self,greet_request:crate::proto::example::v1::GreetRequest)\
+         ->impl::core::future::Future<Output=::core::result::Result<crate::proto::example::v1::GreetReply,::protocontract::Error>>+::core::marker::Send;"
     ));
     assert!(code.contains(
         "pubstructDynGreeterServiceAsync{inner:::std::sync::Arc<dyn__dyn_greeter_service_async::Erased>,}"
@@ -202,13 +202,13 @@ fn message_paths_follow_buffa() {
     let code = squeeze(outputs(&response)[0].1);
     for expected in [
         // another package under `buffa_module`
-        "fngreet_name(&self,request:crate::proto::example::common::v1::Name)",
+        "fngreet_name(&self,name:crate::proto::example::common::v1::Name)",
         // a nested message
         "->::core::result::Result<crate::proto::example::v1::greet_request::Options,",
         // a package mapped by `extern_path`, longest prefix over `buffa_module`
-        "fnecho_label(&self,request:::shared_types::v1::Label)",
+        "fnecho_label(&self,label:::shared_types::v1::Label)",
         // a well-known type
-        "fnr#type(&self,request:::buffa_types::google::protobuf::Empty)",
+        "fnr#type(&self,empty:::buffa_types::google::protobuf::Empty)",
     ] {
         assert!(code.contains(expected), "missing {expected} in {code}");
     }
@@ -240,10 +240,10 @@ fn buffa_module_may_be_the_crate_root() {
     .unwrap();
     let code = squeeze(outputs(&response)[0].1);
     assert!(
-        code.contains("fngreet(&self,request:crate::example::v1::GreetRequest)"),
+        code.contains("fngreet(&self,greet_request:crate::example::v1::GreetRequest)"),
         "{code}"
     );
-    assert!(code.contains("fnecho_label(&self,request:crate::example::shared::v1::Label)"));
+    assert!(code.contains("fnecho_label(&self,label:crate::example::shared::v1::Label)"));
 }
 
 /// A proto path cannot break out of the `// source:` comment.
@@ -273,10 +273,41 @@ fn runtime_path_is_a_parameter() {
     });
     let response = generate(&request(greeter_files(methods), &parameter)).unwrap();
     let code = squeeze(outputs(&response)[0].1);
-    for item in ["Status", "BoxFuture", "BoxIter", "BoxStream", "Stream<"] {
+    for item in ["Error", "BoxFuture", "BoxIter", "BoxStream", "Stream<"] {
         assert!(code.contains(&format!("crate::rt::{item}")), "{item}");
     }
-    assert!(!code.contains("::contract"));
+    assert!(!code.contains("::protocontract"));
+}
+
+#[test]
+fn error_code_enum_gets_an_alias_and_a_mention() {
+    let mut files = greeter_files(greeter_methods());
+    if let Some(greeter) = files.last_mut() {
+        greeter
+            .enum_type
+            .push(buffa_codegen::generated::descriptor::EnumDescriptorProto {
+                name: Some("GreeterErrorCode".into()),
+                ..Default::default()
+            });
+    }
+    let response = generate(&request(files, PARAMETER)).unwrap();
+    let raw = outputs(&response)[0].1;
+    let code = squeeze(raw);
+    assert!(
+        code.contains(
+            "pubtypeGreeterServiceErrorCode=crate::proto::example::v1::GreeterErrorCode;"
+        )
+    );
+    assert_eq!(
+        raw.matches("It fails with the codes of `GreeterServiceErrorCode`")
+            .count(),
+        2,
+        "{raw}"
+    );
+
+    let response = generate(&request(greeter_files(greeter_methods()), PARAMETER)).unwrap();
+    let raw = outputs(&response)[0].1;
+    assert!(!raw.contains("ErrorCode"), "{raw}");
 }
 
 #[test]
@@ -339,37 +370,40 @@ fn streaming_methods_in_every_form() {
     let code = squeeze(outputs(&response)[0].1);
 
     let req = "crate::proto::example::v1::GreetRequest";
-    let reply = "::core::result::Result<crate::proto::example::v1::GreetReply,::contract::Status>";
-    let item = format!("::core::result::Result<{req},::contract::Status>");
+    let reply =
+        "::core::result::Result<crate::proto::example::v1::GreetReply,::protocontract::Error>";
+    let item = format!("::core::result::Result<{req},::protocontract::Error>");
     let send = "::core::marker::Send";
-    let inbound = format!("whereR:::contract::Stream<Item={item}>+{send}+'static");
+    let inbound = format!("whereR:::protocontract::Stream<Item={item}>+{send}+'static");
     for expected in [
         // sync
         format!(
-            "fnwatch(&self,request:{req})\
-             ->::core::result::Result<::contract::BoxIter<'static,{reply}>,::contract::Status>;"
+            "fnwatch(&self,greet_request:{req})\
+             ->::core::result::Result<::protocontract::BoxIter<'static,{reply}>,::protocontract::Error>;"
         ),
-        format!("fncollect(&self,requests:::contract::BoxIter<'static,{item}>)->{reply};"),
         format!(
-            "fnchat(&self,requests:::contract::BoxIter<'static,{item}>)\
-             ->::core::result::Result<::contract::BoxIter<'static,{reply}>,::contract::Status>;"
+            "fncollect(&self,greet_requests:::protocontract::BoxIter<'static,{item}>)->{reply};"
+        ),
+        format!(
+            "fnchat(&self,greet_requests:::protocontract::BoxIter<'static,{item}>)\
+             ->::core::result::Result<::protocontract::BoxIter<'static,{reply}>,::protocontract::Error>;"
         ),
         // async
         format!(
-            "fnwatch(&self,request:{req})->impl::core::future::Future<Output=::core::result::Result<\
-             impl::contract::Stream<Item={reply}>+{send}+use<Self>,::contract::Status>>+{send};"
+            "fnwatch(&self,greet_request:{req})->impl::core::future::Future<Output=::core::result::Result<\
+             impl::protocontract::Stream<Item={reply}>+{send}+use<Self>,::protocontract::Error>>+{send};"
         ),
         format!(
-            "fncollect<R>(&self,requests:R)->impl::core::future::Future<Output={reply}>+{send}{inbound};"
+            "fncollect<R>(&self,greet_requests:R)->impl::core::future::Future<Output={reply}>+{send}{inbound};"
         ),
         format!(
-            "fnchat<R>(&self,requests:R)->impl::core::future::Future<Output=::core::result::Result<\
-             impl::contract::Stream<Item={reply}>+{send}+use<Self,R>,::contract::Status>>+{send}{inbound};"
+            "fnchat<R>(&self,greet_requests:R)->impl::core::future::Future<Output=::core::result::Result<\
+             impl::protocontract::Stream<Item={reply}>+{send}+use<Self,R>,::protocontract::Error>>+{send}{inbound};"
         ),
         // the erased face of the dyn handle
         format!(
-            "fnchat(&self,requests:::contract::BoxStream<'static,{item}>)->::contract::BoxFuture<'_,\
-             ::core::result::Result<::contract::BoxStream<'static,{reply}>,::contract::Status>>;"
+            "fnchat(&self,greet_requests:::protocontract::BoxStream<'static,{item}>)->::protocontract::BoxFuture<'_,\
+             ::core::result::Result<::protocontract::BoxStream<'static,{reply}>,::protocontract::Error>>;"
         ),
     ] {
         assert!(code.contains(&expected), "missing {expected}\nin {code}");
@@ -392,25 +426,25 @@ fn bridges_for_every_kind() {
     let code = squeeze(outputs(&response)[0].1);
 
     for expected in [
-        "impl<T:GreeterServiceSync>GreeterServiceAsyncfor::contract::Inline<T>{",
-        "impl<T:GreeterServiceSync+'static>GreeterServiceAsyncfor::contract::Offload<T>{",
-        "impl<T:GreeterServiceAsync+'static>GreeterServiceSyncfor::contract::Blocking<T>{",
+        "impl<T:GreeterServiceSync>GreeterServiceAsyncfor::protocontract::Inline<T>{",
+        "impl<T:GreeterServiceSync+'static>GreeterServiceAsyncfor::protocontract::Offload<T>{",
+        "impl<T:GreeterServiceAsync+'static>GreeterServiceSyncfor::protocontract::Blocking<T>{",
         // Inline
-        "asyncfngreet(&self,request:crate::proto::example::v1::GreetRequest)\
-         ->::core::result::Result<crate::proto::example::v1::GreetReply,::contract::Status>\
-         {<TasGreeterServiceSync>::greet(Self::get_ref(self),request)}",
-        "{<TasGreeterServiceSync>::watch(Self::get_ref(self),request).map(Self::reply_stream)}",
-        "{letrequests=Self::buffer(requests).await;<TasGreeterServiceSync>::collect(Self::get_ref(self),requests)}",
+        "asyncfngreet(&self,greet_request:crate::proto::example::v1::GreetRequest)\
+         ->::core::result::Result<crate::proto::example::v1::GreetReply,::protocontract::Error>\
+         {<TasGreeterServiceSync>::greet(Self::get_ref(self),greet_request)}",
+        "{<TasGreeterServiceSync>::watch(Self::get_ref(self),greet_request).map(Self::reply_stream)}",
+        "{letgreet_requests=Self::buffer(greet_requests).await;<TasGreeterServiceSync>::collect(Self::get_ref(self),greet_requests)}",
         // Offload
-        "Self::call(self,move|service|<TasGreeterServiceSync>::greet(service,request))",
-        "Self::server_streaming(self,move|service|<TasGreeterServiceSync>::watch(service,request))",
-        "Self::client_streaming(self,requests,<TasGreeterServiceSync>::collect)",
-        "Self::bidirectional(self,requests,<TasGreeterServiceSync>::chat)",
+        "Self::call(self,move|service|<TasGreeterServiceSync>::greet(service,greet_request))",
+        "Self::server_streaming(self,move|service|<TasGreeterServiceSync>::watch(service,greet_request))",
+        "Self::client_streaming(self,greet_requests,<TasGreeterServiceSync>::collect)",
+        "Self::bidirectional(self,greet_requests,<TasGreeterServiceSync>::chat)",
         // Blocking
-        "Self::block_on(self,<TasGreeterServiceAsync>::greet(Self::get_ref(self),request))",
-        "Self::block_on_stream(self,<TasGreeterServiceAsync>::watch(Self::get_ref(self),request))",
-        "letrequests=Self::feed(self,requests);Self::block_on(self,<TasGreeterServiceAsync>::collect(Self::get_ref(self),requests))",
-        "letrequests=Self::feed(self,requests);Self::block_on_stream(self,<TasGreeterServiceAsync>::chat(Self::get_ref(self),requests))",
+        "Self::block_on(self,<TasGreeterServiceAsync>::greet(Self::get_ref(self),greet_request))",
+        "Self::block_on_stream(self,<TasGreeterServiceAsync>::watch(Self::get_ref(self),greet_request))",
+        "letgreet_requests=Self::feed(self,greet_requests);Self::block_on(self,<TasGreeterServiceAsync>::collect(Self::get_ref(self),greet_requests))",
+        "letgreet_requests=Self::feed(self,greet_requests);Self::block_on_stream(self,<TasGreeterServiceAsync>::chat(Self::get_ref(self),greet_requests))",
     ] {
         assert!(code.contains(expected), "missing {expected}\nin {code}");
     }
@@ -423,10 +457,10 @@ fn tokio_gate_covers_offload_and_blocking_only() {
     let response = generate(&request(greeter_files(greeter_methods()), &parameter)).unwrap();
     let code = squeeze(outputs(&response)[0].1);
     assert!(code.contains(
-        "#[cfg(feature=\"bridges\")]impl<T:GreeterServiceSync+'static>GreeterServiceAsyncfor::contract::Offload<T>"
+        "#[cfg(feature=\"bridges\")]impl<T:GreeterServiceSync+'static>GreeterServiceAsyncfor::protocontract::Offload<T>"
     ));
     assert!(code.contains(
-        "#[cfg(feature=\"bridges\")]impl<T:GreeterServiceAsync+'static>GreeterServiceSyncfor::contract::Blocking<T>"
+        "#[cfg(feature=\"bridges\")]impl<T:GreeterServiceAsync+'static>GreeterServiceSyncfor::protocontract::Blocking<T>"
     ));
     assert_eq!(code.matches("#[cfg(").count(), 2);
 }

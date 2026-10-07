@@ -3,15 +3,15 @@
 
 /// A number to add.
 #[derive(Clone, Debug, Default)]
-pub struct AddRequestView<'a> {
+pub struct DeltaView<'a> {
     /// The amount to add; may be negative.
     ///
-    /// Field 1: `delta`
-    pub delta: ::core::option::Option<i64>,
+    /// Field 1: `value`
+    pub value: ::core::option::Option<i64>,
     pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
 }
-impl<'a> ::buffa::MessageView<'a> for AddRequestView<'a> {
-    type Owned = super::super::AddRequest;
+impl<'a> ::buffa::MessageView<'a> for DeltaView<'a> {
+    type Owned = super::super::Delta;
     fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
         let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
@@ -45,7 +45,7 @@ impl<'a> ::buffa::MessageView<'a> for AddRequestView<'a> {
                     tag,
                     ::buffa::encoding::WireType::Varint,
                 )?;
-                view.delta = Some(::buffa::types::decode_int64(&mut cur)?);
+                view.value = Some(::buffa::types::decode_int64(&mut cur)?);
             }
             _ => {
                 ::buffa::encoding::skip_field_depth(tag, &mut cur, ctx.depth())?;
@@ -57,31 +57,31 @@ impl<'a> ::buffa::MessageView<'a> for AddRequestView<'a> {
     }
     fn to_owned_message(
         &self,
-    ) -> ::core::result::Result<super::super::AddRequest, ::buffa::DecodeError> {
+    ) -> ::core::result::Result<super::super::Delta, ::buffa::DecodeError> {
         self.to_owned_from_source(None)
     }
     #[allow(clippy::useless_conversion, clippy::needless_update)]
     fn to_owned_from_source(
         &self,
         __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
-    ) -> ::core::result::Result<super::super::AddRequest, ::buffa::DecodeError> {
+    ) -> ::core::result::Result<super::super::Delta, ::buffa::DecodeError> {
         #[allow(unused_imports)]
         use ::buffa::alloc::string::ToString as _;
         let _ = __buffa_src;
-        ::core::result::Result::Ok(super::super::AddRequest {
-            delta: self.delta,
+        ::core::result::Result::Ok(super::super::Delta {
+            value: self.value,
             __buffa_unknown_fields: self.__buffa_unknown_fields.to_owned()?.into(),
             ..::core::default::Default::default()
         })
     }
 }
-impl<'a> ::buffa::ViewEncode<'a> for AddRequestView<'a> {
+impl<'a> ::buffa::ViewEncode<'a> for DeltaView<'a> {
     #[allow(clippy::needless_borrow, clippy::let_and_return)]
     fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
         let mut size = 0u64;
-        if let Some(v) = self.delta {
+        if let Some(v) = self.value {
             size += 1u64 + ::buffa::types::int64_encoded_len(v) as u64;
         }
         size += self.__buffa_unknown_fields.encoded_len() as u64;
@@ -95,28 +95,28 @@ impl<'a> ::buffa::ViewEncode<'a> for AddRequestView<'a> {
     ) {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
-        if let Some(v) = self.delta {
+        if let Some(v) = self.value {
             ::buffa::types::put_int64_field(1u32, v, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
     }
 }
-impl<'a> ::buffa::MessageName for AddRequestView<'a> {
+impl<'a> ::buffa::MessageName for DeltaView<'a> {
     const PACKAGE: &'static str = "example.v1";
-    const NAME: &'static str = "AddRequest";
-    const FULL_NAME: &'static str = "example.v1.AddRequest";
-    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.AddRequest";
+    const NAME: &'static str = "Delta";
+    const FULL_NAME: &'static str = "example.v1.Delta";
+    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.Delta";
 }
-::buffa::impl_default_view_instance!(AddRequestView);
-::buffa::impl_view_reborrow!(AddRequestView);
-/** Self-contained, `'static` owned view of a `AddRequest` message.
+::buffa::impl_default_view_instance!(DeltaView);
+::buffa::impl_view_reborrow!(DeltaView);
+/** Self-contained, `'static` owned view of a `Delta` message.
 
- Wraps [`::buffa::OwnedView`]`<`[`AddRequestView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+ Wraps [`::buffa::OwnedView`]`<`[`DeltaView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
 
- Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`AddRequestView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`DeltaView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
 #[derive(Clone, Debug)]
-pub struct AddRequestOwnedView(::buffa::OwnedView<AddRequestView<'static>>);
-impl AddRequestOwnedView {
+pub struct DeltaOwnedView(::buffa::OwnedView<DeltaView<'static>>);
+impl DeltaOwnedView {
     /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
     ///
     /// The view borrows directly from the buffer's data; the buffer is
@@ -129,9 +129,7 @@ impl AddRequestOwnedView {
     pub fn decode(
         bytes: ::buffa::bytes::Bytes,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-        ::core::result::Result::Ok(
-            AddRequestOwnedView(::buffa::OwnedView::decode(bytes)?),
-        )
+        ::core::result::Result::Ok(DeltaOwnedView(::buffa::OwnedView::decode(bytes)?))
     }
     /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
     /// max message size).
@@ -145,7 +143,7 @@ impl AddRequestOwnedView {
         opts: &::buffa::DecodeOptions,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         ::core::result::Result::Ok(
-            AddRequestOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
+            DeltaOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
         )
     }
     /// Build from an owned message via an encode → decode round-trip.
@@ -157,15 +155,13 @@ impl AddRequestOwnedView {
     /// another [`::buffa::DecodeError`] if the re-encoded bytes are
     /// somehow invalid (should not happen for well-formed messages).
     pub fn from_owned(
-        msg: &super::super::AddRequest,
+        msg: &super::super::Delta,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-        ::core::result::Result::Ok(
-            AddRequestOwnedView(::buffa::OwnedView::from_owned(msg)?),
-        )
+        ::core::result::Result::Ok(DeltaOwnedView(::buffa::OwnedView::from_owned(msg)?))
     }
-    /// Borrow the full [`AddRequestView`] with its lifetime tied to `&self`.
+    /// Borrow the full [`DeltaView`] with its lifetime tied to `&self`.
     #[must_use]
-    pub fn view(&self) -> &AddRequestView<'_> {
+    pub fn view(&self) -> &DeltaView<'_> {
         self.0.reborrow()
     }
     /// Convert to the owned message type.
@@ -176,7 +172,7 @@ impl AddRequestOwnedView {
     /// whose contract also governs handles converted from a raw
     /// [`::buffa::OwnedView`].
     #[must_use]
-    pub fn to_owned_message(&self) -> super::super::AddRequest {
+    pub fn to_owned_message(&self) -> super::super::Delta {
         self.0.to_owned_message()
     }
     /// The underlying bytes buffer.
@@ -191,45 +187,42 @@ impl AddRequestOwnedView {
     }
     /// The amount to add; may be negative.
     ///
-    /// Field 1: `delta`
+    /// Field 1: `value`
     #[must_use]
-    pub fn delta(&self) -> ::core::option::Option<i64> {
-        self.0.reborrow().delta
+    pub fn value(&self) -> ::core::option::Option<i64> {
+        self.0.reborrow().value
     }
 }
-impl ::core::convert::From<::buffa::OwnedView<AddRequestView<'static>>>
-for AddRequestOwnedView {
-    fn from(inner: ::buffa::OwnedView<AddRequestView<'static>>) -> Self {
-        AddRequestOwnedView(inner)
+impl ::core::convert::From<::buffa::OwnedView<DeltaView<'static>>> for DeltaOwnedView {
+    fn from(inner: ::buffa::OwnedView<DeltaView<'static>>) -> Self {
+        DeltaOwnedView(inner)
     }
 }
-impl ::core::convert::From<AddRequestOwnedView>
-for ::buffa::OwnedView<AddRequestView<'static>> {
-    fn from(wrapper: AddRequestOwnedView) -> Self {
+impl ::core::convert::From<DeltaOwnedView> for ::buffa::OwnedView<DeltaView<'static>> {
+    fn from(wrapper: DeltaOwnedView) -> Self {
         wrapper.0
     }
 }
-impl ::core::convert::AsRef<::buffa::OwnedView<AddRequestView<'static>>>
-for AddRequestOwnedView {
-    fn as_ref(&self) -> &::buffa::OwnedView<AddRequestView<'static>> {
+impl ::core::convert::AsRef<::buffa::OwnedView<DeltaView<'static>>> for DeltaOwnedView {
+    fn as_ref(&self) -> &::buffa::OwnedView<DeltaView<'static>> {
         &self.0
     }
 }
-impl ::buffa::HasMessageView for super::super::AddRequest {
-    type View<'a> = AddRequestView<'a>;
-    type ViewHandle = AddRequestOwnedView;
+impl ::buffa::HasMessageView for super::super::Delta {
+    type View<'a> = DeltaView<'a>;
+    type ViewHandle = DeltaOwnedView;
 }
 /// The total after an addition.
 #[derive(Clone, Debug, Default)]
-pub struct AddReplyView<'a> {
+pub struct TotalView<'a> {
     /// The new total.
     ///
-    /// Field 1: `total`
-    pub total: ::core::option::Option<i64>,
+    /// Field 1: `value`
+    pub value: ::core::option::Option<i64>,
     pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
 }
-impl<'a> ::buffa::MessageView<'a> for AddReplyView<'a> {
-    type Owned = super::super::AddReply;
+impl<'a> ::buffa::MessageView<'a> for TotalView<'a> {
+    type Owned = super::super::Total;
     fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
         let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
@@ -263,7 +256,7 @@ impl<'a> ::buffa::MessageView<'a> for AddReplyView<'a> {
                     tag,
                     ::buffa::encoding::WireType::Varint,
                 )?;
-                view.total = Some(::buffa::types::decode_int64(&mut cur)?);
+                view.value = Some(::buffa::types::decode_int64(&mut cur)?);
             }
             _ => {
                 ::buffa::encoding::skip_field_depth(tag, &mut cur, ctx.depth())?;
@@ -275,31 +268,31 @@ impl<'a> ::buffa::MessageView<'a> for AddReplyView<'a> {
     }
     fn to_owned_message(
         &self,
-    ) -> ::core::result::Result<super::super::AddReply, ::buffa::DecodeError> {
+    ) -> ::core::result::Result<super::super::Total, ::buffa::DecodeError> {
         self.to_owned_from_source(None)
     }
     #[allow(clippy::useless_conversion, clippy::needless_update)]
     fn to_owned_from_source(
         &self,
         __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
-    ) -> ::core::result::Result<super::super::AddReply, ::buffa::DecodeError> {
+    ) -> ::core::result::Result<super::super::Total, ::buffa::DecodeError> {
         #[allow(unused_imports)]
         use ::buffa::alloc::string::ToString as _;
         let _ = __buffa_src;
-        ::core::result::Result::Ok(super::super::AddReply {
-            total: self.total,
+        ::core::result::Result::Ok(super::super::Total {
+            value: self.value,
             __buffa_unknown_fields: self.__buffa_unknown_fields.to_owned()?.into(),
             ..::core::default::Default::default()
         })
     }
 }
-impl<'a> ::buffa::ViewEncode<'a> for AddReplyView<'a> {
+impl<'a> ::buffa::ViewEncode<'a> for TotalView<'a> {
     #[allow(clippy::needless_borrow, clippy::let_and_return)]
     fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
         let mut size = 0u64;
-        if let Some(v) = self.total {
+        if let Some(v) = self.value {
             size += 1u64 + ::buffa::types::int64_encoded_len(v) as u64;
         }
         size += self.__buffa_unknown_fields.encoded_len() as u64;
@@ -313,28 +306,28 @@ impl<'a> ::buffa::ViewEncode<'a> for AddReplyView<'a> {
     ) {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
-        if let Some(v) = self.total {
+        if let Some(v) = self.value {
             ::buffa::types::put_int64_field(1u32, v, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
     }
 }
-impl<'a> ::buffa::MessageName for AddReplyView<'a> {
+impl<'a> ::buffa::MessageName for TotalView<'a> {
     const PACKAGE: &'static str = "example.v1";
-    const NAME: &'static str = "AddReply";
-    const FULL_NAME: &'static str = "example.v1.AddReply";
-    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.AddReply";
+    const NAME: &'static str = "Total";
+    const FULL_NAME: &'static str = "example.v1.Total";
+    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.Total";
 }
-::buffa::impl_default_view_instance!(AddReplyView);
-::buffa::impl_view_reborrow!(AddReplyView);
-/** Self-contained, `'static` owned view of a `AddReply` message.
+::buffa::impl_default_view_instance!(TotalView);
+::buffa::impl_view_reborrow!(TotalView);
+/** Self-contained, `'static` owned view of a `Total` message.
 
- Wraps [`::buffa::OwnedView`]`<`[`AddReplyView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+ Wraps [`::buffa::OwnedView`]`<`[`TotalView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
 
- Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`AddReplyView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`TotalView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
 #[derive(Clone, Debug)]
-pub struct AddReplyOwnedView(::buffa::OwnedView<AddReplyView<'static>>);
-impl AddReplyOwnedView {
+pub struct TotalOwnedView(::buffa::OwnedView<TotalView<'static>>);
+impl TotalOwnedView {
     /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
     ///
     /// The view borrows directly from the buffer's data; the buffer is
@@ -347,7 +340,7 @@ impl AddReplyOwnedView {
     pub fn decode(
         bytes: ::buffa::bytes::Bytes,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-        ::core::result::Result::Ok(AddReplyOwnedView(::buffa::OwnedView::decode(bytes)?))
+        ::core::result::Result::Ok(TotalOwnedView(::buffa::OwnedView::decode(bytes)?))
     }
     /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
     /// max message size).
@@ -361,7 +354,7 @@ impl AddReplyOwnedView {
         opts: &::buffa::DecodeOptions,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         ::core::result::Result::Ok(
-            AddReplyOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
+            TotalOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
         )
     }
     /// Build from an owned message via an encode → decode round-trip.
@@ -373,15 +366,13 @@ impl AddReplyOwnedView {
     /// another [`::buffa::DecodeError`] if the re-encoded bytes are
     /// somehow invalid (should not happen for well-formed messages).
     pub fn from_owned(
-        msg: &super::super::AddReply,
+        msg: &super::super::Total,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-        ::core::result::Result::Ok(
-            AddReplyOwnedView(::buffa::OwnedView::from_owned(msg)?),
-        )
+        ::core::result::Result::Ok(TotalOwnedView(::buffa::OwnedView::from_owned(msg)?))
     }
-    /// Borrow the full [`AddReplyView`] with its lifetime tied to `&self`.
+    /// Borrow the full [`TotalView`] with its lifetime tied to `&self`.
     #[must_use]
-    pub fn view(&self) -> &AddReplyView<'_> {
+    pub fn view(&self) -> &TotalView<'_> {
         self.0.reborrow()
     }
     /// Convert to the owned message type.
@@ -392,7 +383,7 @@ impl AddReplyOwnedView {
     /// whose contract also governs handles converted from a raw
     /// [`::buffa::OwnedView`].
     #[must_use]
-    pub fn to_owned_message(&self) -> super::super::AddReply {
+    pub fn to_owned_message(&self) -> super::super::Total {
         self.0.to_owned_message()
     }
     /// The underlying bytes buffer.
@@ -407,31 +398,28 @@ impl AddReplyOwnedView {
     }
     /// The new total.
     ///
-    /// Field 1: `total`
+    /// Field 1: `value`
     #[must_use]
-    pub fn total(&self) -> ::core::option::Option<i64> {
-        self.0.reborrow().total
+    pub fn value(&self) -> ::core::option::Option<i64> {
+        self.0.reborrow().value
     }
 }
-impl ::core::convert::From<::buffa::OwnedView<AddReplyView<'static>>>
-for AddReplyOwnedView {
-    fn from(inner: ::buffa::OwnedView<AddReplyView<'static>>) -> Self {
-        AddReplyOwnedView(inner)
+impl ::core::convert::From<::buffa::OwnedView<TotalView<'static>>> for TotalOwnedView {
+    fn from(inner: ::buffa::OwnedView<TotalView<'static>>) -> Self {
+        TotalOwnedView(inner)
     }
 }
-impl ::core::convert::From<AddReplyOwnedView>
-for ::buffa::OwnedView<AddReplyView<'static>> {
-    fn from(wrapper: AddReplyOwnedView) -> Self {
+impl ::core::convert::From<TotalOwnedView> for ::buffa::OwnedView<TotalView<'static>> {
+    fn from(wrapper: TotalOwnedView) -> Self {
         wrapper.0
     }
 }
-impl ::core::convert::AsRef<::buffa::OwnedView<AddReplyView<'static>>>
-for AddReplyOwnedView {
-    fn as_ref(&self) -> &::buffa::OwnedView<AddReplyView<'static>> {
+impl ::core::convert::AsRef<::buffa::OwnedView<TotalView<'static>>> for TotalOwnedView {
+    fn as_ref(&self) -> &::buffa::OwnedView<TotalView<'static>> {
         &self.0
     }
 }
-impl ::buffa::HasMessageView for super::super::AddReply {
-    type View<'a> = AddReplyView<'a>;
-    type ViewHandle = AddReplyOwnedView;
+impl ::buffa::HasMessageView for super::super::Total {
+    type View<'a> = TotalView<'a>;
+    type ViewHandle = TotalOwnedView;
 }

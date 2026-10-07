@@ -13,7 +13,7 @@ use futures_core::Stream;
 /// `next` returns in microseconds.
 ///
 /// ```
-/// use contract::{IterStream, Stream};
+/// use protocontract::{IterStream, Stream};
 ///
 /// fn numbers() -> impl Stream<Item = u32> {
 ///     IterStream::new(1..=3)

@@ -1,6 +1,6 @@
-///Shorthand for `OwnedView<WatchRequestView<'static>>`.
-pub type OwnedWatchRequestView = ::buffa::view::OwnedView<
-    crate::proto::example::v1::__buffa::view::WatchRequestView<'static>,
+///Shorthand for `OwnedView<LimitView<'static>>`.
+pub type OwnedLimitView = ::buffa::view::OwnedView<
+    crate::proto::example::v1::__buffa::view::LimitView<'static>,
 >;
 ///Shorthand for `OwnedView<ItemView<'static>>`.
 pub type OwnedItemView = ::buffa::view::OwnedView<
@@ -79,22 +79,22 @@ for ::buffa::view::OwnedView<
     }
 }
 /// Full service name for this service.
-pub const FEED_SERVICE_SERVICE_NAME: &str = "example.v1.FeedService";
+pub const FEED_SERVICE_NAME: &str = "example.v1.Feed";
 /// Static [`Spec`](::connectrpc::Spec) for the `Watch` RPC, as seen by the server; the generated client passes it with [`origin`](::connectrpc::Spec::origin) `Client` (compare across sides with [`Spec::same_method`](::connectrpc::Spec::same_method)).
-pub const FEED_SERVICE_WATCH_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
-        "/example.v1.FeedService/Watch",
+pub const FEED_WATCH_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
+        "/example.v1.Feed/Watch",
         ::connectrpc::StreamType::ServerStream,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
 /// Static [`Spec`](::connectrpc::Spec) for the `Collect` RPC, as seen by the server; the generated client passes it with [`origin`](::connectrpc::Spec::origin) `Client` (compare across sides with [`Spec::same_method`](::connectrpc::Spec::same_method)).
-pub const FEED_SERVICE_COLLECT_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
-        "/example.v1.FeedService/Collect",
+pub const FEED_COLLECT_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
+        "/example.v1.Feed/Collect",
         ::connectrpc::StreamType::ClientStream,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
 /// Static [`Spec`](::connectrpc::Spec) for the `Echo` RPC, as seen by the server; the generated client passes it with [`origin`](::connectrpc::Spec::origin) `Client` (compare across sides with [`Spec::same_method`](::connectrpc::Spec::same_method)).
-pub const FEED_SERVICE_ECHO_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
-        "/example.v1.FeedService/Echo",
+pub const FEED_ECHO_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
+        "/example.v1.Feed/Echo",
         ::connectrpc::StreamType::BidiStream,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
@@ -148,8 +148,8 @@ pub const FEED_SERVICE_ECHO_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::serve
 /// [`PreEncoded`](::connectrpc::PreEncoded) — see its `# Streaming
 /// example` doc.
 #[allow(clippy::type_complexity)]
-pub trait FeedService: Send + Sync + 'static {
-    /// Stream the first `count` items of the feed, one reply per item.
+pub trait Feed: Send + Sync + 'static {
+    /// Stream the first `count` items of the feed, one item per message.
     ///
     /// `request` is borrowed from the request body and is valid for the
     /// duration of the call (until the response stream is returned);
@@ -159,10 +159,7 @@ pub trait FeedService: Send + Sync + 'static {
     fn watch(
         &self,
         ctx: ::connectrpc::RequestContext,
-        request: ::connectrpc::ServiceRequest<
-            '_,
-            crate::proto::example::v1::WatchRequest,
-        >,
+        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::Limit>,
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             ::connectrpc::ServiceStream<
@@ -228,7 +225,7 @@ pub trait FeedService: Send + Sync + 'static {
 /// let service = Arc::new(MyServiceImpl);
 /// let router = service.register(Router::new());
 /// ```
-pub trait FeedServiceExt: FeedService {
+pub trait FeedExt: Feed {
     /// Register this service implementation with a Router.
     ///
     /// Takes ownership of the `Arc<Self>` and returns a new Router with
@@ -238,7 +235,7 @@ pub trait FeedServiceExt: FeedService {
         router: ::connectrpc::Router,
     ) -> ::connectrpc::Router;
 }
-impl<S: FeedService> FeedServiceExt for S {
+impl<S: Feed> FeedExt for S {
     fn register(
         self: ::std::sync::Arc<Self>,
         router: ::connectrpc::Router,
@@ -249,31 +246,29 @@ impl<S: FeedService> FeedServiceExt for S {
                 _,
                 crate::proto::example::v1::Item,
             >(
-                FEED_SERVICE_SERVICE_NAME,
+                FEED_SERVICE_NAME,
                 "Watch",
                 ::connectrpc::view_streaming_handler_fn({
                     let svc = ::std::sync::Arc::clone(&self);
                     move |
                         ctx,
                         req: ::buffa::view::OwnedView<
-                            crate::proto::example::v1::__buffa::view::WatchRequestView<
-                                'static,
-                            >,
+                            crate::proto::example::v1::__buffa::view::LimitView<'static>,
                         >|
                     {
                         let svc = ::std::sync::Arc::clone(&svc);
                         async move {
                             let sreq = ::connectrpc::ServiceRequest::<
-                                crate::proto::example::v1::WatchRequest,
+                                crate::proto::example::v1::Limit,
                             >::from_parts(req.reborrow(), req.bytes());
                             svc.watch(ctx, sreq).await
                         }
                     }
                 }),
             )
-            .with_spec(FEED_SERVICE_WATCH_SPEC)
+            .with_spec(FEED_WATCH_SPEC)
             .route_view_client_stream(
-                FEED_SERVICE_SERVICE_NAME,
+                FEED_SERVICE_NAME,
                 "Collect",
                 ::connectrpc::view_client_streaming_handler_fn({
                     let svc = ::std::sync::Arc::clone(&self);
@@ -290,13 +285,13 @@ impl<S: FeedService> FeedServiceExt for S {
                     }
                 }),
             )
-            .with_spec(FEED_SERVICE_COLLECT_SPEC)
+            .with_spec(FEED_COLLECT_SPEC)
             .route_view_bidi_stream::<
                 _,
                 _,
                 crate::proto::example::v1::Item,
             >(
-                FEED_SERVICE_SERVICE_NAME,
+                FEED_SERVICE_NAME,
                 "Echo",
                 ::connectrpc::view_bidi_streaming_handler_fn({
                     let svc = ::std::sync::Arc::clone(&self);
@@ -311,19 +306,18 @@ impl<S: FeedService> FeedServiceExt for S {
                     }
                 }),
             )
-            .with_spec(FEED_SERVICE_ECHO_SPEC)
+            .with_spec(FEED_ECHO_SPEC)
     }
 }
 /// Type-inference marker used by [`Router::add_service`](::connectrpc::Router::add_service).
 #[doc(hidden)]
-pub struct FeedServiceRegisterMarker;
-impl<S: FeedService> ::connectrpc::ServiceRegister<FeedServiceRegisterMarker>
-for ::std::sync::Arc<S> {
+pub struct FeedRegisterMarker;
+impl<S: Feed> ::connectrpc::ServiceRegister<FeedRegisterMarker> for ::std::sync::Arc<S> {
     fn register_service(self, router: ::connectrpc::Router) -> ::connectrpc::Router {
-        <S as FeedServiceExt>::register(self, router)
+        <S as FeedExt>::register(self, router)
     }
 }
-/// Monomorphic dispatcher for `FeedService`.
+/// Monomorphic dispatcher for `Feed`.
 ///
 /// Unlike `.register(Router)` which type-erases each method into an `Arc<dyn ErasedHandler>` stored in a `HashMap`, this struct dispatches via a compile-time `match` on method name: no vtable, no hash lookup.
 ///
@@ -332,14 +326,14 @@ for ::std::sync::Arc<S> {
 /// ```rust,ignore
 /// use connectrpc::ConnectRpcService;
 ///
-/// let server = FeedServiceServer::new(MyImpl);
+/// let server = FeedServer::new(MyImpl);
 /// let service = ConnectRpcService::new(server);
 /// // hand `service` to axum/hyper as a fallback_service
 /// ```
-pub struct FeedServiceServer<T> {
+pub struct FeedServer<T> {
     inner: ::std::sync::Arc<T>,
 }
-impl<T: FeedService> FeedServiceServer<T> {
+impl<T: Feed> FeedServer<T> {
     /// Wrap a service implementation in a monomorphic dispatcher.
     pub fn new(service: T) -> Self {
         Self {
@@ -351,37 +345,37 @@ impl<T: FeedService> FeedServiceServer<T> {
         Self { inner }
     }
 }
-impl<T> Clone for FeedServiceServer<T> {
+impl<T> Clone for FeedServer<T> {
     fn clone(&self) -> Self {
         Self {
             inner: ::std::sync::Arc::clone(&self.inner),
         }
     }
 }
-impl<T: FeedService> ::connectrpc::Dispatcher for FeedServiceServer<T> {
+impl<T: Feed> ::connectrpc::Dispatcher for FeedServer<T> {
     #[inline]
     fn lookup(
         &self,
         path: &str,
     ) -> Option<::connectrpc::dispatcher::codegen::MethodDescriptor> {
-        let method = path.strip_prefix("example.v1.FeedService/")?;
+        let method = path.strip_prefix("example.v1.Feed/")?;
         match method {
             "Watch" => {
                 Some(
                     ::connectrpc::dispatcher::codegen::MethodDescriptor::server_streaming()
-                        .with_spec(FEED_SERVICE_WATCH_SPEC),
+                        .with_spec(FEED_WATCH_SPEC),
                 )
             }
             "Collect" => {
                 Some(
                     ::connectrpc::dispatcher::codegen::MethodDescriptor::client_streaming()
-                        .with_spec(FEED_SERVICE_COLLECT_SPEC),
+                        .with_spec(FEED_COLLECT_SPEC),
                 )
             }
             "Echo" => {
                 Some(
                     ::connectrpc::dispatcher::codegen::MethodDescriptor::bidi_streaming()
-                        .with_spec(FEED_SERVICE_ECHO_SPEC),
+                        .with_spec(FEED_ECHO_SPEC),
                 )
             }
             _ => None,
@@ -394,7 +388,7 @@ impl<T: FeedService> ::connectrpc::Dispatcher for FeedServiceServer<T> {
         request: ::connectrpc::Payload,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::UnaryResult {
-        let Some(method) = path.strip_prefix("example.v1.FeedService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Feed/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_unary(path);
         };
         let _ = (&ctx, &request, &format);
@@ -409,7 +403,7 @@ impl<T: FeedService> ::connectrpc::Dispatcher for FeedServiceServer<T> {
         request: ::buffa::bytes::Bytes,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::StreamingResult {
-        let Some(method) = path.strip_prefix("example.v1.FeedService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Feed/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_streaming(path);
         };
         let _ = (&ctx, &request, &format);
@@ -418,16 +412,14 @@ impl<T: FeedService> ::connectrpc::Dispatcher for FeedServiceServer<T> {
                 let svc = ::std::sync::Arc::clone(&self.inner);
                 Box::pin(async move {
                     let body = ::connectrpc::dispatcher::codegen::request_proto_bytes::<
-                        crate::proto::example::v1::WatchRequest,
+                        crate::proto::example::v1::Limit,
                     >(request, format)?;
-                    let req: crate::proto::example::v1::__buffa::view::WatchRequestView<
-                        '_,
-                    > = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
+                    let req: crate::proto::example::v1::__buffa::view::LimitView<'_> = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
                         &body,
                         ctx.decode_options(),
                     )?;
                     let req = ::connectrpc::ServiceRequest::<
-                        crate::proto::example::v1::WatchRequest,
+                        crate::proto::example::v1::Limit,
                     >::from_parts(&req, &body);
                     let resp = svc.watch(ctx, req).await?;
                     Ok(
@@ -450,7 +442,7 @@ impl<T: FeedService> ::connectrpc::Dispatcher for FeedServiceServer<T> {
         requests: ::connectrpc::dispatcher::codegen::RequestStream,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::UnaryResult {
-        let Some(method) = path.strip_prefix("example.v1.FeedService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Feed/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_unary(path);
         };
         let _ = (&ctx, &requests, &format);
@@ -476,7 +468,7 @@ impl<T: FeedService> ::connectrpc::Dispatcher for FeedServiceServer<T> {
         requests: ::connectrpc::dispatcher::codegen::RequestStream,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::StreamingResult {
-        let Some(method) = path.strip_prefix("example.v1.FeedService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Feed/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_streaming(path);
         };
         let _ = (&ctx, &requests, &format);
@@ -519,7 +511,7 @@ impl<T: FeedService> ::connectrpc::Dispatcher for FeedServiceServer<T> {
 /// let conn = Http2Connection::connect_plaintext(uri.clone()).await?.shared(1024);
 /// let config = ClientConfig::new(uri).with_protocol(Protocol::Grpc);
 ///
-/// let client = FeedServiceClient::new(conn, config);
+/// let client = FeedClient::new(conn, config);
 /// let response = client.watch(request).await?;
 /// ```
 ///
@@ -531,7 +523,7 @@ impl<T: FeedService> ::connectrpc::Dispatcher for FeedServiceServer<T> {
 /// let http = HttpClient::plaintext();  // cleartext http:// only
 /// let config = ClientConfig::new("http://localhost:8080".parse()?);
 ///
-/// let client = FeedServiceClient::new(http, config);
+/// let client = FeedClient::new(http, config);
 /// let response = client.watch(request).await?;
 /// ```
 ///
@@ -561,12 +553,12 @@ impl<T: FeedService> ::connectrpc::Dispatcher for FeedServiceServer<T> {
 /// methods (`msg.name()`) or `.view()`, or convert with `.to_owned_message()`.
 #[cfg(feature = "client")]
 #[derive(Clone)]
-pub struct FeedServiceClient<T> {
+pub struct FeedClient<T> {
     transport: T,
     config: ::connectrpc::client::ClientConfig,
 }
 #[cfg(feature = "client")]
-impl<T> FeedServiceClient<T>
+impl<T> FeedClient<T>
 where
     T: ::connectrpc::client::ClientTransport,
     <T::ResponseBody as ::connectrpc::http_body::Body>::Error: ::std::fmt::Display,
@@ -583,10 +575,10 @@ where
     pub fn config_mut(&mut self) -> &mut ::connectrpc::client::ClientConfig {
         &mut self.config
     }
-    /// Call the Watch RPC. Sends a request to /example.v1.FeedService/Watch.
+    /// Call the Watch RPC. Sends a request to /example.v1.Feed/Watch.
     pub async fn watch(
         &self,
-        request: crate::proto::example::v1::WatchRequest,
+        request: crate::proto::example::v1::Limit,
     ) -> Result<
         ::connectrpc::client::ServerStream<
             T::ResponseBody,
@@ -600,7 +592,7 @@ where
     /// Call the Watch RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
     pub async fn watch_with_options(
         &self,
-        request: crate::proto::example::v1::WatchRequest,
+        request: crate::proto::example::v1::Limit,
         options: ::connectrpc::client::CallOptions,
     ) -> Result<
         ::connectrpc::client::ServerStream<
@@ -612,13 +604,13 @@ where
         ::connectrpc::client::call_server_stream(
                 &self.transport,
                 &self.config,
-                FEED_SERVICE_WATCH_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
+                FEED_WATCH_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
                 request,
                 options,
             )
             .await
     }
-    /// Call the Collect RPC. Sends a request to /example.v1.FeedService/Collect.
+    /// Call the Collect RPC. Sends a request to /example.v1.Feed/Collect.
     ///
     /// `requests` is any `Stream<Item = ...> + Send + 'static` of
     /// request messages (the `ClientRequestStream` bound); messages
@@ -679,13 +671,13 @@ where
         ::connectrpc::client::call_client_stream(
                 &self.transport,
                 &self.config,
-                FEED_SERVICE_COLLECT_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
+                FEED_COLLECT_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
                 requests,
                 options,
             )
             .await
     }
-    /// Call the Echo RPC. Sends a request to /example.v1.FeedService/Echo.
+    /// Call the Echo RPC. Sends a request to /example.v1.Feed/Echo.
     pub async fn echo(
         &self,
     ) -> Result<
@@ -713,7 +705,7 @@ where
         ::connectrpc::client::call_bidi_stream(
                 &self.transport,
                 &self.config,
-                FEED_SERVICE_ECHO_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
+                FEED_ECHO_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
                 options,
             )
             .await

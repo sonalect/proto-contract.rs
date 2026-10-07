@@ -3,43 +3,43 @@
 
 /// A number to add.
 #[derive(Clone, PartialEq, Default)]
-pub struct AddRequest {
+pub struct Delta {
     /// The amount to add; may be negative.
     ///
-    /// Field 1: `delta`
-    pub delta: ::core::option::Option<i64>,
+    /// Field 1: `value`
+    pub value: ::core::option::Option<i64>,
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
 }
-impl ::core::fmt::Debug for AddRequest {
+impl ::core::fmt::Debug for Delta {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-        f.debug_struct("AddRequest").field("delta", &self.delta).finish()
+        f.debug_struct("Delta").field("value", &self.value).finish()
     }
 }
-impl AddRequest {
+impl Delta {
     /// Protobuf type URL for this message, for use with `Any::pack` and
     /// `Any::unpack_if`.
     ///
     /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
-    pub const TYPE_URL: &'static str = "type.googleapis.com/example.v1.AddRequest";
+    pub const TYPE_URL: &'static str = "type.googleapis.com/example.v1.Delta";
 }
-impl AddRequest {
+impl Delta {
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
     #[inline]
-    ///Sets [`Self::delta`] to `Some(value)`, consuming and returning `self`.
-    pub fn with_delta(mut self, value: i64) -> Self {
-        self.delta = Some(value);
+    ///Sets [`Self::value`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_value(mut self, value: i64) -> Self {
+        self.value = Some(value);
         self
     }
 }
-::buffa::impl_default_instance!(AddRequest);
-impl ::buffa::MessageName for AddRequest {
+::buffa::impl_default_instance!(Delta);
+impl ::buffa::MessageName for Delta {
     const PACKAGE: &'static str = "example.v1";
-    const NAME: &'static str = "AddRequest";
-    const FULL_NAME: &'static str = "example.v1.AddRequest";
-    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.AddRequest";
+    const NAME: &'static str = "Delta";
+    const FULL_NAME: &'static str = "example.v1.Delta";
+    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.Delta";
 }
-impl ::buffa::Message for AddRequest {
+impl ::buffa::Message for Delta {
     /// Returns the total encoded size in bytes.
     ///
     /// Accumulates in `u64` (which cannot overflow for in-memory
@@ -52,7 +52,7 @@ impl ::buffa::Message for AddRequest {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
         let mut size = 0u64;
-        if let Some(v) = self.delta {
+        if let Some(v) = self.value {
             size += 1u64 + ::buffa::types::int64_encoded_len(v) as u64;
         }
         size += self.__buffa_unknown_fields.encoded_len() as u64;
@@ -65,7 +65,7 @@ impl ::buffa::Message for AddRequest {
     ) {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
-        if let Some(v) = self.delta {
+        if let Some(v) = self.value {
             ::buffa::types::put_int64_field(1u32, v, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
@@ -86,7 +86,7 @@ impl ::buffa::Message for AddRequest {
                     tag,
                     ::buffa::encoding::WireType::Varint,
                 )?;
-                self.delta = ::core::option::Option::Some(
+                self.value = ::core::option::Option::Some(
                     ::buffa::types::decode_int64(buf)?,
                 );
             }
@@ -98,12 +98,12 @@ impl ::buffa::Message for AddRequest {
         ::core::result::Result::Ok(())
     }
     fn clear(&mut self) {
-        self.delta = ::core::option::Option::None;
+        self.value = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
-impl ::buffa::ExtensionSet for AddRequest {
-    const PROTO_FQN: &'static str = "example.v1.AddRequest";
+impl ::buffa::ExtensionSet for Delta {
+    const PROTO_FQN: &'static str = "example.v1.Delta";
     fn unknown_fields(&self) -> &::buffa::UnknownFields {
         &self.__buffa_unknown_fields
     }
@@ -113,43 +113,43 @@ impl ::buffa::ExtensionSet for AddRequest {
 }
 /// The total after an addition.
 #[derive(Clone, PartialEq, Default)]
-pub struct AddReply {
+pub struct Total {
     /// The new total.
     ///
-    /// Field 1: `total`
-    pub total: ::core::option::Option<i64>,
+    /// Field 1: `value`
+    pub value: ::core::option::Option<i64>,
     #[doc(hidden)]
     pub __buffa_unknown_fields: ::buffa::UnknownFields,
 }
-impl ::core::fmt::Debug for AddReply {
+impl ::core::fmt::Debug for Total {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-        f.debug_struct("AddReply").field("total", &self.total).finish()
+        f.debug_struct("Total").field("value", &self.value).finish()
     }
 }
-impl AddReply {
+impl Total {
     /// Protobuf type URL for this message, for use with `Any::pack` and
     /// `Any::unpack_if`.
     ///
     /// Format: `type.googleapis.com/<fully.qualified.TypeName>`
-    pub const TYPE_URL: &'static str = "type.googleapis.com/example.v1.AddReply";
+    pub const TYPE_URL: &'static str = "type.googleapis.com/example.v1.Total";
 }
-impl AddReply {
+impl Total {
     #[must_use = "with_* setters return `self` by value; assign or chain the result"]
     #[inline]
-    ///Sets [`Self::total`] to `Some(value)`, consuming and returning `self`.
-    pub fn with_total(mut self, value: i64) -> Self {
-        self.total = Some(value);
+    ///Sets [`Self::value`] to `Some(value)`, consuming and returning `self`.
+    pub fn with_value(mut self, value: i64) -> Self {
+        self.value = Some(value);
         self
     }
 }
-::buffa::impl_default_instance!(AddReply);
-impl ::buffa::MessageName for AddReply {
+::buffa::impl_default_instance!(Total);
+impl ::buffa::MessageName for Total {
     const PACKAGE: &'static str = "example.v1";
-    const NAME: &'static str = "AddReply";
-    const FULL_NAME: &'static str = "example.v1.AddReply";
-    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.AddReply";
+    const NAME: &'static str = "Total";
+    const FULL_NAME: &'static str = "example.v1.Total";
+    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.Total";
 }
-impl ::buffa::Message for AddReply {
+impl ::buffa::Message for Total {
     /// Returns the total encoded size in bytes.
     ///
     /// Accumulates in `u64` (which cannot overflow for in-memory
@@ -162,7 +162,7 @@ impl ::buffa::Message for AddReply {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
         let mut size = 0u64;
-        if let Some(v) = self.total {
+        if let Some(v) = self.value {
             size += 1u64 + ::buffa::types::int64_encoded_len(v) as u64;
         }
         size += self.__buffa_unknown_fields.encoded_len() as u64;
@@ -175,7 +175,7 @@ impl ::buffa::Message for AddReply {
     ) {
         #[allow(unused_imports)]
         use ::buffa::Enumeration as _;
-        if let Some(v) = self.total {
+        if let Some(v) = self.value {
             ::buffa::types::put_int64_field(1u32, v, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
@@ -196,7 +196,7 @@ impl ::buffa::Message for AddReply {
                     tag,
                     ::buffa::encoding::WireType::Varint,
                 )?;
-                self.total = ::core::option::Option::Some(
+                self.value = ::core::option::Option::Some(
                     ::buffa::types::decode_int64(buf)?,
                 );
             }
@@ -208,12 +208,12 @@ impl ::buffa::Message for AddReply {
         ::core::result::Result::Ok(())
     }
     fn clear(&mut self) {
-        self.total = ::core::option::Option::None;
+        self.value = ::core::option::Option::None;
         self.__buffa_unknown_fields.clear();
     }
 }
-impl ::buffa::ExtensionSet for AddReply {
-    const PROTO_FQN: &'static str = "example.v1.AddReply";
+impl ::buffa::ExtensionSet for Total {
+    const PROTO_FQN: &'static str = "example.v1.Total";
     fn unknown_fields(&self) -> &::buffa::UnknownFields {
         &self.__buffa_unknown_fields
     }

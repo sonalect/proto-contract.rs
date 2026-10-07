@@ -1,0 +1,24 @@
+# Generate for the glossary example (`bazel run //examples/glossary:generate`).
+# buffa writes the messages, Contract the traits of the service; both land
+# in the `glossary-api` crate, which is all a provider or a consumer
+# depends on. Both forms of the traits are generated; the example calls
+# the sync one. The async traits need no runtime, but the bridges `Offload`
+# and `Blocking` need tokio, so `gate_tokio_feature` puts them behind the
+# crate's `tokio` feature, off by default: the example builds without tokio.
+version: v2
+inputs:
+  - directory: examples/glossary/proto
+plugins:
+  - local: protoc-gen-buffa
+    out: examples/glossary/api/src/generated/buffa
+    strategy: all
+  - local: protoc-gen-buffa-packaging
+    out: examples/glossary/api/src/generated/buffa
+    strategy: all
+  - local: protoc-gen-contract-rust
+    out: examples/glossary/api/src/generated/contract
+    strategy: all
+    opt:
+      - buffa_module=crate::proto
+      - file_per_package
+      - gate_tokio_feature

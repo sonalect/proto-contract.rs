@@ -21,8 +21,8 @@ and Contract is not built for it alone.
 
 The generated code is the product. A change to a generated name, a method
 signature, the module layout, a plugin parameter or its default, a runtime
-type, the `Status` ↔ `ConnectError` mapping, or the thread a bridge runs
-on is consumer-visible — for every consumer, known or not. A changed
+type, the error code a runtime or bridge failure carries, or the thread a
+bridge runs on is consumer-visible — for every consumer, known or not. A changed
 golden file is such a change by definition.
 
 Before calling such a change done:

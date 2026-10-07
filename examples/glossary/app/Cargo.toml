@@ -1,0 +1,17 @@
+[package]
+name = "glossary-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+description = "Glossary example: the application that hands the provider to the consumer."
+
+[dependencies]
+glossary-api = { workspace = true }
+glossary-consumer = { workspace = true }
+glossary-provider = { workspace = true }
+
+[lints]
+workspace = true

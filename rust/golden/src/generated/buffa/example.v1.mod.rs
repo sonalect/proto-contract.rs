@@ -3,6 +3,7 @@
 include!("example.v1.counter.rs");
 include!("example.v1.feed.rs");
 include!("example.v1.greeter.rs");
+include!("example.v1.tools.rs");
 #[allow(
     non_camel_case_types,
     dead_code,
@@ -26,17 +27,17 @@ pub mod __buffa {
     }
 }
 #[doc(inline)]
-pub use self::__buffa::view::AddRequestView;
+pub use self::__buffa::view::DeltaView;
 #[doc(inline)]
-pub use self::__buffa::view::AddRequestOwnedView;
+pub use self::__buffa::view::DeltaOwnedView;
 #[doc(inline)]
-pub use self::__buffa::view::AddReplyView;
+pub use self::__buffa::view::TotalView;
 #[doc(inline)]
-pub use self::__buffa::view::AddReplyOwnedView;
+pub use self::__buffa::view::TotalOwnedView;
 #[doc(inline)]
-pub use self::__buffa::view::WatchRequestView;
+pub use self::__buffa::view::LimitView;
 #[doc(inline)]
-pub use self::__buffa::view::WatchRequestOwnedView;
+pub use self::__buffa::view::LimitOwnedView;
 #[doc(inline)]
 pub use self::__buffa::view::ItemView;
 #[doc(inline)]
@@ -46,10 +47,10 @@ pub use self::__buffa::view::SummaryView;
 #[doc(inline)]
 pub use self::__buffa::view::SummaryOwnedView;
 #[doc(inline)]
-pub use self::__buffa::view::GreetRequestView;
+pub use self::__buffa::view::PersonView;
 #[doc(inline)]
-pub use self::__buffa::view::GreetRequestOwnedView;
+pub use self::__buffa::view::PersonOwnedView;
 #[doc(inline)]
-pub use self::__buffa::view::GreetReplyView;
+pub use self::__buffa::view::GreetingView;
 #[doc(inline)]
-pub use self::__buffa::view::GreetReplyOwnedView;
+pub use self::__buffa::view::GreetingOwnedView;

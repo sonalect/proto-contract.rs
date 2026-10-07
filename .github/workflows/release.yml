@@ -215,8 +215,8 @@ jobs:
       - name: Bazel test
         run: |
           bazel test //... --keep_going --test_output=errors \
-            //rust/contract:contract_no_tokio_test \
-            //rust/contract:contract_test \
+            //rust/protocontract:protocontract_no_tokio_test \
+            //rust/protocontract:protocontract_test \
             //rust/golden:bridges_test \
             //rust/golden:direct_test \
             //rust/golden:streaming_test \

@@ -3,19 +3,19 @@ edition = "2023";
 package example.v1;
 
 // Keeps a running total.
-service CounterService {
+service Counter {
   // Add a number to the total and return the new total.
-  rpc Add(AddRequest) returns (AddReply);
+  rpc Add(Delta) returns (Total);
 }
 
 // A number to add.
-message AddRequest {
+message Delta {
   // The amount to add; may be negative.
-  int64 delta = 1;
+  int64 value = 1;
 }
 
 // The total after an addition.
-message AddReply {
+message Total {
   // The new total.
-  int64 total = 1;
+  int64 value = 1;
 }

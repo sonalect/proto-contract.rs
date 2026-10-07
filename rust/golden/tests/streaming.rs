@@ -7,11 +7,9 @@ use std::pin::{Pin, pin};
 use std::sync::Arc;
 use std::task::{Context, Poll, Waker};
 
-use contract::{BoxIter, Code, Status, Stream};
-use contract_golden::proto::example::v1::{Item, Summary, WatchRequest};
-use contract_golden::traits::example::v1::{
-    DynFeedServiceAsync, FeedServiceAsync, FeedServiceSync,
-};
+use contract_golden::proto::example::v1::{FeedErrorCode, Item, Limit, Summary};
+use contract_golden::traits::example::v1::{DynFeedAsync, FeedAsync, FeedSync};
+use protocontract::{BoxIter, Error, Stream};
 
 // ---- test plumbing: streams that never wait, polled without a runtime ----
 
@@ -73,37 +71,47 @@ fn item(text: &str) -> Item {
     }
 }
 
-fn texts(items: Vec<Result<Item, Status>>) -> Vec<String> {
+fn texts(items: Vec<Result<Item, Error>>) -> Vec<String> {
     items.into_iter().map(|item| item.unwrap().text).collect()
 }
 
-fn watch(count: i32) -> WatchRequest {
-    WatchRequest {
+fn watch(count: i32) -> Limit {
+    Limit {
         count,
         ..Default::default()
     }
 }
 
 /// Inbound items, the last one a broken stream.
-fn broken_inbound() -> Vec<Result<Item, Status>> {
-    vec![Ok(item("a")), Err(Status::unavailable("connection reset"))]
+fn broken_inbound() -> Vec<Result<Item, Error>> {
+    vec![
+        Ok(item("a")),
+        Err(Error::new(
+            FeedErrorCode::ConnectionReset,
+            "connection reset",
+        )),
+    ]
 }
 
-fn summary(requests: impl Iterator<Item = Result<Item, Status>>) -> Result<Summary, Status> {
+fn summary(requests: impl Iterator<Item = Result<Item, Error>>) -> Result<Summary, Error> {
     let mut texts = Vec::new();
     for request in requests {
         texts.push(request?.text);
     }
     Ok(Summary {
-        count: i32::try_from(texts.len()).map_err(|_| Status::out_of_range("too many items"))?,
+        count: i32::try_from(texts.len())
+            .map_err(|_| Error::new(FeedErrorCode::TooManyItems, "too many items"))?,
         joined: texts.join(" "),
         ..Default::default()
     })
 }
 
-fn check_count(count: i32) -> Result<(), Status> {
+fn check_count(count: i32) -> Result<(), Error> {
     if count < 0 {
-        Err(Status::invalid_argument("count is negative"))
+        Err(Error::new(
+            FeedErrorCode::NegativeCount,
+            "count is negative",
+        ))
     } else {
         Ok(())
     }
@@ -115,11 +123,8 @@ struct SyncFeed {
     prefix: String,
 }
 
-impl FeedServiceSync for SyncFeed {
-    fn watch(
-        &self,
-        request: WatchRequest,
-    ) -> Result<BoxIter<'static, Result<Item, Status>>, Status> {
+impl FeedSync for SyncFeed {
+    fn watch(&self, request: Limit) -> Result<BoxIter<'static, Result<Item, Error>>, Error> {
         check_count(request.count)?;
         let prefix = self.prefix.clone();
         Ok(Box::new(
@@ -127,14 +132,14 @@ impl FeedServiceSync for SyncFeed {
         ))
     }
 
-    fn collect(&self, requests: BoxIter<'static, Result<Item, Status>>) -> Result<Summary, Status> {
+    fn collect(&self, requests: BoxIter<'static, Result<Item, Error>>) -> Result<Summary, Error> {
         summary(requests)
     }
 
     fn echo(
         &self,
-        requests: BoxIter<'static, Result<Item, Status>>,
-    ) -> Result<BoxIter<'static, Result<Item, Status>>, Status> {
+        requests: BoxIter<'static, Result<Item, Error>>,
+    ) -> Result<BoxIter<'static, Result<Item, Error>>, Error> {
         let prefix = self.prefix.clone();
         Ok(Box::new(requests.map(move |request| {
             request.map(|request| item(&format!("{prefix}{}", request.text)))
@@ -144,27 +149,32 @@ impl FeedServiceSync for SyncFeed {
 
 #[test]
 fn sync_streaming_through_dyn() {
-    let service: Arc<dyn FeedServiceSync> = Arc::new(SyncFeed { prefix: "s".into() });
+    let service: Arc<dyn FeedSync> = Arc::new(SyncFeed { prefix: "s".into() });
 
     let replies: Vec<_> = service.watch(watch(3)).unwrap().collect();
     assert_eq!(texts(replies), ["s0", "s1", "s2"]);
-    let status = service.watch(watch(-1)).err().unwrap();
-    assert_eq!(status.code(), Code::InvalidArgument);
+    let error = service.watch(watch(-1)).err().unwrap();
+    assert!(error.is(FeedErrorCode::NegativeCount));
 
     let requests = Box::new([item("a"), item("b")].into_iter().map(Ok));
     let collected = service.collect(requests).unwrap();
     assert_eq!((collected.count, collected.joined.as_str()), (2, "a b"));
-    let status = service
+    let error = service
         .collect(Box::new(broken_inbound().into_iter()))
         .unwrap_err();
-    assert_eq!(status.code(), Code::Unavailable);
+    assert!(error.is(FeedErrorCode::ConnectionReset));
 
     let echoed: Vec<_> = service
         .echo(Box::new(broken_inbound().into_iter()))
         .unwrap()
         .collect();
     assert_eq!(echoed[0].as_ref().unwrap().text, "sa");
-    assert_eq!(echoed[1].as_ref().unwrap_err().code(), Code::Unavailable);
+    assert!(
+        echoed[1]
+            .as_ref()
+            .unwrap_err()
+            .is(FeedErrorCode::ConnectionReset)
+    );
 }
 
 // ---- the async form: plain `async fn`, streams that do not borrow it ----
@@ -173,11 +183,11 @@ struct AsyncFeed {
     prefix: String,
 }
 
-impl FeedServiceAsync for AsyncFeed {
+impl FeedAsync for AsyncFeed {
     async fn watch(
         &self,
-        request: WatchRequest,
-    ) -> Result<impl Stream<Item = Result<Item, Status>> + Send + use<>, Status> {
+        request: Limit,
+    ) -> Result<impl Stream<Item = Result<Item, Error>> + Send + use<>, Error> {
         check_count(request.count)?;
         let prefix = self.prefix.clone();
         Ok(Iter(
@@ -185,9 +195,9 @@ impl FeedServiceAsync for AsyncFeed {
         ))
     }
 
-    async fn collect<R>(&self, requests: R) -> Result<Summary, Status>
+    async fn collect<R>(&self, requests: R) -> Result<Summary, Error>
     where
-        R: Stream<Item = Result<Item, Status>> + Send + 'static,
+        R: Stream<Item = Result<Item, Error>> + Send + 'static,
     {
         let mut requests = Box::pin(requests);
         let mut items = Vec::new();
@@ -200,14 +210,14 @@ impl FeedServiceAsync for AsyncFeed {
     async fn echo<R>(
         &self,
         requests: R,
-    ) -> Result<impl Stream<Item = Result<Item, Status>> + Send + use<R>, Status>
+    ) -> Result<impl Stream<Item = Result<Item, Error>> + Send + use<R>, Error>
     where
-        R: Stream<Item = Result<Item, Status>> + Send + 'static,
+        R: Stream<Item = Result<Item, Error>> + Send + 'static,
     {
         let prefix = self.prefix.clone();
         Ok(Map(
             Box::pin(requests),
-            move |request: Result<Item, Status>| {
+            move |request: Result<Item, Error>| {
                 request.map(|request| item(&format!("{prefix}{}", request.text)))
             },
         ))
@@ -215,7 +225,7 @@ impl FeedServiceAsync for AsyncFeed {
 }
 
 /// A caller generic over the async form: no boxing anywhere.
-async fn round_trip(service: &impl FeedServiceAsync) -> (Vec<String>, Summary, Vec<String>) {
+async fn round_trip(service: &impl FeedAsync) -> (Vec<String>, Summary, Vec<String>) {
     let watched = drain(service.watch(watch(2)).await.unwrap());
     let collected = service
         .collect(Iter([item("x"), item("y")].into_iter().map(Ok)))
@@ -240,27 +250,32 @@ fn async_streaming_called_generically() {
 
 #[test]
 fn async_streaming_through_the_dyn_handle() {
-    let service = DynFeedServiceAsync::new(AsyncFeed { prefix: "d".into() });
+    let service = DynFeedAsync::new(AsyncFeed { prefix: "d".into() });
 
     let (watched, collected, echoed) = ready(round_trip(&service));
     assert_eq!(watched, ["d0", "d1"]);
     assert_eq!(collected.joined, "x y");
     assert_eq!(echoed, ["dz"]);
 
-    let status = ready(service.watch(watch(-1))).err().unwrap();
-    assert_eq!(status.code(), Code::InvalidArgument);
-    let status = ready(service.collect(Iter(broken_inbound().into_iter()))).unwrap_err();
-    assert_eq!(status.code(), Code::Unavailable);
+    let error = ready(service.watch(watch(-1))).err().unwrap();
+    assert!(error.is(FeedErrorCode::NegativeCount));
+    let error = ready(service.collect(Iter(broken_inbound().into_iter()))).unwrap_err();
+    assert!(error.is(FeedErrorCode::ConnectionReset));
     let echoed = drain(ready(service.echo(Iter(broken_inbound().into_iter()))).unwrap());
     assert_eq!(echoed[0].as_ref().unwrap().text, "da");
-    assert_eq!(echoed[1].as_ref().unwrap_err().code(), Code::Unavailable);
+    assert!(
+        echoed[1]
+            .as_ref()
+            .unwrap_err()
+            .is(FeedErrorCode::ConnectionReset)
+    );
 }
 
 /// A reply stream does not borrow the service: it outlives the handle and
 /// moves to another thread.
 #[test]
 fn reply_stream_outlives_the_service() {
-    let service = DynFeedServiceAsync::new(AsyncFeed { prefix: "t".into() });
+    let service = DynFeedAsync::new(AsyncFeed { prefix: "t".into() });
     let stream = ready(service.watch(watch(2))).unwrap();
     drop(service);
     let replies = std::thread::spawn(move || drain(stream)).join().unwrap();

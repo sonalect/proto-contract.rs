@@ -1,10 +1,10 @@
-///Shorthand for `OwnedView<GreetRequestView<'static>>`.
-pub type OwnedGreetRequestView = ::buffa::view::OwnedView<
-    crate::proto::example::v1::__buffa::view::GreetRequestView<'static>,
+///Shorthand for `OwnedView<PersonView<'static>>`.
+pub type OwnedPersonView = ::buffa::view::OwnedView<
+    crate::proto::example::v1::__buffa::view::PersonView<'static>,
 >;
-///Shorthand for `OwnedView<GreetReplyView<'static>>`.
-pub type OwnedGreetReplyView = ::buffa::view::OwnedView<
-    crate::proto::example::v1::__buffa::view::GreetReplyView<'static>,
+///Shorthand for `OwnedView<GreetingView<'static>>`.
+pub type OwnedGreetingView = ::buffa::view::OwnedView<
+    crate::proto::example::v1::__buffa::view::GreetingView<'static>,
 >;
 ///Shorthand for `OwnedView<NameView<'static>>`.
 pub type OwnedNameView = ::buffa::view::OwnedView<
@@ -14,16 +14,16 @@ pub type OwnedNameView = ::buffa::view::OwnedView<
 pub type OwnedEmptyView = ::buffa::view::OwnedView<
     ::buffa_types::google::protobuf::__buffa::view::EmptyView<'static>,
 >;
-///Shorthand for `OwnedView<OptionsView<'static>>`.
-pub type OwnedOptionsView = ::buffa::view::OwnedView<
-    crate::proto::example::v1::__buffa::view::greet_request::OptionsView<'static>,
+///Shorthand for `OwnedView<StyleView<'static>>`.
+pub type OwnedStyleView = ::buffa::view::OwnedView<
+    crate::proto::example::v1::__buffa::view::person::StyleView<'static>,
 >;
 ///Shorthand for `OwnedView<LabelView<'static>>`.
 pub type OwnedLabelView = ::buffa::view::OwnedView<
     crate::shared::v1::__buffa::view::LabelView<'static>,
 >;
-impl ::connectrpc::Encodable<crate::proto::example::v1::GreetReply>
-for crate::proto::example::v1::__buffa::view::GreetReplyView<'_> {
+impl ::connectrpc::Encodable<crate::proto::example::v1::Greeting>
+for crate::proto::example::v1::__buffa::view::GreetingView<'_> {
     fn encode(
         &self,
         codec: ::connectrpc::CodecFormat,
@@ -31,9 +31,9 @@ for crate::proto::example::v1::__buffa::view::GreetReplyView<'_> {
         ::connectrpc::__codegen::encode_view_body(self, codec)
     }
 }
-impl ::connectrpc::Encodable<crate::proto::example::v1::GreetReply>
+impl ::connectrpc::Encodable<crate::proto::example::v1::Greeting>
 for ::buffa::view::OwnedView<
-    crate::proto::example::v1::__buffa::view::GreetReplyView<'static>,
+    crate::proto::example::v1::__buffa::view::GreetingView<'static>,
 > {
     fn encode(
         &self,
@@ -56,8 +56,8 @@ for ::buffa::view::OwnedView<
         )
     }
 }
-impl ::connectrpc::Encodable<crate::proto::example::v1::greet_request::Options>
-for crate::proto::example::v1::__buffa::view::greet_request::OptionsView<'_> {
+impl ::connectrpc::Encodable<crate::proto::example::v1::person::Style>
+for crate::proto::example::v1::__buffa::view::person::StyleView<'_> {
     fn encode(
         &self,
         codec: ::connectrpc::CodecFormat,
@@ -65,9 +65,9 @@ for crate::proto::example::v1::__buffa::view::greet_request::OptionsView<'_> {
         ::connectrpc::__codegen::encode_view_body(self, codec)
     }
 }
-impl ::connectrpc::Encodable<crate::proto::example::v1::greet_request::Options>
+impl ::connectrpc::Encodable<crate::proto::example::v1::person::Style>
 for ::buffa::view::OwnedView<
-    crate::proto::example::v1::__buffa::view::greet_request::OptionsView<'static>,
+    crate::proto::example::v1::__buffa::view::person::StyleView<'static>,
 > {
     fn encode(
         &self,
@@ -123,34 +123,34 @@ for ::buffa::view::OwnedView<crate::shared::v1::__buffa::view::LabelView<'static
     }
 }
 /// Full service name for this service.
-pub const GREETER_SERVICE_SERVICE_NAME: &str = "example.v1.GreeterService";
+pub const GREETER_SERVICE_NAME: &str = "example.v1.Greeter";
 /// Static [`Spec`](::connectrpc::Spec) for the `Greet` RPC, as seen by the server; the generated client passes it with [`origin`](::connectrpc::Spec::origin) `Client` (compare across sides with [`Spec::same_method`](::connectrpc::Spec::same_method)).
-pub const GREETER_SERVICE_GREET_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
-        "/example.v1.GreeterService/Greet",
+pub const GREETER_GREET_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
+        "/example.v1.Greeter/Greet",
         ::connectrpc::StreamType::Unary,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
 /// Static [`Spec`](::connectrpc::Spec) for the `GreetName` RPC, as seen by the server; the generated client passes it with [`origin`](::connectrpc::Spec::origin) `Client` (compare across sides with [`Spec::same_method`](::connectrpc::Spec::same_method)).
-pub const GREETER_SERVICE_GREET_NAME_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
-        "/example.v1.GreeterService/GreetName",
+pub const GREETER_GREET_NAME_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
+        "/example.v1.Greeter/GreetName",
         ::connectrpc::StreamType::Unary,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
-/// Static [`Spec`](::connectrpc::Spec) for the `GetOptions` RPC, as seen by the server; the generated client passes it with [`origin`](::connectrpc::Spec::origin) `Client` (compare across sides with [`Spec::same_method`](::connectrpc::Spec::same_method)).
-pub const GREETER_SERVICE_GET_OPTIONS_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
-        "/example.v1.GreeterService/GetOptions",
+/// Static [`Spec`](::connectrpc::Spec) for the `GetStyle` RPC, as seen by the server; the generated client passes it with [`origin`](::connectrpc::Spec::origin) `Client` (compare across sides with [`Spec::same_method`](::connectrpc::Spec::same_method)).
+pub const GREETER_GET_STYLE_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
+        "/example.v1.Greeter/GetStyle",
         ::connectrpc::StreamType::Unary,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
 /// Static [`Spec`](::connectrpc::Spec) for the `EchoLabel` RPC, as seen by the server; the generated client passes it with [`origin`](::connectrpc::Spec::origin) `Client` (compare across sides with [`Spec::same_method`](::connectrpc::Spec::same_method)).
-pub const GREETER_SERVICE_ECHO_LABEL_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
-        "/example.v1.GreeterService/EchoLabel",
+pub const GREETER_ECHO_LABEL_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
+        "/example.v1.Greeter/EchoLabel",
         ::connectrpc::StreamType::Unary,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
 /// Static [`Spec`](::connectrpc::Spec) for the `Reset` RPC, as seen by the server; the generated client passes it with [`origin`](::connectrpc::Spec::origin) `Client` (compare across sides with [`Spec::same_method`](::connectrpc::Spec::same_method)).
-pub const GREETER_SERVICE_RESET_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
-        "/example.v1.GreeterService/Reset",
+pub const GREETER_RESET_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
+        "/example.v1.Greeter/Reset",
         ::connectrpc::StreamType::Unary,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
@@ -204,7 +204,7 @@ pub const GREETER_SERVICE_RESET_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::s
 /// [`PreEncoded`](::connectrpc::PreEncoded) — see its `# Streaming
 /// example` doc.
 #[allow(clippy::type_complexity)]
-pub trait GreeterService: Send + Sync + 'static {
+pub trait Greeter: Send + Sync + 'static {
     /// Greet a person by name.
     ///
     /// `'a` lets the response body borrow from `&self` (e.g. server-resident state).
@@ -217,14 +217,11 @@ pub trait GreeterService: Send + Sync + 'static {
     fn greet<'a>(
         &'a self,
         ctx: ::connectrpc::RequestContext,
-        request: ::connectrpc::ServiceRequest<
-            '_,
-            crate::proto::example::v1::GreetRequest,
-        >,
+        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::Person>,
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             impl ::connectrpc::Encodable<
-                crate::proto::example::v1::GreetReply,
+                crate::proto::example::v1::Greeting,
             > + Send + use<'a, Self>,
         >,
     > + Send;
@@ -247,11 +244,11 @@ pub trait GreeterService: Send + Sync + 'static {
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             impl ::connectrpc::Encodable<
-                crate::proto::example::v1::GreetReply,
+                crate::proto::example::v1::Greeting,
             > + Send + use<'a, Self>,
         >,
     > + Send;
-    /// Report the options the greeter uses by default.
+    /// Report the style the greeter uses by default.
     ///
     /// `'a` lets the response body borrow from `&self` (e.g. server-resident state).
     ///
@@ -260,14 +257,14 @@ pub trait GreeterService: Send + Sync + 'static {
     /// (zero-copy). The response cannot borrow from `request` — use
     /// `.to_owned_message()` (or copy the specific fields) for anything
     /// returned, stored, or moved into `tokio::spawn`.
-    fn get_options<'a>(
+    fn get_style<'a>(
         &'a self,
         ctx: ::connectrpc::RequestContext,
         request: ::connectrpc::ServiceRequest<'_, ::buffa_types::google::protobuf::Empty>,
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             impl ::connectrpc::Encodable<
-                crate::proto::example::v1::greet_request::Options,
+                crate::proto::example::v1::person::Style,
             > + Send + use<'a, Self>,
         >,
     > + Send;
@@ -325,7 +322,7 @@ pub trait GreeterService: Send + Sync + 'static {
 /// let service = Arc::new(MyServiceImpl);
 /// let router = service.register(Router::new());
 /// ```
-pub trait GreeterServiceExt: GreeterService {
+pub trait GreeterExt: Greeter {
     /// Register this service implementation with a Router.
     ///
     /// Takes ownership of the `Arc<Self>` and returns a new Router with
@@ -335,41 +332,39 @@ pub trait GreeterServiceExt: GreeterService {
         router: ::connectrpc::Router,
     ) -> ::connectrpc::Router;
 }
-impl<S: GreeterService> GreeterServiceExt for S {
+impl<S: Greeter> GreeterExt for S {
     fn register(
         self: ::std::sync::Arc<Self>,
         router: ::connectrpc::Router,
     ) -> ::connectrpc::Router {
         router
             .route_view(
-                GREETER_SERVICE_SERVICE_NAME,
+                GREETER_SERVICE_NAME,
                 "Greet",
                 {
                     let svc = ::std::sync::Arc::clone(&self);
                     ::connectrpc::view_handler_fn(move |
                         ctx,
                         req: ::buffa::view::OwnedView<
-                            crate::proto::example::v1::__buffa::view::GreetRequestView<
-                                'static,
-                            >,
+                            crate::proto::example::v1::__buffa::view::PersonView<'static>,
                         >,
                         format|
                     {
                         let svc = ::std::sync::Arc::clone(&svc);
                         async move {
                             let sreq = ::connectrpc::ServiceRequest::<
-                                crate::proto::example::v1::GreetRequest,
+                                crate::proto::example::v1::Person,
                             >::from_parts(req.reborrow(), req.bytes());
                             svc.greet(ctx, sreq)
                                 .await?
-                                .encode::<crate::proto::example::v1::GreetReply>(format)
+                                .encode::<crate::proto::example::v1::Greeting>(format)
                         }
                     })
                 },
             )
-            .with_spec(GREETER_SERVICE_GREET_SPEC)
+            .with_spec(GREETER_GREET_SPEC)
             .route_view(
-                GREETER_SERVICE_SERVICE_NAME,
+                GREETER_SERVICE_NAME,
                 "GreetName",
                 {
                     let svc = ::std::sync::Arc::clone(&self);
@@ -389,15 +384,15 @@ impl<S: GreeterService> GreeterServiceExt for S {
                             >::from_parts(req.reborrow(), req.bytes());
                             svc.greet_name(ctx, sreq)
                                 .await?
-                                .encode::<crate::proto::example::v1::GreetReply>(format)
+                                .encode::<crate::proto::example::v1::Greeting>(format)
                         }
                     })
                 },
             )
-            .with_spec(GREETER_SERVICE_GREET_NAME_SPEC)
+            .with_spec(GREETER_GREET_NAME_SPEC)
             .route_view(
-                GREETER_SERVICE_SERVICE_NAME,
-                "GetOptions",
+                GREETER_SERVICE_NAME,
+                "GetStyle",
                 {
                     let svc = ::std::sync::Arc::clone(&self);
                     ::connectrpc::view_handler_fn(move |
@@ -414,18 +409,16 @@ impl<S: GreeterService> GreeterServiceExt for S {
                             let sreq = ::connectrpc::ServiceRequest::<
                                 ::buffa_types::google::protobuf::Empty,
                             >::from_parts(req.reborrow(), req.bytes());
-                            svc.get_options(ctx, sreq)
+                            svc.get_style(ctx, sreq)
                                 .await?
-                                .encode::<
-                                    crate::proto::example::v1::greet_request::Options,
-                                >(format)
+                                .encode::<crate::proto::example::v1::person::Style>(format)
                         }
                     })
                 },
             )
-            .with_spec(GREETER_SERVICE_GET_OPTIONS_SPEC)
+            .with_spec(GREETER_GET_STYLE_SPEC)
             .route_view(
-                GREETER_SERVICE_SERVICE_NAME,
+                GREETER_SERVICE_NAME,
                 "EchoLabel",
                 {
                     let svc = ::std::sync::Arc::clone(&self);
@@ -448,9 +441,9 @@ impl<S: GreeterService> GreeterServiceExt for S {
                     })
                 },
             )
-            .with_spec(GREETER_SERVICE_ECHO_LABEL_SPEC)
+            .with_spec(GREETER_ECHO_LABEL_SPEC)
             .route_view(
-                GREETER_SERVICE_SERVICE_NAME,
+                GREETER_SERVICE_NAME,
                 "Reset",
                 {
                     let svc = ::std::sync::Arc::clone(&self);
@@ -475,19 +468,19 @@ impl<S: GreeterService> GreeterServiceExt for S {
                     })
                 },
             )
-            .with_spec(GREETER_SERVICE_RESET_SPEC)
+            .with_spec(GREETER_RESET_SPEC)
     }
 }
 /// Type-inference marker used by [`Router::add_service`](::connectrpc::Router::add_service).
 #[doc(hidden)]
-pub struct GreeterServiceRegisterMarker;
-impl<S: GreeterService> ::connectrpc::ServiceRegister<GreeterServiceRegisterMarker>
+pub struct GreeterRegisterMarker;
+impl<S: Greeter> ::connectrpc::ServiceRegister<GreeterRegisterMarker>
 for ::std::sync::Arc<S> {
     fn register_service(self, router: ::connectrpc::Router) -> ::connectrpc::Router {
-        <S as GreeterServiceExt>::register(self, router)
+        <S as GreeterExt>::register(self, router)
     }
 }
-/// Monomorphic dispatcher for `GreeterService`.
+/// Monomorphic dispatcher for `Greeter`.
 ///
 /// Unlike `.register(Router)` which type-erases each method into an `Arc<dyn ErasedHandler>` stored in a `HashMap`, this struct dispatches via a compile-time `match` on method name: no vtable, no hash lookup.
 ///
@@ -496,14 +489,14 @@ for ::std::sync::Arc<S> {
 /// ```rust,ignore
 /// use connectrpc::ConnectRpcService;
 ///
-/// let server = GreeterServiceServer::new(MyImpl);
+/// let server = GreeterServer::new(MyImpl);
 /// let service = ConnectRpcService::new(server);
 /// // hand `service` to axum/hyper as a fallback_service
 /// ```
-pub struct GreeterServiceServer<T> {
+pub struct GreeterServer<T> {
     inner: ::std::sync::Arc<T>,
 }
-impl<T: GreeterService> GreeterServiceServer<T> {
+impl<T: Greeter> GreeterServer<T> {
     /// Wrap a service implementation in a monomorphic dispatcher.
     pub fn new(service: T) -> Self {
         Self {
@@ -515,49 +508,49 @@ impl<T: GreeterService> GreeterServiceServer<T> {
         Self { inner }
     }
 }
-impl<T> Clone for GreeterServiceServer<T> {
+impl<T> Clone for GreeterServer<T> {
     fn clone(&self) -> Self {
         Self {
             inner: ::std::sync::Arc::clone(&self.inner),
         }
     }
 }
-impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
+impl<T: Greeter> ::connectrpc::Dispatcher for GreeterServer<T> {
     #[inline]
     fn lookup(
         &self,
         path: &str,
     ) -> Option<::connectrpc::dispatcher::codegen::MethodDescriptor> {
-        let method = path.strip_prefix("example.v1.GreeterService/")?;
+        let method = path.strip_prefix("example.v1.Greeter/")?;
         match method {
             "Greet" => {
                 Some(
                     ::connectrpc::dispatcher::codegen::MethodDescriptor::unary(false)
-                        .with_spec(GREETER_SERVICE_GREET_SPEC),
+                        .with_spec(GREETER_GREET_SPEC),
                 )
             }
             "GreetName" => {
                 Some(
                     ::connectrpc::dispatcher::codegen::MethodDescriptor::unary(false)
-                        .with_spec(GREETER_SERVICE_GREET_NAME_SPEC),
+                        .with_spec(GREETER_GREET_NAME_SPEC),
                 )
             }
-            "GetOptions" => {
+            "GetStyle" => {
                 Some(
                     ::connectrpc::dispatcher::codegen::MethodDescriptor::unary(false)
-                        .with_spec(GREETER_SERVICE_GET_OPTIONS_SPEC),
+                        .with_spec(GREETER_GET_STYLE_SPEC),
                 )
             }
             "EchoLabel" => {
                 Some(
                     ::connectrpc::dispatcher::codegen::MethodDescriptor::unary(false)
-                        .with_spec(GREETER_SERVICE_ECHO_LABEL_SPEC),
+                        .with_spec(GREETER_ECHO_LABEL_SPEC),
                 )
             }
             "Reset" => {
                 Some(
                     ::connectrpc::dispatcher::codegen::MethodDescriptor::unary(false)
-                        .with_spec(GREETER_SERVICE_RESET_SPEC),
+                        .with_spec(GREETER_RESET_SPEC),
                 )
             }
             _ => None,
@@ -570,7 +563,7 @@ impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
         request: ::connectrpc::Payload,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::UnaryResult {
-        let Some(method) = path.strip_prefix("example.v1.GreeterService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Greeter/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_unary(path);
         };
         let _ = (&ctx, &request, &format);
@@ -579,20 +572,18 @@ impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
                 let svc = ::std::sync::Arc::clone(&self.inner);
                 Box::pin(async move {
                     let body = ::connectrpc::dispatcher::codegen::request_proto_bytes::<
-                        crate::proto::example::v1::GreetRequest,
+                        crate::proto::example::v1::Person,
                     >(request.encoded()?, format)?;
-                    let req: crate::proto::example::v1::__buffa::view::GreetRequestView<
-                        '_,
-                    > = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
+                    let req: crate::proto::example::v1::__buffa::view::PersonView<'_> = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
                         &body,
                         ctx.decode_options(),
                     )?;
                     let req = ::connectrpc::ServiceRequest::<
-                        crate::proto::example::v1::GreetRequest,
+                        crate::proto::example::v1::Person,
                     >::from_parts(&req, &body);
                     svc.greet(ctx, req)
                         .await?
-                        .encode::<crate::proto::example::v1::GreetReply>(format)
+                        .encode::<crate::proto::example::v1::Greeting>(format)
                 })
             }
             "GreetName" => {
@@ -612,10 +603,10 @@ impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
                     >::from_parts(&req, &body);
                     svc.greet_name(ctx, req)
                         .await?
-                        .encode::<crate::proto::example::v1::GreetReply>(format)
+                        .encode::<crate::proto::example::v1::Greeting>(format)
                 })
             }
-            "GetOptions" => {
+            "GetStyle" => {
                 let svc = ::std::sync::Arc::clone(&self.inner);
                 Box::pin(async move {
                     let body = ::connectrpc::dispatcher::codegen::request_proto_bytes::<
@@ -630,11 +621,9 @@ impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
                     let req = ::connectrpc::ServiceRequest::<
                         ::buffa_types::google::protobuf::Empty,
                     >::from_parts(&req, &body);
-                    svc.get_options(ctx, req)
+                    svc.get_style(ctx, req)
                         .await?
-                        .encode::<
-                            crate::proto::example::v1::greet_request::Options,
-                        >(format)
+                        .encode::<crate::proto::example::v1::person::Style>(format)
                 })
             }
             "EchoLabel" => {
@@ -685,7 +674,7 @@ impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
         request: ::buffa::bytes::Bytes,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::StreamingResult {
-        let Some(method) = path.strip_prefix("example.v1.GreeterService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Greeter/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_streaming(path);
         };
         let _ = (&ctx, &request, &format);
@@ -700,7 +689,7 @@ impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
         requests: ::connectrpc::dispatcher::codegen::RequestStream,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::UnaryResult {
-        let Some(method) = path.strip_prefix("example.v1.GreeterService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Greeter/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_unary(path);
         };
         let _ = (&ctx, &requests, &format);
@@ -715,7 +704,7 @@ impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
         requests: ::connectrpc::dispatcher::codegen::RequestStream,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::StreamingResult {
-        let Some(method) = path.strip_prefix("example.v1.GreeterService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Greeter/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_streaming(path);
         };
         let _ = (&ctx, &requests, &format);
@@ -741,7 +730,7 @@ impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
 /// let conn = Http2Connection::connect_plaintext(uri.clone()).await?.shared(1024);
 /// let config = ClientConfig::new(uri).with_protocol(Protocol::Grpc);
 ///
-/// let client = GreeterServiceClient::new(conn, config);
+/// let client = GreeterClient::new(conn, config);
 /// let response = client.greet(request).await?;
 /// ```
 ///
@@ -753,7 +742,7 @@ impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
 /// let http = HttpClient::plaintext();  // cleartext http:// only
 /// let config = ClientConfig::new("http://localhost:8080".parse()?);
 ///
-/// let client = GreeterServiceClient::new(http, config);
+/// let client = GreeterClient::new(http, config);
 /// let response = client.greet(request).await?;
 /// ```
 ///
@@ -783,12 +772,12 @@ impl<T: GreeterService> ::connectrpc::Dispatcher for GreeterServiceServer<T> {
 /// methods (`msg.name()`) or `.view()`, or convert with `.to_owned_message()`.
 #[cfg(feature = "client")]
 #[derive(Clone)]
-pub struct GreeterServiceClient<T> {
+pub struct GreeterClient<T> {
     transport: T,
     config: ::connectrpc::client::ClientConfig,
 }
 #[cfg(feature = "client")]
-impl<T> GreeterServiceClient<T>
+impl<T> GreeterClient<T>
 where
     T: ::connectrpc::client::ClientTransport,
     <T::ResponseBody as ::connectrpc::http_body::Body>::Error: ::std::fmt::Display,
@@ -805,14 +794,14 @@ where
     pub fn config_mut(&mut self) -> &mut ::connectrpc::client::ClientConfig {
         &mut self.config
     }
-    /// Call the Greet RPC. Sends a request to /example.v1.GreeterService/Greet.
+    /// Call the Greet RPC. Sends a request to /example.v1.Greeter/Greet.
     pub async fn greet(
         &self,
-        request: crate::proto::example::v1::GreetRequest,
+        request: crate::proto::example::v1::Person,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::GreetReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::GreetingView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -823,12 +812,12 @@ where
     /// Call the Greet RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
     pub async fn greet_with_options(
         &self,
-        request: crate::proto::example::v1::GreetRequest,
+        request: crate::proto::example::v1::Person,
         options: ::connectrpc::client::CallOptions,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::GreetReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::GreetingView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -836,20 +825,20 @@ where
         ::connectrpc::client::call_unary(
                 &self.transport,
                 &self.config,
-                GREETER_SERVICE_GREET_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
+                GREETER_GREET_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
                 request,
                 options,
             )
             .await
     }
-    /// Call the GreetName RPC. Sends a request to /example.v1.GreeterService/GreetName.
+    /// Call the GreetName RPC. Sends a request to /example.v1.Greeter/GreetName.
     pub async fn greet_name(
         &self,
         request: crate::proto::example::common::v1::Name,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::GreetReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::GreetingView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -868,7 +857,7 @@ where
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::GreetReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::GreetingView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -876,44 +865,39 @@ where
         ::connectrpc::client::call_unary(
                 &self.transport,
                 &self.config,
-                GREETER_SERVICE_GREET_NAME_SPEC
-                    .with_origin(::connectrpc::SpecOrigin::Client),
+                GREETER_GREET_NAME_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
                 request,
                 options,
             )
             .await
     }
-    /// Call the GetOptions RPC. Sends a request to /example.v1.GreeterService/GetOptions.
-    pub async fn get_options(
+    /// Call the GetStyle RPC. Sends a request to /example.v1.Greeter/GetStyle.
+    pub async fn get_style(
         &self,
         request: ::buffa_types::google::protobuf::Empty,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::greet_request::OptionsView<
-                    'static,
-                >,
+                crate::proto::example::v1::__buffa::view::person::StyleView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
     > {
-        self.get_options_with_options(
+        self.get_style_with_options(
                 request,
                 ::connectrpc::client::CallOptions::default(),
             )
             .await
     }
-    /// Call the GetOptions RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
-    pub async fn get_options_with_options(
+    /// Call the GetStyle RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
+    pub async fn get_style_with_options(
         &self,
         request: ::buffa_types::google::protobuf::Empty,
         options: ::connectrpc::client::CallOptions,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::greet_request::OptionsView<
-                    'static,
-                >,
+                crate::proto::example::v1::__buffa::view::person::StyleView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -921,14 +905,13 @@ where
         ::connectrpc::client::call_unary(
                 &self.transport,
                 &self.config,
-                GREETER_SERVICE_GET_OPTIONS_SPEC
-                    .with_origin(::connectrpc::SpecOrigin::Client),
+                GREETER_GET_STYLE_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
                 request,
                 options,
             )
             .await
     }
-    /// Call the EchoLabel RPC. Sends a request to /example.v1.GreeterService/EchoLabel.
+    /// Call the EchoLabel RPC. Sends a request to /example.v1.Greeter/EchoLabel.
     pub async fn echo_label(
         &self,
         request: crate::shared::v1::Label,
@@ -962,14 +945,13 @@ where
         ::connectrpc::client::call_unary(
                 &self.transport,
                 &self.config,
-                GREETER_SERVICE_ECHO_LABEL_SPEC
-                    .with_origin(::connectrpc::SpecOrigin::Client),
+                GREETER_ECHO_LABEL_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
                 request,
                 options,
             )
             .await
     }
-    /// Call the Reset RPC. Sends a request to /example.v1.GreeterService/Reset.
+    /// Call the Reset RPC. Sends a request to /example.v1.Greeter/Reset.
     pub async fn reset(
         &self,
         request: ::buffa_types::google::protobuf::Empty,
@@ -1000,7 +982,7 @@ where
         ::connectrpc::client::call_unary(
                 &self.transport,
                 &self.config,
-                GREETER_SERVICE_RESET_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
+                GREETER_RESET_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
                 request,
                 options,
             )

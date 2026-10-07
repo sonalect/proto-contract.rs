@@ -6,11 +6,22 @@ import "example/v1/counter.proto";
 
 // Methods named like the helpers of Contract's bridges: the generated
 // code must call the helpers, and callers must reach these methods.
+//
+// The service keeps the `Service` suffix on purpose: with the enum
+// `ToolsErrorCode`, it covers the `<Service>ErrorCode` alias the plugin
+// emits for such a service (`ToolsServiceErrorCode`).
 service ToolsService {
-  rpc Call(AddRequest) returns (AddReply);
-  rpc Feed(AddRequest) returns (AddReply);
-  rpc GetRef(AddRequest) returns (AddReply);
-  rpc BlockOn(AddRequest) returns (AddReply);
-  rpc IntoInner(AddRequest) returns (AddReply);
-  rpc ServerStreaming(AddRequest) returns (stream AddReply);
+  rpc Call(Delta) returns (Total);
+  rpc Feed(Delta) returns (Total);
+  rpc GetRef(Delta) returns (Total);
+  rpc BlockOn(Delta) returns (Total);
+  rpc IntoInner(Delta) returns (Total);
+  rpc ServerStreaming(Delta) returns (stream Total);
+}
+
+// Failures a ToolsService caller can branch on.
+enum ToolsErrorCode {
+  TOOLS_ERROR_CODE_UNSPECIFIED = 0;
+  // A tool broke.
+  TOOLS_ERROR_CODE_BROKEN = 1;
 }

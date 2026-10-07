@@ -9,12 +9,12 @@ use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::task::{Context, Poll};
 use std::time::{Duration, Instant};
 
-use contract::{Blocking, BoxIter, Code, Inline, IterStream, Offload, Status, Stream};
-use contract_golden::proto::example::v1::{AddReply, AddRequest, Item, Summary, WatchRequest};
+use contract_golden::proto::example::v1::{Delta, FeedErrorCode, Item, Limit, Summary, Total};
 use contract_golden::traits::example::v1::{
-    CounterServiceAsync, CounterServiceSync, DynFeedServiceAsync, FeedServiceAsync,
-    FeedServiceSync, ToolsServiceAsync, ToolsServiceSync,
+    CounterAsync, CounterSync, DynFeedAsync, FeedAsync, FeedSync, ToolsServiceAsync,
+    ToolsServiceSync,
 };
+use protocontract::{Blocking, BoxIter, Error, Inline, IterStream, Offload, RuntimeCode, Stream};
 use tokio::runtime::{Builder, Runtime};
 use tokio::sync::mpsc;
 
@@ -63,23 +63,23 @@ fn item(text: &str) -> Item {
     }
 }
 
-fn items(texts: &[&str]) -> Vec<Result<Item, Status>> {
+fn items(texts: &[&str]) -> Vec<Result<Item, Error>> {
     texts.iter().map(|text| Ok(item(text))).collect()
 }
 
-fn texts(items: Vec<Result<Item, Status>>) -> Vec<String> {
+fn texts(items: Vec<Result<Item, Error>>) -> Vec<String> {
     items.into_iter().map(|item| item.unwrap().text).collect()
 }
 
-fn add(delta: i64) -> AddRequest {
-    AddRequest {
-        delta: Some(delta),
+fn add(delta: i64) -> Delta {
+    Delta {
+        value: Some(delta),
         ..Default::default()
     }
 }
 
-fn watch(count: i32) -> WatchRequest {
-    WatchRequest {
+fn watch(count: i32) -> Limit {
+    Limit {
         count,
         ..Default::default()
     }
@@ -99,15 +99,15 @@ struct SyncCounter {
     total: AtomicI64,
 }
 
-impl CounterServiceSync for SyncCounter {
-    fn add(&self, request: AddRequest) -> Result<AddReply, Status> {
-        let delta = request.delta.unwrap_or_default();
+impl CounterSync for SyncCounter {
+    fn add(&self, request: Delta) -> Result<Total, Error> {
+        let delta = request.value.unwrap_or_default();
         if delta == i64::MIN {
             panic!("delta out of range");
         }
         let total = self.total.fetch_add(delta, Ordering::SeqCst) + delta;
-        Ok(AddReply {
-            total: Some(total),
+        Ok(Total {
+            value: Some(total),
             ..Default::default()
         })
     }
@@ -119,13 +119,13 @@ struct SyncFeed {
     pulled: Arc<AtomicUsize>,
 }
 
-impl FeedServiceSync for SyncFeed {
-    fn watch(
-        &self,
-        request: WatchRequest,
-    ) -> Result<BoxIter<'static, Result<Item, Status>>, Status> {
+impl FeedSync for SyncFeed {
+    fn watch(&self, request: Limit) -> Result<BoxIter<'static, Result<Item, Error>>, Error> {
         if request.count < 0 {
-            return Err(Status::invalid_argument("count is negative"));
+            return Err(Error::new(
+                FeedErrorCode::NegativeCount,
+                "count is negative",
+            ));
         }
         let (panics, fails) = (
             request.count == PANIC_AFTER_ONE,
@@ -138,13 +138,13 @@ impl FeedServiceSync for SyncFeed {
                 panic!("feed broke");
             }
             if fails && i == 1 {
-                return Err(Status::aborted("feed failed"));
+                return Err(Error::new(FeedErrorCode::FeedFailed, "feed failed"));
             }
             Ok(item(&format!("s{i}")))
         })))
     }
 
-    fn collect(&self, requests: BoxIter<'static, Result<Item, Status>>) -> Result<Summary, Status> {
+    fn collect(&self, requests: BoxIter<'static, Result<Item, Error>>) -> Result<Summary, Error> {
         let mut texts = Vec::new();
         for request in requests {
             texts.push(request?.text);
@@ -158,8 +158,8 @@ impl FeedServiceSync for SyncFeed {
 
     fn echo(
         &self,
-        requests: BoxIter<'static, Result<Item, Status>>,
-    ) -> Result<BoxIter<'static, Result<Item, Status>>, Status> {
+        requests: BoxIter<'static, Result<Item, Error>>,
+    ) -> Result<BoxIter<'static, Result<Item, Error>>, Error> {
         Ok(Box::new(requests.map(|request| {
             request.map(|request| item(&request.text.to_uppercase()))
         })))
@@ -173,13 +173,13 @@ struct AsyncCounter {
     total: AtomicI64,
 }
 
-impl CounterServiceAsync for AsyncCounter {
-    async fn add(&self, request: AddRequest) -> Result<AddReply, Status> {
+impl CounterAsync for AsyncCounter {
+    async fn add(&self, request: Delta) -> Result<Total, Error> {
         tokio::task::yield_now().await;
-        let delta = request.delta.unwrap_or_default();
+        let delta = request.value.unwrap_or_default();
         let total = self.total.fetch_add(delta, Ordering::SeqCst) + delta;
-        Ok(AddReply {
-            total: Some(total),
+        Ok(Total {
+            value: Some(total),
             ..Default::default()
         })
     }
@@ -187,13 +187,16 @@ impl CounterServiceAsync for AsyncCounter {
 
 struct AsyncFeed;
 
-impl FeedServiceAsync for AsyncFeed {
+impl FeedAsync for AsyncFeed {
     async fn watch(
         &self,
-        request: WatchRequest,
-    ) -> Result<impl Stream<Item = Result<Item, Status>> + Send + use<>, Status> {
+        request: Limit,
+    ) -> Result<impl Stream<Item = Result<Item, Error>> + Send + use<>, Error> {
         if request.count < 0 {
-            return Err(Status::invalid_argument("count is negative"));
+            return Err(Error::new(
+                FeedErrorCode::NegativeCount,
+                "count is negative",
+            ));
         }
         let (sender, receiver) = mpsc::channel(2);
         tokio::spawn(async move {
@@ -207,9 +210,9 @@ impl FeedServiceAsync for AsyncFeed {
         Ok(Channel(receiver))
     }
 
-    async fn collect<R>(&self, requests: R) -> Result<Summary, Status>
+    async fn collect<R>(&self, requests: R) -> Result<Summary, Error>
     where
-        R: Stream<Item = Result<Item, Status>> + Send + 'static,
+        R: Stream<Item = Result<Item, Error>> + Send + 'static,
     {
         let mut texts = Vec::new();
         for request in drain(requests).await {
@@ -225,9 +228,9 @@ impl FeedServiceAsync for AsyncFeed {
     async fn echo<R>(
         &self,
         requests: R,
-    ) -> Result<impl Stream<Item = Result<Item, Status>> + Send + use<R>, Status>
+    ) -> Result<impl Stream<Item = Result<Item, Error>> + Send + use<R>, Error>
     where
-        R: Stream<Item = Result<Item, Status>> + Send + 'static,
+        R: Stream<Item = Result<Item, Error>> + Send + 'static,
     {
         let (sender, receiver) = mpsc::channel(1);
         tokio::spawn(async move {
@@ -250,13 +253,13 @@ fn inline_runs_every_kind_in_place() {
     let counter = Inline::new(SyncCounter::default());
     let feed = Inline::new(SyncFeed::default());
     current_thread().block_on(async {
-        assert_eq!(counter.add(add(4)).await.unwrap().total, Some(4));
+        assert_eq!(counter.add(add(4)).await.unwrap().value, Some(4));
         assert_eq!(
             texts(drain(feed.watch(watch(2)).await.unwrap()).await),
             ["s0", "s1"]
         );
-        let status = feed.watch(watch(-1)).await.err().unwrap();
-        assert_eq!(status.code(), Code::InvalidArgument);
+        let error = feed.watch(watch(-1)).await.err().unwrap();
+        assert!(error.is(FeedErrorCode::NegativeCount));
 
         let summary = feed
             .collect(IterStream::new(items(&["a", "b"]).into_iter()))
@@ -273,7 +276,7 @@ fn inline_runs_every_kind_in_place() {
 
 #[test]
 fn inline_fits_in_the_dyn_handle() {
-    let service = DynFeedServiceAsync::new(Inline::new(SyncFeed::default()));
+    let service = DynFeedAsync::new(Inline::new(SyncFeed::default()));
     let replies =
         current_thread().block_on(async { drain(service.watch(watch(1)).await.unwrap()).await });
     assert_eq!(texts(replies), ["s0"]);
@@ -287,13 +290,13 @@ fn offload_runs_every_kind_on_the_blocking_pool() {
         let counter = Offload::new(SyncCounter::default(), runtime.handle().clone());
         let feed = Offload::new(SyncFeed::default(), runtime.handle().clone());
         runtime.block_on(async {
-            assert_eq!(counter.add(add(2)).await.unwrap().total, Some(2));
-            assert_eq!(counter.add(add(3)).await.unwrap().total, Some(5));
+            assert_eq!(counter.add(add(2)).await.unwrap().value, Some(2));
+            assert_eq!(counter.add(add(3)).await.unwrap().value, Some(5));
 
             let replies = drain(feed.watch(watch(3)).await.unwrap()).await;
             assert_eq!(texts(replies), ["s0", "s1", "s2"]);
-            let status = feed.watch(watch(-1)).await.err().unwrap();
-            assert_eq!(status.code(), Code::InvalidArgument);
+            let error = feed.watch(watch(-1)).await.err().unwrap();
+            assert!(error.is(FeedErrorCode::NegativeCount));
 
             let summary = feed
                 .collect(IterStream::new(items(&["a", "b", "c"]).into_iter()))
@@ -301,12 +304,12 @@ fn offload_runs_every_kind_on_the_blocking_pool() {
                 .unwrap();
             assert_eq!((summary.count, summary.joined.as_str()), (3, "a b c"));
             let mut broken = items(&["a"]);
-            broken.push(Err(Status::unavailable("reset")));
-            let status = feed
+            broken.push(Err(Error::new(FeedErrorCode::ConnectionReset, "reset")));
+            let error = feed
                 .collect(IterStream::new(broken.into_iter()))
                 .await
                 .unwrap_err();
-            assert_eq!(status.code(), Code::Unavailable);
+            assert!(error.is(FeedErrorCode::ConnectionReset));
         });
     }
 }
@@ -368,40 +371,50 @@ fn an_error_item_ends_the_stream() {
         ] {
             assert_eq!(replies.len(), 2);
             assert_eq!(replies[0].as_ref().unwrap().text, "s0");
-            assert_eq!(replies[1].as_ref().unwrap_err().code(), Code::Aborted);
+            assert!(
+                replies[1]
+                    .as_ref()
+                    .unwrap_err()
+                    .is(FeedErrorCode::FeedFailed)
+            );
         }
     });
     let blocking = Blocking::new(offload, runtime.handle().clone());
-    let replies: Vec<_> = FeedServiceSync::watch(&blocking, watch(ERR_AT_ONE))
+    let replies: Vec<_> = FeedSync::watch(&blocking, watch(ERR_AT_ONE))
         .unwrap()
         .collect();
     assert_eq!(replies.len(), 2);
-    assert_eq!(replies[1].as_ref().unwrap_err().code(), Code::Aborted);
+    assert!(
+        replies[1]
+            .as_ref()
+            .unwrap_err()
+            .is(FeedErrorCode::FeedFailed)
+    );
 }
 
 #[test]
-fn offload_turns_a_panic_into_internal() {
+fn offload_turns_a_panic_into_panicked() {
     let runtime = multi_thread();
     let counter = Offload::new(SyncCounter::default(), runtime.handle().clone());
     let feed = Offload::new(SyncFeed::default(), runtime.handle().clone());
     runtime.block_on(async {
-        let status = counter.add(add(i64::MIN)).await.unwrap_err();
-        assert_eq!(status.code(), Code::Internal);
-        assert!(status.message().contains("delta out of range"), "{status}");
+        let error = counter.add(add(i64::MIN)).await.unwrap_err();
+        assert!(error.is(RuntimeCode::Panicked));
+        assert!(error.to_string().contains("delta out of range"), "{error}");
 
         let replies = drain(feed.watch(watch(PANIC_AFTER_ONE)).await.unwrap()).await;
         assert_eq!(replies.len(), 2);
         assert_eq!(replies[0].as_ref().unwrap().text, "s0");
-        let status = replies[1].as_ref().unwrap_err();
-        assert_eq!(status.code(), Code::Internal);
-        assert!(status.message().contains("feed broke"), "{status}");
+        let error = replies[1].as_ref().unwrap_err();
+        assert!(error.is(RuntimeCode::Panicked));
+        assert!(error.to_string().contains("feed broke"), "{error}");
     });
 }
 
 // ---- Blocking ----
 
 fn check_blocking_counter(counter: &Blocking<AsyncCounter>, expected: i64) {
-    assert_eq!(counter.add(add(1)).unwrap().total, Some(expected));
+    assert_eq!(counter.add(add(1)).unwrap().value, Some(expected));
 }
 
 #[test]
@@ -414,8 +427,8 @@ fn blocking_runs_every_kind_from_a_plain_thread() {
 
         let replies: Vec<_> = feed.watch(watch(3)).unwrap().collect();
         assert_eq!(texts(replies), ["a0", "a1", "a2"]);
-        let status = feed.watch(watch(-1)).err().unwrap();
-        assert_eq!(status.code(), Code::InvalidArgument);
+        let error = feed.watch(watch(-1)).err().unwrap();
+        assert!(error.is(FeedErrorCode::NegativeCount));
 
         let summary = feed
             .collect(Box::new(items(&["a", "b"]).into_iter()))
@@ -438,7 +451,7 @@ fn blocking_runs_every_kind_from_a_plain_thread() {
 fn blocking_bidirectional_is_a_conversation() {
     let runtime = multi_thread();
     let feed = Blocking::new(AsyncFeed, runtime.handle().clone());
-    let (requests, inbound) = std::sync::mpsc::channel::<Result<Item, Status>>();
+    let (requests, inbound) = std::sync::mpsc::channel::<Result<Item, Error>>();
     let mut replies = feed.echo(Box::new(inbound.into_iter())).unwrap();
     for text in ["ping", "pong"] {
         requests.send(Ok(item(text))).unwrap();
@@ -485,17 +498,17 @@ fn blocking_inside_a_current_thread_runtime_is_refused() {
     let runtime = current_thread();
     let from_task = Arc::clone(&counter);
     runtime.block_on(async move {
-        let status = counter.add(add(1)).unwrap_err();
-        assert_eq!(status.code(), Code::FailedPrecondition);
-        let status = tokio::spawn(async move { from_task.add(add(1)).unwrap_err() })
+        let error = counter.add(add(1)).unwrap_err();
+        assert!(error.is(RuntimeCode::CannotBlock));
+        let error = tokio::spawn(async move { from_task.add(add(1)).unwrap_err() })
             .await
             .unwrap();
-        assert_eq!(status.code(), Code::FailedPrecondition);
+        assert!(error.is(RuntimeCode::CannotBlock));
 
         // A reply stream read there fails the same way, and ends.
         let mut replies = replies;
-        let status = replies.next().unwrap().unwrap_err();
-        assert_eq!(status.code(), Code::FailedPrecondition);
+        let error = replies.next().unwrap().unwrap_err();
+        assert!(error.is(RuntimeCode::CannotBlock));
         assert!(replies.next().is_none());
     });
 }
@@ -539,33 +552,33 @@ fn offload_cost() {
 #[derive(Default)]
 struct Tools;
 
-fn tool(request: AddRequest, base: i64) -> Result<AddReply, Status> {
-    Ok(AddReply {
-        total: Some(base + request.delta.unwrap_or_default()),
+fn tool(request: Delta, base: i64) -> Result<Total, Error> {
+    Ok(Total {
+        value: Some(base + request.value.unwrap_or_default()),
         ..Default::default()
     })
 }
 
 impl ToolsServiceSync for Tools {
-    fn call(&self, request: AddRequest) -> Result<AddReply, Status> {
+    fn call(&self, request: Delta) -> Result<Total, Error> {
         tool(request, 100)
     }
-    fn feed(&self, request: AddRequest) -> Result<AddReply, Status> {
+    fn feed(&self, request: Delta) -> Result<Total, Error> {
         tool(request, 200)
     }
-    fn get_ref(&self, request: AddRequest) -> Result<AddReply, Status> {
+    fn get_ref(&self, request: Delta) -> Result<Total, Error> {
         tool(request, 300)
     }
-    fn block_on(&self, request: AddRequest) -> Result<AddReply, Status> {
+    fn block_on(&self, request: Delta) -> Result<Total, Error> {
         tool(request, 400)
     }
-    fn into_inner(&self, request: AddRequest) -> Result<AddReply, Status> {
+    fn into_inner(&self, request: Delta) -> Result<Total, Error> {
         tool(request, 500)
     }
     fn server_streaming(
         &self,
-        request: AddRequest,
-    ) -> Result<BoxIter<'static, Result<AddReply, Status>>, Status> {
+        request: Delta,
+    ) -> Result<BoxIter<'static, Result<Total, Error>>, Error> {
         Ok(Box::new(std::iter::once(tool(request, 600))))
     }
 }
@@ -578,14 +591,14 @@ fn methods_named_like_helpers_are_reachable() {
     let inline = Inline::new(Tools);
     let offload = Offload::new(Tools, runtime.handle().clone());
     runtime.block_on(async {
-        assert_eq!(inline.get_ref(add(1)).await.unwrap().total, Some(301));
-        assert_eq!(offload.call(add(1)).await.unwrap().total, Some(101));
-        assert_eq!(offload.feed(add(1)).await.unwrap().total, Some(201));
+        assert_eq!(inline.get_ref(add(1)).await.unwrap().value, Some(301));
+        assert_eq!(offload.call(add(1)).await.unwrap().value, Some(101));
+        assert_eq!(offload.feed(add(1)).await.unwrap().value, Some(201));
         let replies = drain(offload.server_streaming(add(1)).await.unwrap()).await;
-        assert_eq!(replies[0].as_ref().unwrap().total, Some(601));
+        assert_eq!(replies[0].as_ref().unwrap().value, Some(601));
     });
     let blocking = Blocking::new(offload, runtime.handle().clone());
-    assert_eq!(blocking.block_on(add(1)).unwrap().total, Some(401));
-    assert_eq!(blocking.into_inner(add(1)).unwrap().total, Some(501));
-    assert_eq!(blocking.get_ref(add(1)).unwrap().total, Some(301));
+    assert_eq!(blocking.block_on(add(1)).unwrap().value, Some(401));
+    assert_eq!(blocking.into_inner(add(1)).unwrap().value, Some(501));
+    assert_eq!(blocking.get_ref(add(1)).unwrap().value, Some(301));
 }

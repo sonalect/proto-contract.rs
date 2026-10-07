@@ -1,13 +1,13 @@
-///Shorthand for `OwnedView<AddRequestView<'static>>`.
-pub type OwnedAddRequestView = ::buffa::view::OwnedView<
-    crate::proto::example::v1::__buffa::view::AddRequestView<'static>,
+///Shorthand for `OwnedView<DeltaView<'static>>`.
+pub type OwnedDeltaView = ::buffa::view::OwnedView<
+    crate::proto::example::v1::__buffa::view::DeltaView<'static>,
 >;
-///Shorthand for `OwnedView<AddReplyView<'static>>`.
-pub type OwnedAddReplyView = ::buffa::view::OwnedView<
-    crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+///Shorthand for `OwnedView<TotalView<'static>>`.
+pub type OwnedTotalView = ::buffa::view::OwnedView<
+    crate::proto::example::v1::__buffa::view::TotalView<'static>,
 >;
-impl ::connectrpc::Encodable<crate::proto::example::v1::AddReply>
-for crate::proto::example::v1::__buffa::view::AddReplyView<'_> {
+impl ::connectrpc::Encodable<crate::proto::example::v1::Total>
+for crate::proto::example::v1::__buffa::view::TotalView<'_> {
     fn encode(
         &self,
         codec: ::connectrpc::CodecFormat,
@@ -15,9 +15,9 @@ for crate::proto::example::v1::__buffa::view::AddReplyView<'_> {
         ::connectrpc::__codegen::encode_view_body(self, codec)
     }
 }
-impl ::connectrpc::Encodable<crate::proto::example::v1::AddReply>
+impl ::connectrpc::Encodable<crate::proto::example::v1::Total>
 for ::buffa::view::OwnedView<
-    crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+    crate::proto::example::v1::__buffa::view::TotalView<'static>,
 > {
     fn encode(
         &self,
@@ -41,10 +41,10 @@ for ::buffa::view::OwnedView<
     }
 }
 /// Full service name for this service.
-pub const COUNTER_SERVICE_SERVICE_NAME: &str = "example.v1.CounterService";
+pub const COUNTER_SERVICE_NAME: &str = "example.v1.Counter";
 /// Static [`Spec`](::connectrpc::Spec) for the `Add` RPC, as seen by the server; the generated client passes it with [`origin`](::connectrpc::Spec::origin) `Client` (compare across sides with [`Spec::same_method`](::connectrpc::Spec::same_method)).
-pub const COUNTER_SERVICE_ADD_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
-        "/example.v1.CounterService/Add",
+pub const COUNTER_ADD_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::server(
+        "/example.v1.Counter/Add",
         ::connectrpc::StreamType::Unary,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
@@ -98,7 +98,7 @@ pub const COUNTER_SERVICE_ADD_SPEC: ::connectrpc::Spec = ::connectrpc::Spec::ser
 /// [`PreEncoded`](::connectrpc::PreEncoded) — see its `# Streaming
 /// example` doc.
 #[allow(clippy::type_complexity)]
-pub trait CounterService: Send + Sync + 'static {
+pub trait Counter: Send + Sync + 'static {
     /// Add a number to the total and return the new total.
     ///
     /// `'a` lets the response body borrow from `&self` (e.g. server-resident state).
@@ -111,11 +111,11 @@ pub trait CounterService: Send + Sync + 'static {
     fn add<'a>(
         &'a self,
         ctx: ::connectrpc::RequestContext,
-        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::AddRequest>,
+        request: ::connectrpc::ServiceRequest<'_, crate::proto::example::v1::Delta>,
     ) -> impl ::std::future::Future<
         Output = ::connectrpc::ServiceResult<
             impl ::connectrpc::Encodable<
-                crate::proto::example::v1::AddReply,
+                crate::proto::example::v1::Total,
             > + Send + use<'a, Self>,
         >,
     > + Send;
@@ -135,7 +135,7 @@ pub trait CounterService: Send + Sync + 'static {
 /// let service = Arc::new(MyServiceImpl);
 /// let router = service.register(Router::new());
 /// ```
-pub trait CounterServiceExt: CounterService {
+pub trait CounterExt: Counter {
     /// Register this service implementation with a Router.
     ///
     /// Takes ownership of the `Arc<Self>` and returns a new Router with
@@ -145,51 +145,49 @@ pub trait CounterServiceExt: CounterService {
         router: ::connectrpc::Router,
     ) -> ::connectrpc::Router;
 }
-impl<S: CounterService> CounterServiceExt for S {
+impl<S: Counter> CounterExt for S {
     fn register(
         self: ::std::sync::Arc<Self>,
         router: ::connectrpc::Router,
     ) -> ::connectrpc::Router {
         router
             .route_view(
-                COUNTER_SERVICE_SERVICE_NAME,
+                COUNTER_SERVICE_NAME,
                 "Add",
                 {
                     let svc = ::std::sync::Arc::clone(&self);
                     ::connectrpc::view_handler_fn(move |
                         ctx,
                         req: ::buffa::view::OwnedView<
-                            crate::proto::example::v1::__buffa::view::AddRequestView<
-                                'static,
-                            >,
+                            crate::proto::example::v1::__buffa::view::DeltaView<'static>,
                         >,
                         format|
                     {
                         let svc = ::std::sync::Arc::clone(&svc);
                         async move {
                             let sreq = ::connectrpc::ServiceRequest::<
-                                crate::proto::example::v1::AddRequest,
+                                crate::proto::example::v1::Delta,
                             >::from_parts(req.reborrow(), req.bytes());
                             svc.add(ctx, sreq)
                                 .await?
-                                .encode::<crate::proto::example::v1::AddReply>(format)
+                                .encode::<crate::proto::example::v1::Total>(format)
                         }
                     })
                 },
             )
-            .with_spec(COUNTER_SERVICE_ADD_SPEC)
+            .with_spec(COUNTER_ADD_SPEC)
     }
 }
 /// Type-inference marker used by [`Router::add_service`](::connectrpc::Router::add_service).
 #[doc(hidden)]
-pub struct CounterServiceRegisterMarker;
-impl<S: CounterService> ::connectrpc::ServiceRegister<CounterServiceRegisterMarker>
+pub struct CounterRegisterMarker;
+impl<S: Counter> ::connectrpc::ServiceRegister<CounterRegisterMarker>
 for ::std::sync::Arc<S> {
     fn register_service(self, router: ::connectrpc::Router) -> ::connectrpc::Router {
-        <S as CounterServiceExt>::register(self, router)
+        <S as CounterExt>::register(self, router)
     }
 }
-/// Monomorphic dispatcher for `CounterService`.
+/// Monomorphic dispatcher for `Counter`.
 ///
 /// Unlike `.register(Router)` which type-erases each method into an `Arc<dyn ErasedHandler>` stored in a `HashMap`, this struct dispatches via a compile-time `match` on method name: no vtable, no hash lookup.
 ///
@@ -198,14 +196,14 @@ for ::std::sync::Arc<S> {
 /// ```rust,ignore
 /// use connectrpc::ConnectRpcService;
 ///
-/// let server = CounterServiceServer::new(MyImpl);
+/// let server = CounterServer::new(MyImpl);
 /// let service = ConnectRpcService::new(server);
 /// // hand `service` to axum/hyper as a fallback_service
 /// ```
-pub struct CounterServiceServer<T> {
+pub struct CounterServer<T> {
     inner: ::std::sync::Arc<T>,
 }
-impl<T: CounterService> CounterServiceServer<T> {
+impl<T: Counter> CounterServer<T> {
     /// Wrap a service implementation in a monomorphic dispatcher.
     pub fn new(service: T) -> Self {
         Self {
@@ -217,25 +215,25 @@ impl<T: CounterService> CounterServiceServer<T> {
         Self { inner }
     }
 }
-impl<T> Clone for CounterServiceServer<T> {
+impl<T> Clone for CounterServer<T> {
     fn clone(&self) -> Self {
         Self {
             inner: ::std::sync::Arc::clone(&self.inner),
         }
     }
 }
-impl<T: CounterService> ::connectrpc::Dispatcher for CounterServiceServer<T> {
+impl<T: Counter> ::connectrpc::Dispatcher for CounterServer<T> {
     #[inline]
     fn lookup(
         &self,
         path: &str,
     ) -> Option<::connectrpc::dispatcher::codegen::MethodDescriptor> {
-        let method = path.strip_prefix("example.v1.CounterService/")?;
+        let method = path.strip_prefix("example.v1.Counter/")?;
         match method {
             "Add" => {
                 Some(
                     ::connectrpc::dispatcher::codegen::MethodDescriptor::unary(false)
-                        .with_spec(COUNTER_SERVICE_ADD_SPEC),
+                        .with_spec(COUNTER_ADD_SPEC),
                 )
             }
             _ => None,
@@ -248,7 +246,7 @@ impl<T: CounterService> ::connectrpc::Dispatcher for CounterServiceServer<T> {
         request: ::connectrpc::Payload,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::UnaryResult {
-        let Some(method) = path.strip_prefix("example.v1.CounterService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Counter/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_unary(path);
         };
         let _ = (&ctx, &request, &format);
@@ -257,20 +255,18 @@ impl<T: CounterService> ::connectrpc::Dispatcher for CounterServiceServer<T> {
                 let svc = ::std::sync::Arc::clone(&self.inner);
                 Box::pin(async move {
                     let body = ::connectrpc::dispatcher::codegen::request_proto_bytes::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >(request.encoded()?, format)?;
-                    let req: crate::proto::example::v1::__buffa::view::AddRequestView<
-                        '_,
-                    > = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
+                    let req: crate::proto::example::v1::__buffa::view::DeltaView<'_> = ::connectrpc::dispatcher::codegen::decode_borrowed_request_view(
                         &body,
                         ctx.decode_options(),
                     )?;
                     let req = ::connectrpc::ServiceRequest::<
-                        crate::proto::example::v1::AddRequest,
+                        crate::proto::example::v1::Delta,
                     >::from_parts(&req, &body);
                     svc.add(ctx, req)
                         .await?
-                        .encode::<crate::proto::example::v1::AddReply>(format)
+                        .encode::<crate::proto::example::v1::Total>(format)
                 })
             }
             _ => ::connectrpc::dispatcher::codegen::unimplemented_unary(path),
@@ -283,7 +279,7 @@ impl<T: CounterService> ::connectrpc::Dispatcher for CounterServiceServer<T> {
         request: ::buffa::bytes::Bytes,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::StreamingResult {
-        let Some(method) = path.strip_prefix("example.v1.CounterService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Counter/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_streaming(path);
         };
         let _ = (&ctx, &request, &format);
@@ -298,7 +294,7 @@ impl<T: CounterService> ::connectrpc::Dispatcher for CounterServiceServer<T> {
         requests: ::connectrpc::dispatcher::codegen::RequestStream,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::UnaryResult {
-        let Some(method) = path.strip_prefix("example.v1.CounterService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Counter/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_unary(path);
         };
         let _ = (&ctx, &requests, &format);
@@ -313,7 +309,7 @@ impl<T: CounterService> ::connectrpc::Dispatcher for CounterServiceServer<T> {
         requests: ::connectrpc::dispatcher::codegen::RequestStream,
         format: ::connectrpc::CodecFormat,
     ) -> ::connectrpc::dispatcher::codegen::StreamingResult {
-        let Some(method) = path.strip_prefix("example.v1.CounterService/") else {
+        let Some(method) = path.strip_prefix("example.v1.Counter/") else {
             return ::connectrpc::dispatcher::codegen::unimplemented_streaming(path);
         };
         let _ = (&ctx, &requests, &format);
@@ -339,7 +335,7 @@ impl<T: CounterService> ::connectrpc::Dispatcher for CounterServiceServer<T> {
 /// let conn = Http2Connection::connect_plaintext(uri.clone()).await?.shared(1024);
 /// let config = ClientConfig::new(uri).with_protocol(Protocol::Grpc);
 ///
-/// let client = CounterServiceClient::new(conn, config);
+/// let client = CounterClient::new(conn, config);
 /// let response = client.add(request).await?;
 /// ```
 ///
@@ -351,7 +347,7 @@ impl<T: CounterService> ::connectrpc::Dispatcher for CounterServiceServer<T> {
 /// let http = HttpClient::plaintext();  // cleartext http:// only
 /// let config = ClientConfig::new("http://localhost:8080".parse()?);
 ///
-/// let client = CounterServiceClient::new(http, config);
+/// let client = CounterClient::new(http, config);
 /// let response = client.add(request).await?;
 /// ```
 ///
@@ -381,12 +377,12 @@ impl<T: CounterService> ::connectrpc::Dispatcher for CounterServiceServer<T> {
 /// methods (`msg.name()`) or `.view()`, or convert with `.to_owned_message()`.
 #[cfg(feature = "client")]
 #[derive(Clone)]
-pub struct CounterServiceClient<T> {
+pub struct CounterClient<T> {
     transport: T,
     config: ::connectrpc::client::ClientConfig,
 }
 #[cfg(feature = "client")]
-impl<T> CounterServiceClient<T>
+impl<T> CounterClient<T>
 where
     T: ::connectrpc::client::ClientTransport,
     <T::ResponseBody as ::connectrpc::http_body::Body>::Error: ::std::fmt::Display,
@@ -403,14 +399,14 @@ where
     pub fn config_mut(&mut self) -> &mut ::connectrpc::client::ClientConfig {
         &mut self.config
     }
-    /// Call the Add RPC. Sends a request to /example.v1.CounterService/Add.
+    /// Call the Add RPC. Sends a request to /example.v1.Counter/Add.
     pub async fn add(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -421,12 +417,12 @@ where
     /// Call the Add RPC with explicit per-call options. Options override [`ClientConfig`](::connectrpc::client::ClientConfig) defaults.
     pub async fn add_with_options(
         &self,
-        request: crate::proto::example::v1::AddRequest,
+        request: crate::proto::example::v1::Delta,
         options: ::connectrpc::client::CallOptions,
     ) -> Result<
         ::connectrpc::client::UnaryResponse<
             ::buffa::view::OwnedView<
-                crate::proto::example::v1::__buffa::view::AddReplyView<'static>,
+                crate::proto::example::v1::__buffa::view::TotalView<'static>,
             >,
         >,
         ::connectrpc::ConnectError,
@@ -434,7 +430,7 @@ where
         ::connectrpc::client::call_unary(
                 &self.transport,
                 &self.config,
-                COUNTER_SERVICE_ADD_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
+                COUNTER_ADD_SPEC.with_origin(::connectrpc::SpecOrigin::Client),
                 request,
                 options,
             )

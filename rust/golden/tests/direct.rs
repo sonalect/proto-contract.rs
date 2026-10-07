@@ -9,16 +9,18 @@ use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Waker};
 
 use buffa_types::google::protobuf::Empty;
-use contract::{Code, Status};
 use contract_golden::per_package;
 use contract_golden::proto::example::common::v1::Name;
-use contract_golden::proto::example::v1::greet_request::Options;
-use contract_golden::proto::example::v1::{AddReply, AddRequest, GreetReply, GreetRequest};
+use contract_golden::proto::example::v1::person::Style;
+use contract_golden::proto::example::v1::{
+    Delta, GreeterErrorCode, Greeting, Person, ToolsErrorCode, Total,
+};
 use contract_golden::shared::v1::Label;
 use contract_golden::traits::example::v1::{
-    CounterServiceAsync, CounterServiceSync, DynCounterServiceAsync, DynGreeterServiceAsync,
-    GreeterServiceAsync, GreeterServiceSync,
+    CounterAsync, CounterSync, DynCounterAsync, DynGreeterAsync, GreeterAsync, GreeterSync,
+    ToolsServiceErrorCode,
 };
+use protocontract::Error;
 
 /// Drive a future that never waits, as the in-memory implementations here
 /// do; no async runtime is needed for them.
@@ -33,34 +35,37 @@ fn ready<T>(future: impl Future<Output = T>) -> T {
     }
 }
 
-fn text(reply: &GreetReply) -> &str {
+fn text(reply: &Greeting) -> &str {
     reply.text.as_deref().unwrap_or_default()
 }
 
-fn greeting(name: &Name, options: &Options) -> Result<GreetReply, Status> {
+fn greeting(name: &Name, style: &Style) -> Result<Greeting, Error> {
     if name.first.is_empty() {
-        return Err(Status::invalid_argument("name.first is empty"));
+        return Err(Error::new(
+            GreeterErrorCode::EmptyName,
+            "name.first is empty",
+        ));
     }
     let text = format!("Hello, {}!", name.first);
-    let text = if options.shout == Some(true) {
+    let text = if style.shout == Some(true) {
         text.to_uppercase()
     } else {
         text
     };
-    Ok(GreetReply {
+    Ok(Greeting {
         text: Some(text),
         ..Default::default()
     })
 }
 
-fn request(first: &str, shout: bool) -> GreetRequest {
-    GreetRequest {
+fn request(first: &str, shout: bool) -> Person {
+    Person {
         name: Name {
             first: first.into(),
             ..Default::default()
         }
         .into(),
-        options: Options {
+        style: Style {
             shout: Some(shout),
             ..Default::default()
         }
@@ -82,27 +87,27 @@ struct SyncGreeter {
     resets: AtomicI64,
 }
 
-impl GreeterServiceSync for SyncGreeter {
-    fn greet(&self, request: GreetRequest) -> Result<GreetReply, Status> {
-        greeting(&request.name, &request.options)
+impl GreeterSync for SyncGreeter {
+    fn greet(&self, request: Person) -> Result<Greeting, Error> {
+        greeting(&request.name, &request.style)
     }
 
-    fn greet_name(&self, request: Name) -> Result<GreetReply, Status> {
-        greeting(&request, &Options::default())
+    fn greet_name(&self, request: Name) -> Result<Greeting, Error> {
+        greeting(&request, &Style::default())
     }
 
-    fn get_options(&self, _request: Empty) -> Result<Options, Status> {
-        Ok(Options {
+    fn get_style(&self, _request: Empty) -> Result<Style, Error> {
+        Ok(Style {
             shout: Some(true),
             ..Default::default()
         })
     }
 
-    fn echo_label(&self, request: Label) -> Result<Label, Status> {
+    fn echo_label(&self, request: Label) -> Result<Label, Error> {
         Ok(request)
     }
 
-    fn reset(&self, request: Empty) -> Result<Empty, Status> {
+    fn reset(&self, request: Empty) -> Result<Empty, Error> {
         self.resets.fetch_add(1, Ordering::SeqCst);
         Ok(request)
     }
@@ -114,32 +119,35 @@ struct AsyncGreeter {
     log: Mutex<Vec<String>>,
 }
 
-impl GreeterServiceAsync for AsyncGreeter {
-    async fn greet(&self, request: GreetRequest) -> Result<GreetReply, Status> {
-        let reply = greeting(&request.name, &request.options)?;
+impl GreeterAsync for AsyncGreeter {
+    async fn greet(&self, request: Person) -> Result<Greeting, Error> {
+        let reply = greeting(&request.name, &request.style)?;
         self.log.lock().unwrap().push(text(&reply).to_string());
         Ok(reply)
     }
 
-    async fn greet_name(&self, request: Name) -> Result<GreetReply, Status> {
-        greeting(&request, &Options::default())
+    async fn greet_name(&self, request: Name) -> Result<Greeting, Error> {
+        greeting(&request, &Style::default())
     }
 
-    async fn get_options(&self, _request: Empty) -> Result<Options, Status> {
-        Ok(Options::default())
+    async fn get_style(&self, _request: Empty) -> Result<Style, Error> {
+        Ok(Style::default())
     }
 
-    async fn echo_label(&self, request: Label) -> Result<Label, Status> {
+    async fn echo_label(&self, request: Label) -> Result<Label, Error> {
         Ok(request)
     }
 
-    async fn reset(&self, _request: Empty) -> Result<Empty, Status> {
-        Err(Status::unimplemented("reset is not supported"))
+    async fn reset(&self, _request: Empty) -> Result<Empty, Error> {
+        Err(Error::new(
+            GreeterErrorCode::NotSupported,
+            "reset is not supported",
+        ))
     }
 }
 
 /// A caller generic over the async form: no boxing.
-async fn greet_twice(service: &impl GreeterServiceAsync, first: &str) -> Vec<String> {
+async fn greet_twice(service: &impl GreeterAsync, first: &str) -> Vec<String> {
     let mut texts = Vec::new();
     for shout in [false, true] {
         let reply = service.greet(request(first, shout)).await.unwrap();
@@ -151,7 +159,7 @@ async fn greet_twice(service: &impl GreeterServiceAsync, first: &str) -> Vec<Str
 #[test]
 fn sync_implementation_through_dyn() {
     let greeter = Arc::new(SyncGreeter::default());
-    let service: Arc<dyn GreeterServiceSync> = greeter.clone();
+    let service: Arc<dyn GreeterSync> = greeter.clone();
 
     assert_eq!(
         text(&service.greet(request("Ada", false)).unwrap()),
@@ -166,7 +174,7 @@ fn sync_implementation_through_dyn() {
         "Hello, Grace!"
     );
     assert_eq!(
-        service.get_options(Empty::default()).unwrap().shout,
+        service.get_style(Empty::default()).unwrap().shout,
         Some(true)
     );
     let label = Label {
@@ -180,10 +188,46 @@ fn sync_implementation_through_dyn() {
 
 #[test]
 fn sync_error_keeps_code_and_message() {
-    let service: Arc<dyn GreeterServiceSync> = Arc::new(SyncGreeter::default());
-    let status = service.greet(request("", false)).unwrap_err();
-    assert_eq!(status.code(), Code::InvalidArgument);
-    assert_eq!(status.message(), "name.first is empty");
+    let service: Arc<dyn GreeterSync> = Arc::new(SyncGreeter::default());
+    let error = service.greet(request("", false)).unwrap_err();
+    assert!(error.is(GreeterErrorCode::EmptyName));
+    // A caller matches on the enum's constants, as the README shows.
+    let what = match error.code_as::<GreeterErrorCode>() {
+        Some(GreeterErrorCode::EmptyName) => "empty name",
+        Some(_) => "another greeter code",
+        None => "not a greeter code",
+    };
+    assert_eq!(what, "empty name");
+    assert_eq!(
+        error.to_string(),
+        "GREETER_ERROR_CODE_EMPTY_NAME: name.first is empty"
+    );
+}
+
+/// `ToolsService` keeps its `Service` suffix, so the plugin emits the alias
+/// `ToolsServiceErrorCode` for the enum `ToolsErrorCode`.
+#[test]
+fn error_code_alias_names_the_enum() {
+    let error = Error::new(ToolsErrorCode::Broken, "a tool broke");
+    assert!(error.is(ToolsServiceErrorCode::Broken));
+    assert!(error.is(ToolsServiceErrorCode::TOOLS_ERROR_CODE_BROKEN));
+    assert_eq!(
+        error.code_as::<ToolsServiceErrorCode>(),
+        Some(ToolsErrorCode::Broken)
+    );
+    let what = match error.code_as::<ToolsServiceErrorCode>() {
+        Some(ToolsServiceErrorCode::Broken) => "broken",
+        Some(_) => "another tools code",
+        None => "not a tools code",
+    };
+    assert_eq!(what, "broken");
+    // Number 1 of another enum is another code.
+    assert_eq!(
+        GreeterErrorCode::EmptyName as i32,
+        ToolsErrorCode::Broken as i32
+    );
+    assert!(!error.is(GreeterErrorCode::EmptyName));
+    assert_eq!(error.code_as::<GreeterErrorCode>(), None);
 }
 
 #[test]
@@ -198,7 +242,7 @@ fn async_implementation_called_generically() {
 #[test]
 fn async_implementation_through_the_dyn_handle() {
     let greeter = Arc::new(AsyncGreeter::default());
-    let service = DynGreeterServiceAsync::from_arc(Arc::clone(&greeter));
+    let service = DynGreeterAsync::from_arc(Arc::clone(&greeter));
 
     assert_eq!(
         text(&ready(service.greet(request("Ada", true))).unwrap()),
@@ -209,20 +253,27 @@ fn async_implementation_through_the_dyn_handle() {
         "Hello, Grace!"
     );
     assert_eq!(
-        ready(service.get_options(Empty::default())).unwrap().shout,
+        ready(service.get_style(Empty::default())).unwrap().shout,
         None
     );
     assert_eq!(*greeter.log.lock().unwrap(), ["HELLO, ADA!"]);
 
-    let status = ready(service.reset(Empty::default())).unwrap_err();
-    assert_eq!(status.code(), Code::Unimplemented);
-    let status = ready(service.greet(request("", false))).unwrap_err();
-    assert_eq!(status.code(), Code::InvalidArgument);
+    let error = ready(service.reset(Empty::default())).unwrap_err();
+    assert!(error.is(GreeterErrorCode::NotSupported));
+    let error = ready(service.greet(request("", false))).unwrap_err();
+    assert!(error.is(GreeterErrorCode::EmptyName));
+    // A caller matches on the enum's constants, as the README shows.
+    let what = match error.code_as::<GreeterErrorCode>() {
+        Some(GreeterErrorCode::EmptyName) => "empty name",
+        Some(_) => "another greeter code",
+        None => "not a greeter code",
+    };
+    assert_eq!(what, "empty name");
 }
 
 #[test]
 fn dyn_handle_is_an_implementation_and_moves_across_threads() {
-    let service = DynGreeterServiceAsync::new(AsyncGreeter::default());
+    let service = DynGreeterAsync::new(AsyncGreeter::default());
     // The handle implements the trait, so generic callers take it too.
     assert_eq!(
         ready(greet_twice(&service, "Bo")),
@@ -239,40 +290,40 @@ fn dyn_handle_is_an_implementation_and_moves_across_threads() {
 
 #[test]
 fn dyn_handle_has_debug() {
-    let service = DynGreeterServiceAsync::new(AsyncGreeter::default());
-    assert_eq!(format!("{service:?}"), "DynGreeterServiceAsync { .. }");
+    let service = DynGreeterAsync::new(AsyncGreeter::default());
+    assert_eq!(format!("{service:?}"), "DynGreeterAsync { .. }");
 }
 
 /// The handle may be chosen at run time among implementations.
 #[test]
 fn dyn_handle_swaps_implementations() {
     struct Polite;
-    impl GreeterServiceAsync for Polite {
-        async fn greet(&self, _request: GreetRequest) -> Result<GreetReply, Status> {
-            Ok(GreetReply {
+    impl GreeterAsync for Polite {
+        async fn greet(&self, _request: Person) -> Result<Greeting, Error> {
+            Ok(Greeting {
                 text: Some("Good day.".into()),
                 ..Default::default()
             })
         }
-        async fn greet_name(&self, _request: Name) -> Result<GreetReply, Status> {
-            Err(Status::unimplemented("greet_name"))
+        async fn greet_name(&self, _request: Name) -> Result<Greeting, Error> {
+            Err(Error::new(GreeterErrorCode::NotSupported, "greet_name"))
         }
-        async fn get_options(&self, _request: Empty) -> Result<Options, Status> {
-            Err(Status::unimplemented("get_options"))
+        async fn get_style(&self, _request: Empty) -> Result<Style, Error> {
+            Err(Error::new(GreeterErrorCode::NotSupported, "get_style"))
         }
-        async fn echo_label(&self, request: Label) -> Result<Label, Status> {
+        async fn echo_label(&self, request: Label) -> Result<Label, Error> {
             Ok(request)
         }
-        async fn reset(&self, request: Empty) -> Result<Empty, Status> {
+        async fn reset(&self, request: Empty) -> Result<Empty, Error> {
             Ok(request)
         }
     }
 
     for (polite, expected) in [(true, "Good day."), (false, "Hello, Ada!")] {
         let service = if polite {
-            DynGreeterServiceAsync::new(Polite)
+            DynGreeterAsync::new(Polite)
         } else {
-            DynGreeterServiceAsync::new(AsyncGreeter::default())
+            DynGreeterAsync::new(AsyncGreeter::default())
         };
         let reply = ready(service.greet(request("Ada", false))).unwrap();
         assert_eq!(text(&reply), expected);
@@ -284,20 +335,20 @@ struct Counter {
     total: AtomicI64,
 }
 
-impl CounterServiceSync for Counter {
-    fn add(&self, request: AddRequest) -> Result<AddReply, Status> {
-        let delta = request.delta.unwrap_or_default();
+impl CounterSync for Counter {
+    fn add(&self, request: Delta) -> Result<Total, Error> {
+        let delta = request.value.unwrap_or_default();
         let total = self.total.fetch_add(delta, Ordering::SeqCst) + delta;
-        Ok(AddReply {
-            total: Some(total),
+        Ok(Total {
+            value: Some(total),
             ..Default::default()
         })
     }
 }
 
-impl CounterServiceAsync for Counter {
-    async fn add(&self, request: AddRequest) -> Result<AddReply, Status> {
-        CounterServiceSync::add(self, request)
+impl CounterAsync for Counter {
+    async fn add(&self, request: Delta) -> Result<Total, Error> {
+        CounterSync::add(self, request)
     }
 }
 
@@ -306,34 +357,34 @@ fn one_type_may_implement_both_forms() {
     let counter = Arc::new(Counter {
         total: AtomicI64::new(0),
     });
-    let sync: Arc<dyn CounterServiceSync> = counter.clone();
-    let asynchronous = DynCounterServiceAsync::from_arc(counter);
-    let add = |delta| AddRequest {
-        delta: Some(delta),
+    let sync: Arc<dyn CounterSync> = counter.clone();
+    let asynchronous = DynCounterAsync::from_arc(counter);
+    let add = |delta| Delta {
+        value: Some(delta),
         ..Default::default()
     };
-    assert_eq!(sync.add(add(2)).unwrap().total, Some(2));
-    assert_eq!(ready(asynchronous.add(add(-5))).unwrap().total, Some(-3));
+    assert_eq!(sync.add(add(2)).unwrap().value, Some(2));
+    assert_eq!(ready(asynchronous.add(add(-5))).unwrap().value, Some(-3));
 }
 
 /// The `file_per_package` layout yields the same traits.
 #[test]
 fn per_package_layout_is_usable() {
     struct Echo;
-    impl per_package::example::v1::CounterServiceSync for Echo {
-        fn add(&self, request: AddRequest) -> Result<AddReply, Status> {
-            Ok(AddReply {
-                total: request.delta,
+    impl per_package::example::v1::CounterSync for Echo {
+        fn add(&self, request: Delta) -> Result<Total, Error> {
+            Ok(Total {
+                value: request.value,
                 ..Default::default()
             })
         }
     }
-    let service: Box<dyn per_package::example::v1::CounterServiceSync> = Box::new(Echo);
+    let service: Box<dyn per_package::example::v1::CounterSync> = Box::new(Echo);
     let reply = service
-        .add(AddRequest {
-            delta: Some(7),
+        .add(Delta {
+            value: Some(7),
             ..Default::default()
         })
         .unwrap();
-    assert_eq!(reply.total, Some(7));
+    assert_eq!(reply.value, Some(7));
 }

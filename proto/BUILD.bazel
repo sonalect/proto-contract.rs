@@ -8,9 +8,15 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+# One module for every proto of the workspace, as `buf.yaml` lists them:
+# buf refuses a listed module without files. Each template picks its own
+# tree through `inputs`.
 buf_module(
     name = "module",
-    srcs = [":protos"],
+    srcs = [
+        ":protos",
+        "//examples/glossary:protos",
+    ],
     visibility = ["//visibility:public"],
 )
 

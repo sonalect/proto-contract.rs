@@ -132,22 +132,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "contract"
-version = "0.1.0"
-dependencies = [
- "buffa-types",
- "futures-core",
- "tokio",
-]
-
-[[package]]
 name = "contract-golden"
 version = "0.1.0"
 dependencies = [
  "buffa",
  "buffa-types",
  "connectrpc",
- "contract",
+ "protocontract",
  "tokio",
 ]
 
@@ -274,6 +265,37 @@ dependencies = [
  "memchr",
  "pin-project-lite",
  "slab",
+]
+
+[[package]]
+name = "glossary-api"
+version = "0.1.0"
+dependencies = [
+ "buffa",
+ "protocontract",
+]
+
+[[package]]
+name = "glossary-app"
+version = "0.1.0"
+dependencies = [
+ "glossary-api",
+ "glossary-consumer",
+ "glossary-provider",
+]
+
+[[package]]
+name = "glossary-consumer"
+version = "0.1.0"
+dependencies = [
+ "glossary-api",
+]
+
+[[package]]
+name = "glossary-provider"
+version = "0.1.0"
+dependencies = [
+ "glossary-api",
 ]
 
 [[package]]
@@ -489,6 +511,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.6",
+]
+
+[[package]]
+name = "protocontract"
+version = "0.1.0"
+dependencies = [
+ "buffa",
+ "futures-core",
+ "tokio",
 ]
 
 [[package]]

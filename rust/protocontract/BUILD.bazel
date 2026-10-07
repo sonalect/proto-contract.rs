@@ -4,22 +4,22 @@ load("//bazel:compat.bzl", "NOT_WINDOWS")
 exports_files(["Cargo.toml"])
 
 rust_library(
-    name = "contract",
+    name = "protocontract",
     srcs = glob(["src/**/*.rs"]),
     crate_features = ["tokio"],
-    crate_name = "contract",
+    crate_name = "protocontract",
     visibility = ["//visibility:public"],
     deps = [
-        "@contract_cargo//:buffa-types",
+        "@contract_cargo//:buffa",
         "@contract_cargo//:futures-core",
         "@contract_cargo//:tokio",
     ],
 )
 
 rust_test(
-    name = "contract_test",
+    name = "protocontract_test",
     size = "small",
-    crate = ":contract",
+    crate = ":protocontract",
     crate_features = ["tokio"],
     visibility = ["//rust:__pkg__"],
 )
@@ -27,28 +27,28 @@ rust_test(
 # On Windows rules_rust links the doc tests against a sysroot path that
 # link.exe cannot open (LNK1181); `cargo test` runs them there.
 rust_doc_test(
-    name = "contract_doc_test",
+    name = "protocontract_doc_test",
     size = "small",
-    crate = ":contract",
+    crate = ":protocontract",
     crate_features = ["tokio"],
     target_compatible_with = NOT_WINDOWS,
 )
 
 # The default feature set: no tokio, no bridges that need it.
 rust_library(
-    name = "contract_no_tokio",
+    name = "protocontract_no_tokio",
     srcs = glob(["src/**/*.rs"]),
-    crate_name = "contract",
+    crate_name = "protocontract",
     visibility = ["//rust:__pkg__"],
     deps = [
-        "@contract_cargo//:buffa-types",
+        "@contract_cargo//:buffa",
         "@contract_cargo//:futures-core",
     ],
 )
 
 rust_test(
-    name = "contract_no_tokio_test",
+    name = "protocontract_no_tokio_test",
     size = "small",
-    crate = ":contract_no_tokio",
+    crate = ":protocontract_no_tokio",
     visibility = ["//rust:__pkg__"],
 )

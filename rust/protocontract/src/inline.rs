@@ -3,7 +3,7 @@
 use futures_core::Stream;
 
 use crate::stream::next;
-use crate::{BoxIter, IterStream, Status};
+use crate::{BoxIter, Error, IterStream};
 
 /// The async form of a sync implementation, without a thread hop: each call
 /// runs the sync method inside the future's `poll`.
@@ -50,8 +50,8 @@ impl<T> Inline<T> {
     /// A sync reply iterator as a stream read in `poll`, ended after its
     /// first `Err` item.
     pub fn reply_stream<X: Send + 'static>(
-        replies: BoxIter<'static, Result<X, Status>>,
-    ) -> IterStream<BoxIter<'static, Result<X, Status>>> {
+        replies: BoxIter<'static, Result<X, Error>>,
+    ) -> IterStream<BoxIter<'static, Result<X, Error>>> {
         IterStream::new(Box::new(UntilError {
             items: Some(replies),
         }))
@@ -79,10 +79,10 @@ struct UntilError<I> {
     items: Option<I>,
 }
 
-impl<X, I: Iterator<Item = Result<X, Status>>> Iterator for UntilError<I> {
-    type Item = Result<X, Status>;
+impl<X, I: Iterator<Item = Result<X, Error>>> Iterator for UntilError<I> {
+    type Item = Result<X, Error>;
 
-    fn next(&mut self) -> Option<Result<X, Status>> {
+    fn next(&mut self) -> Option<Result<X, Error>> {
         let item = self.items.as_mut()?.next();
         if matches!(item, Some(Err(_))) {
             self.items = None;
@@ -98,7 +98,7 @@ mod tests {
     use std::task::{Context, Poll, Waker};
 
     use super::Inline;
-    use crate::{IterStream, Status, Stream};
+    use crate::{Error, IterStream, RuntimeCode, Stream};
 
     #[test]
     fn buffer_keeps_every_item_in_order() {
@@ -116,7 +116,11 @@ mod tests {
 
     #[test]
     fn reply_stream_ends_after_the_first_error() {
-        let replies: Vec<Result<u8, Status>> = vec![Ok(1), Err(Status::aborted("stop")), Ok(2)];
+        let replies: Vec<Result<u8, Error>> = vec![
+            Ok(1),
+            Err(Error::new(RuntimeCode::Cancelled, "stop")),
+            Ok(2),
+        ];
         let stream = Inline::<()>::reply_stream(Box::new(replies.into_iter()));
         let mut stream = pin!(stream);
         let mut seen = Vec::new();
@@ -124,8 +128,8 @@ mod tests {
             .as_mut()
             .poll_next(&mut Context::from_waker(Waker::noop()))
         {
-            seen.push(item);
+            seen.push(item.map_err(|error| error.to_string()));
         }
-        assert_eq!(seen, [Ok(1), Err(Status::aborted("stop"))]);
+        assert_eq!(seen, [Ok(1), Err("CANCELLED: stop".to_owned())]);
     }
 }

@@ -3,9 +3,9 @@ syntax = "proto3";
 package example.v1;
 
 // Moves items in every direction a method can stream.
-service FeedService {
-  // Stream the first `count` items of the feed, one reply per item.
-  rpc Watch(WatchRequest) returns (stream Item);
+service Feed {
+  // Stream the first `count` items of the feed, one item per message.
+  rpc Watch(Limit) returns (stream Item);
 
   // Collect a stream of items into one summary.
   rpc Collect(stream Item) returns (Summary);
@@ -15,7 +15,7 @@ service FeedService {
 }
 
 // How many items to stream.
-message WatchRequest {
+message Limit {
   // The number of items.
   int32 count = 1;
 }
@@ -32,4 +32,17 @@ message Summary {
   int32 count = 1;
   // The item texts, joined with spaces.
   string joined = 2;
+}
+
+// Failures a Feed caller can branch on.
+enum FeedErrorCode {
+  FEED_ERROR_CODE_UNSPECIFIED = 0;
+  // `count` is negative.
+  FEED_ERROR_CODE_NEGATIVE_COUNT = 1;
+  // The feed failed while it streamed.
+  FEED_ERROR_CODE_FEED_FAILED = 2;
+  // The stream of items broke.
+  FEED_ERROR_CODE_CONNECTION_RESET = 3;
+  // More items than a summary can count.
+  FEED_ERROR_CODE_TOO_MANY_ITEMS = 4;
 }

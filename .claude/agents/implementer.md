@@ -10,7 +10,7 @@ You implement a change in the Contract repository from the specification in
 the brief. The project rules in `.claude/rules/` apply in full.
 
 - Follow the spec. If it is wrong or incomplete in a way that changes the
-  design (a generated name or signature, a plugin parameter, a `Status`
+  design (a generated name or signature, a plugin parameter, an `Error`
   code, the thread a bridge runs on), stop
   and report the question instead of choosing yourself.
 - Code and tests first, gates green, then the affected documents in one

@@ -1,8 +1,8 @@
 # Design: Contract
 
-Status: accepted by the owner (6 October 2026); stages C1 and C2 done (6 October 2026)
-Repository: `github.com/sonalect/protoc-gen-contract-rust`
-Crates: `contract` (runtime), `protoc-gen-contract-rust` (protoc plugin)
+Status: accepted by the owner (6 October 2026); stages C1 and C2 done (6 October 2026); C3 and C4 dropped (7 October 2026)
+Repository: `github.com/sonalect/proto-contract.rs`
+Crates: `protocontract` (runtime), `protoc-gen-contract-rust` (protoc plugin)
 License: Apache-2.0
 
 ## 1. Goal
@@ -12,12 +12,15 @@ data, its methods are the operations. Contract generates from each service
 plain Rust traits whose methods take and return the message structs that
 [buffa](https://github.com/anthropics/buffa) generates. A component in the
 same process is called by a method call: no encoding, no HTTP, no view type.
-The same contract crosses a process boundary later through Connect, and
-neither the caller nor the implementation changes.
+
+The traits are for calls inside one process only. A call across a process
+boundary goes through connect-rust's own stubs, which buffa's views make
+fast on the wire; Contract does not wrap or repeat them. Which of the two
+a consumer uses is that consumer's choice, not the plugin's.
 
 ```text
-caller ──plain call──▶ implementation                              same process
-caller ──plain call──▶ client adapter ══Connect══▶ server adapter ──▶ implementation
+caller ──plain call──▶ implementation          same process (Contract)
+caller ──Connect client══▶ Connect server      across processes (connect-rust)
 ```
 
 The first consumer is Knowqore. It moves its components (format, source,
@@ -73,34 +76,34 @@ For each `service` in a requested file. The running example:
 edition = "2024";
 package example.v1;
 
-service GreeterService {
+service Greeter {
   // Greet a person by name.
-  rpc Greet(GreetRequest) returns (GreetReply);
+  rpc Greet(Person) returns (Greeting);
 }
 ```
 
 ### 4.1 Sync trait
 
 ```rust
-pub trait GreeterServiceSync: Send + Sync {
+pub trait GreeterSync: Send + Sync {
     /// Greet a person by name.
-    fn greet(&self, request: GreetRequest) -> Result<GreetReply, contract::Status>;
+    fn greet(&self, person: Person) -> Result<Greeting, protocontract::Error>;
 }
 ```
 
 ### 4.2 Async trait
 
 ```rust
-pub trait GreeterServiceAsync: Send + Sync {
+pub trait GreeterAsync: Send + Sync {
     /// Greet a person by name.
     fn greet(
         &self,
-        request: GreetRequest,
-    ) -> impl Future<Output = Result<GreetReply, contract::Status>> + Send;
+        person: Person,
+    ) -> impl Future<Output = Result<Greeting, protocontract::Error>> + Send;
 }
 
-impl GreeterServiceAsync for MyGreeter {
-    async fn greet(&self, request: GreetRequest) -> Result<GreetReply, contract::Status> {
+impl GreeterAsync for MyGreeter {
+    async fn greet(&self, request: Person) -> Result<Greeting, protocontract::Error> {
         …
     }
 }
@@ -108,7 +111,7 @@ impl GreeterServiceAsync for MyGreeter {
 
 This is the shape the language gives async methods in traits (Rust 1.75):
 an implementation writes plain `async fn`, and a generic caller
-(`impl GreeterServiceAsync`) pays no allocation. The trait spells the
+(`impl GreeterAsync`) pays no allocation. The trait spells the
 method as `fn … -> impl Future + Send` rather than `async fn`, because only
 that form lets the trait require a `Send` future (the `async_fn_in_trait`
 lint); an implementation still writes `async fn`. `protoc-gen-connect-rust`
@@ -121,10 +124,16 @@ Rules for both forms:
 - The request is taken by value. A bridge moves it without a clone; a
   caller that keeps the data clones it explicitly.
 - The reply is owned.
-- The error is `contract::Status` (§5.1).
+- The error is `protocontract::Error` (§5.1).
 - Comments from the `.proto` become rustdoc.
 - There is no context parameter (§7).
 - Method names are snake_case, as `protoc-gen-connect-rust` makes them.
+- The parameter is named after its message in snake case (`Word` gives
+  `word`, `Person` gives `person`), plural by the regular
+  English rules for an inbound stream (`items`, `matches`, `replies`).
+  `service` and `stream`, locals of the bridges' bodies, get a trailing
+  `_`; a keyword is escaped as for a field. Parameter names are not part
+  of a Rust signature's contract: an implementation names its own.
 - Trait names are `<Service>Sync` and `<Service>Async`. The bare service
   name is connect-rust's server trait (§6.3).
 
@@ -134,25 +143,25 @@ computation, async for work that waits on I/O.
 ### 4.3 Dynamic dispatch
 
 The sync trait is dyn-compatible: an implementation chosen at run time is
-held as `Arc<dyn GreeterServiceSync>`.
+held as `Arc<dyn GreeterSync>`.
 
 For the async form the plugin generates a handle:
 
 ```rust
 #[derive(Clone)]
-pub struct DynGreeterServiceAsync { /* Arc<dyn erased trait> */ }
+pub struct DynGreeterAsync { /* Arc<dyn erased trait> */ }
 
-impl DynGreeterServiceAsync {
-    pub fn new<T: GreeterServiceAsync + 'static>(service: T) -> Self;
-    pub fn from_arc<T: GreeterServiceAsync + 'static>(service: Arc<T>) -> Self;
+impl DynGreeterAsync {
+    pub fn new<T: GreeterAsync + 'static>(service: T) -> Self;
+    pub fn from_arc<T: GreeterAsync + 'static>(service: Arc<T>) -> Self;
 }
 
-impl GreeterServiceAsync for DynGreeterServiceAsync { … }
+impl GreeterAsync for DynGreeterAsync { … }
 ```
 
 Behind it sits a private dyn-compatible trait whose methods return
-`contract::BoxFuture` and `contract::BoxStream`, with a blanket impl for
-every `T: GreeterServiceAsync`. The trait lives in a private module
+`protocontract::BoxFuture` and `protocontract::BoxStream`, with a blanket impl for
+every `T: GreeterAsync`. The trait lives in a private module
 `__dyn_greeter_service_async`, so a caller never sees two traits with the
 same method names. Only a call through the handle pays the allocation: one
 per call for the future, one per stream. The handle implements the async
@@ -168,28 +177,27 @@ All four kinds of methods are generated. A stream item is a `Result`:
 
 | Method | `<Service>Sync` | `<Service>Async` |
 | - | - | - |
-| server streaming | `fn watch(&self, request: Req) -> Result<BoxIter<'static, Result<Rep, Status>>, Status>` | `fn watch(&self, request: Req) -> impl Future<Output = Result<impl Stream<Item = Result<Rep, Status>> + Send + use<Self>, Status>> + Send` |
-| client streaming | `fn collect(&self, requests: BoxIter<'static, Result<Req, Status>>) -> Result<Rep, Status>` | `fn collect<R>(&self, requests: R) -> impl Future<Output = Result<Rep, Status>> + Send` |
-| bidirectional | `fn echo(&self, requests: BoxIter<'static, Result<Req, Status>>) -> Result<BoxIter<'static, Result<Rep, Status>>, Status>` | `fn echo<R>(&self, requests: R) -> impl Future<Output = Result<impl Stream<Item = Result<Rep, Status>> + Send + use<Self, R>, Status>> + Send` |
+| server streaming | `fn watch(&self, req: Req) -> Result<BoxIter<'static, Result<Rep, Error>>, Error>` | `fn watch(&self, req: Req) -> impl Future<Output = Result<impl Stream<Item = Result<Rep, Error>> + Send + use<Self>, Error>> + Send` |
+| client streaming | `fn collect(&self, reqs: BoxIter<'static, Result<Req, Error>>) -> Result<Rep, Error>` | `fn collect<R>(&self, reqs: R) -> impl Future<Output = Result<Rep, Error>> + Send` |
+| bidirectional | `fn echo(&self, reqs: BoxIter<'static, Result<Req, Error>>) -> Result<BoxIter<'static, Result<Rep, Error>>, Error>` | `fn echo<R>(&self, reqs: R) -> impl Future<Output = Result<impl Stream<Item = Result<Rep, Error>> + Send + use<Self, R>, Error>> + Send` |
 
-In the async form `R: Stream<Item = Result<Req, Status>> + Send + 'static`.
+In the async form `R: Stream<Item = Result<Req, Error>> + Send + 'static`.
 
-- `contract::BoxIter<'a, T>` is `Box<dyn Iterator<Item = T> + Send + 'a>`,
+- `protocontract::BoxIter<'a, T>` is `Box<dyn Iterator<Item = T> + Send + 'a>`,
   so the sync trait stays dyn-compatible at one allocation per stream. The
   sync form uses it with `'static`: no stream borrows the service, in
   either form (item 26).
-- `contract::Stream` is `futures_core::Stream`, re-exported; std has no
+- `protocontract::Stream` is `futures_core::Stream`, re-exported; std has no
   stable async iterator.
 - The reply stream sits inside the call's `Result`: an `Err` before the
   first item fails the call (validation, permission), an `Err` item ends
   the stream with that failure. connect-rust has the same shape.
-- Inbound items are `Result<Req, Status>`: a stream that crosses a process
+- Inbound items are `Result<Req, Error>`: a stream that crosses a process
   boundary can break, and the implementation must see that rather than a
   stream that merely ends early.
 - An async reply stream does not borrow the service (`use<Self>`,
   `use<Self, R>`), and an inbound stream is `'static`. A reply stream can
-  then outlive the call, move to another task, and be served by Connect,
-  whose server streams cannot borrow the handler. An implementation clones
+  then outlive the call and move to another task. An implementation clones
   what its stream needs.
 
 ### 4.5 Bridges
@@ -199,14 +207,14 @@ impls for each service:
 
 | Have | Need | Wrapper | How |
 | - | - | - | - |
-| sync impl | async trait | `Offload<T>` | the sync call on the blocking pool of a stored `tokio::runtime::Handle`; a panic becomes `Status::internal` |
+| sync impl | async trait | `Offload<T>` | the sync call on the blocking pool of a stored `tokio::runtime::Handle`; a panic becomes `Error::internal` |
 | sync impl | async trait | `Inline<T>` | runs the sync call inside `poll`; only for calls of microseconds |
-| async impl | sync trait | `Blocking<T>` | `block_in_place` around `Handle::block_on` on a stored handle; `FAILED_PRECONDITION` inside a current-thread runtime (§8, O1) |
+| async impl | sync trait | `Blocking<T>` | `block_in_place` around `Handle::block_on` on a stored handle; `RuntimeCode::CannotBlock` inside a current-thread runtime (§8, O1) |
 
 ```rust
-impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for contract::Offload<T> { … }
-impl<T: GreeterServiceSync> GreeterServiceAsync for contract::Inline<T> { … }
-impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for contract::Blocking<T> { … }
+impl<T: GreeterSync + 'static> GreeterAsync for protocontract::Offload<T> { … }
+impl<T: GreeterSync> GreeterAsync for protocontract::Inline<T> { … }
+impl<T: GreeterAsync + 'static> GreeterSync for protocontract::Blocking<T> { … }
 ```
 
 With `gate_tokio_feature`, the `Offload` and `Blocking` impls carry
@@ -241,68 +249,104 @@ impls call (`Offload::call`, `Blocking::block_on`, `Blocking::feed`,
 hide an RPC of the same name.
 
 A panic of the sync method under `Offload` happens on another thread; it
-becomes `Status::internal`, for the call or as the last stream item. Under
+becomes `Error::internal`, for the call or as the last stream item. Under
 `Blocking` the async method runs on the caller's thread, so its panic
 reaches the caller as a direct call's would. The work of an `Offload` call
 starts at its first poll and, once on the blocking pool, runs to its end
 even if the future is dropped.
 
-### 4.6 Connect adapters (parameter `connect_module`)
+### 4.6 What the traits leave to others
 
-Generated only when the parameter is set. They name the items that
-`protoc-gen-connect-rust` generates for the same file (§6.3), so both
-plugins run with the same `buffa_module` and `extern_path`, and their output
-goes into the same Rust crate.
+- **Remote calls.** No adapter connects the traits to Connect (item 32).
+  connect-rust's stubs serve and call a service across processes; they read
+  views straight from the wire, which an owned-struct trait would undo.
+- **Validation.** The plugin knows nothing of it (item 33). A crate that
+  runs `protoc-gen-protovalidate-buffa` gets `Validate` on the same owned
+  messages the traits take and return, and the caller or the
+  implementation calls `validate()` where it decides to. No wrapper ties
+  the generated code to one validation plugin.
 
-- Server: `impl<T: GreeterServiceAsync> connect::GreeterService for
-  contract::Served<T>`: `request.to_owned_message()`, call the impl,
-  `Response::ok(reply)`; `Status` becomes `ConnectError`. Inbound streams
-  map item by item to `Result<Req, Status>`; reply streams pass through,
-  since they do not borrow the implementation.
-- Client: `impl<Tr: ClientTransport> GreeterServiceAsync for
-  contract::Remote<connect::GreeterServiceClient<Tr>>`: call,
-  `view().to_owned_message()`; `ConnectError` becomes `Status`.
+## 5. Runtime crate `protocontract`
 
-The client is wrapped, not given the trait directly: its inherent methods
-carry the same names (`greet`, `greet_with_options`), so `client.greet(…)`
-would call connect-rust's method and bypass the trait without a word.
+### 5.1 `Error`
 
-A sync caller reaches a remote service through
-`Blocking<Remote<GreeterServiceClient<…>>>`. With `gate_connect_feature`,
-both impls carry `#[cfg(feature = "connect")]`.
+Every method of every service returns `Result<_, protocontract::Error>`: one
+error type for all contracts. A per-service or per-implementation error
+type does not fit, for three reasons:
 
-### 4.7 Validation (parameter `validate`)
+- An `Arc<dyn <Service>Sync>` that holds implementations chosen at run
+  time needs one error type for all of them; an associated `type Error`
+  would have to be fixed in the `dyn` type anyway.
+- The bridges make errors of their own: `Offload` turns a panic into
+  `RuntimeCode::Panicked`, `Blocking` refuses a current-thread runtime with
+  `RuntimeCode::CannotBlock`. They cannot build an unknown `E`.
+- An inbound stream that breaks yields an `Err` item, which needs a type
+  the caller of any service can produce.
 
-`Validated<T>` calls protovalidate-buffa's `Validate::validate()` on the
-request before the impl. A violation becomes `Status::invalid_argument`, with
-the violations in `details`, and the impl is not called. The reply is not
-validated; a test can do that. It is a wrapper, not part of every call, so
-the cost stays visible where it is paid.
+`Box<dyn std::error::Error>` would satisfy all three, but a caller that
+does not know the implementation could then only read a string. What such
+a caller acts on is the class of the failure and whether to try again, so
+`Error` says both, and leaves the rest to an open interface.
 
-## 5. Runtime crate `contract`
+**Codes are open.** A code is a value of any type that implements
+`ErrorCode` (`to_i32`, `from_i32`, `name`). Every enum `protoc-gen-buffa`
+generates is one, through `buffa::Enumeration`; a Rust enum implements the
+three methods. `Code` is a code with its type erased: two codes are equal
+when they are the same value of the same type, and `Code::get::<C>()`
+gives the typed code back. A fixed set such as `google.rpc.Code` does not
+fit a component in process: it names transport classes, not the
+failures of a domain (Scheda's `api.v1.Error.Code` is the model here).
 
-### 5.1 `Status`
+**Codes belong to the contract.** A caller knows the contract, not the
+implementation, so the codes it may branch on are declared in the proto as
+an `enum` next to the `service`, and every implementation reports with
+them. An implementation may use codes of its own; to a caller they are
+unknown codes. The types do not bind a service to its enum (one `Error`
+for every contract is the point), so the link is a name: for `service
+GlossaryService` the plugin looks for `GlossaryErrorCode` (the name
+without `Service`), then `GlossaryServiceErrorCode`, as a top-level enum
+of the same package. When it finds one, it emits the alias
+`pub type GlossaryServiceErrorCode = …;` next to the traits (none when
+that is the enum's own name; the alias joins the name-clash check, §6.3)
+and names it in both traits' rustdoc. A service without such an enum gets
+neither. There is no option in the proto (item 2), and the trait
+signatures do not change. Nothing stops an implementation from failing
+with another enum's code; its tests catch that.
+`RuntimeCode` holds the runtime's own codes: `PANICKED`, `CANNOT_BLOCK`,
+`CANCELLED`.
 
-It mirrors `google.rpc.Status` (AIP-193): `code: Code`, `message: String`,
-`details: Vec<Any>`. `Code` holds the 17 `google.rpc.Code` values, the same
-set Connect and gRPC use, and names them as `google.rpc.Code` does
-(`INVALID_ARGUMENT`). There is one constructor per code except `OK`
-(`Status::invalid_argument(message)`; `Status::new(code, message)` for any
-code), and `Status` implements `std::error::Error`. With the `connect` feature, `From` works both ways with
-`ConnectError` and keeps code, message, and details; Connect metadata is
-dropped.
+**A fault says what failed.** `Fault: std::error::Error + Send + Sync +
+'static` has `code()` (required), `retryable()` (default `false`: whether
+the same call may succeed later), and `backtrace()` (default `None`). The
+message is `Display`, the cause `source()`. `Failure` is the ready-made
+fault: a code, a message, `with_retryable`, `with_source`, and a
+`Backtrace::capture()`, which costs nothing unless `RUST_BACKTRACE` or
+`RUST_LIB_BACKTRACE` is set. An implementation whose failure says more (a
+path, a limit, the closest match) implements `Fault` on its own type.
 
-Contract does not use `ConnectError` directly, so that a component that
-never leaves its process does not depend on `connectrpc` and its HTTP stack.
+**`Error` carries the fault.** It is a concrete type, not a bare
+`Arc<dyn Fault>` in the signatures, so `impl<F: Fault> From<F> for Error`
+gives `?`, the caller has methods, and the type can grow without touching
+generated code. It holds the fault in an `Arc` (cloning is cheap) and the
+stack: operation names, outermost first, which `Error::context` and the
+`Context` extension of `Result` prepend on the way out, as Scheda's
+`stack` does. Its methods: `code`, `is`, `code_as`, `retryable`, `stack`,
+`backtrace`, `downcast_ref` (the fault's own fields, for diagnostics: a
+caller that branches on them is bound to one implementation), and
+`context`. `Display` prints `frame: frame: CODE: message`; `source()` is
+the fault's cause. `Error` is not `PartialEq`; tests compare codes.
+
+The calls stay in one process (item 32), so `Error` has no
+`google.rpc.Status.details`: those payloads exist for the wire. Contract
+does not use `ConnectError` either, so that a component does not depend on
+`connectrpc` and its HTTP stack.
 
 ### 5.2 Features
 
 | Feature | Adds | Dependencies |
 | - | - | - |
-| default | `Status`, `Code`, `BoxFuture`, `BoxIter`, `BoxStream`, `Stream`, `IterStream`, `Inline` | `buffa-types`, `futures-core` |
+| default | `Error`, `Fault`, `Failure`, `Context`, `Code`, `ErrorCode`, `RuntimeCode`, `BoxFuture`, `BoxIter`, `BoxStream`, `Stream`, `IterStream`, `Inline` | `buffa` (for `ErrorCode` on its enums), `futures-core` |
 | `tokio` | `Offload`, `Blocking`, `ChannelStream` | `tokio` (`rt`, `rt-multi-thread`, `sync`) |
-| `connect` | `Served`, `Remote`, `Status` ↔ `ConnectError` | `connectrpc` |
-| `validate` | `Validated` | `protovalidate-buffa` |
 
 Versions follow what the consumers pin. Every external dependency obeys the
 two-day publish quarantine.
@@ -337,11 +381,8 @@ the same way:
 | `extern_path=<proto>=<rust>` | maps a proto package prefix to a Rust module; repeatable, longest prefix wins, one catch-all required | same |
 | `file_per_package` | one `<dotted.pkg>.rs` per package instead of per-proto files and a stitcher | same |
 | `element_memory_limit=<bytes\|unlimited>` | accepted; `decode_request` has applied it | same |
-| `runtime=<path>` | path of the runtime crate; default `::contract` | — |
-| `connect_module=<path>` | emit §4.6; where the connect-rust tree is mounted, the proto package appended as for `buffa_module` | — |
-| `gate_connect_feature[=<name>]` | §4.6 under `#[cfg(feature = "<name>")]`, default `connect` | as `gate_client_feature` |
+| `runtime=<path>` | path of the runtime crate; default `::protocontract` | — |
 | `gate_tokio_feature[=<name>]` | `Offload` and `Blocking` impls under `#[cfg(feature = "<name>")]`, default `tokio` | as `gate_client_feature` |
-| `validate` | emit §4.7 | — |
 
 Every Rust path a parameter gives, `runtime` included, must be absolute
 (`::…`, `crate`, or `crate::…`) and made of plain identifiers. A proto prefix mapped twice fails the run
@@ -385,7 +426,7 @@ plugins:
     opt: [filter=services]
   - local: protoc-gen-contract-rust
     out: src/generated/contract
-    opt: [buffa_module=crate::proto, connect_module=crate::connect]
+    opt: [buffa_module=crate::proto]
   - local: protoc-gen-buffa-packaging
     out: src/generated/contract
     strategy: all
@@ -403,8 +444,7 @@ pub mod traits;
 
 A crate may instead `include!` the per-proto files of all three generators
 into one module per package, as Knowqore does with buffa and connect-rust
-today (`connect_module` is then the same path as `buffa_module`). §6.3
-keeps that legal.
+today. §6.3 keeps that legal.
 
 Version 1 has no `build.rs` path like connect-rust's `connectrpc-build`;
 it is added when a consumer needs one.
@@ -422,7 +462,7 @@ connect-rust takes.
 | per service | trait `<S>`, `<S>Ext`, `<S>RegisterMarker`, `<S>Server<T>`, `<S>Client<T>` | traits `<S>Sync`, `<S>Async`; struct `Dyn<S>Async`; private module `__dyn_<s>_async` |
 | constants | `<S>_SERVICE_NAME`, `<S>_<M>_SPEC` (upper snake case) | none |
 | per message | `Owned<M>View` aliases, `Encodable` impls for outputs | none |
-| other impls | — | on the runtime wrappers only: `Offload`, `Inline`, `Blocking`, `Served`, `Remote`, `Validated` |
+| other impls | — | on the runtime wrappers only: `Offload`, `Inline`, `Blocking` |
 
 1. Contract emits nothing that connect-rust emits, so both outputs can be
    mounted into one module without a duplicate name (E0428) or a
@@ -433,9 +473,10 @@ connect-rust takes.
    other services. A clash (service `Foo` next to a
    message or service `FooSync`) fails the run and names both proto
    elements, as connect-rust does for its own method names.
-3. The adapters name connect-rust's items by the scheme above, which is
-   pinned to connect-rust 0.9.0. A bump of connect-rust passes T7 before it
-   lands (`.claude/rules/consumers.md`).
+3. Contract names no connect-rust item, so the generated code compiles
+   without connect-rust. The names above are those of connect-rust 0.9.0;
+   a bump of connect-rust passes T7 before it lands
+   (`.claude/rules/consumers.md`).
 
 ## 7. Out of scope for version 1
 
@@ -462,15 +503,15 @@ connect-rust takes.
   | worker task or `block_on` future, current-thread | panics | panics |
 
   So `Blocking` calls `block_in_place(|| handle.block_on(…))`, and returns
-  `FAILED_PRECONDITION` whenever the current runtime is a current-thread
+  `RuntimeCode::CannotBlock` whenever the current runtime is a current-thread
   one. That also refuses that runtime's `spawn_blocking` threads, which
   could block safely; the rustdoc says so and points to a `std::thread`.
   Tests: `//rust/golden:bridges_test`.
 - **O2.** Answered 6 October 2026: `buffa-types` 0.9.2 has `Any` (`Clone`,
   `PartialEq`, `Debug`, `pack` / `unpack_if`) with its default `std` feature
-  alone.
-- **O3.** Answered 6 October 2026: `connect_module=` and connect-rust's
-  names (§6.1, §6.3).
+  alone. Moot since item 34: `Error` has no `details`.
+- **O3.** Answered 6 October 2026: connect-rust's names (§6.3). The
+  `connect_module=` parameter went with the adapters (item 32).
 - **O4.** Answered 6 October 2026: own `out` directory, stitcher, and
   `protoc-gen-buffa-packaging` with `filter=services`, or `file_per_package`
   (§6.2).
@@ -485,9 +526,10 @@ connect-rust takes.
 
 Layout as `serde_markdown`: a Cargo workspace and a Bazel module
 (`MODULE.bazel`, `rust.MODULE.bazel`, `buf.MODULE.bazel`, through
-`bazel_utils`); `rust/contract`, `rust/protoc-gen-contract-rust`,
-`proto/` with the test protos, and `rust/golden`, which compiles the golden
-output and runs the behaviour tests against it. Edition 2024, `rust-version = "1.99.0"`,
+`bazel_utils`); `rust/protocontract`, `rust/protoc-gen-contract-rust`,
+`proto/` with the test protos, `rust/golden`, which compiles the golden
+output and runs the behaviour tests against it, and `examples/glossary`, a
+contract in use by a provider and a consumer. Edition 2024, `rust-version = "1.99.0"`,
 Apache-2.0, English docs.
 
 Release: a version tag, and nothing else, starts
@@ -544,30 +586,30 @@ the named exceptions of its dependency quarantine, next to `scheda` and
   pull, RPCs named like the bridges' helpers (`tools.proto`), and
   `Blocking` from a plain thread, a worker task, `block_on`'s future,
   `spawn_blocking`, and a current-thread runtime (O1).
-- **T3. Connect round trip in process.** `Served`, `ServiceTransport`, and the
-  client adapter. `Status` ↔ `ConnectError` keeps code, message, and
-  details.
-- **T4. Validation.** An invalid request gives `invalid_argument`, and the
-  impl is not called.
+- **T3, T4.** Dropped with the Connect adapters and the validation
+  wrapper (items 32, 33).
 - **T5. Streaming.** Each kind of streaming method gets its signature in
   the sync trait, the async trait, and the handle's erased trait.
 - **T6. Cross-package paths.** A message from another package, or one under
   `extern_path`, resolves to the right Rust path.
 - **T7. Living next to connect-rust.** A test crate generates buffa,
   connect-rust, and Contract output for the same protos. It mounts them
-  once as separate trees and once into one module per package, builds both
-  with each gate feature on and off, and runs a `Served`,
-  `ServiceTransport`, and `Remote` round trip. A proto with a clashing name
-  fails the run (§6.3).
+  once as separate trees and once into one module per package, and builds
+  both with the tokio gate on and off. A proto with a clashing name fails
+  the run (§6.3).
+- **T8. Example.** `examples/glossary` generates its contract with the
+  plugin built here (`//examples/glossary:generate_test`), and its provider,
+  consumer, and application run their tests: codes from the proto, an own
+  `Fault`, retry, a stack, and the application's whole output.
 
 ## 10. Stages
 
 | Stage | Content | Proof |
 | - | - | - |
-| C1 | Skeleton; `Status`, `Code`, `BoxFuture`, `BoxIter`, `BoxStream`, `Stream`; plugin emits both traits and the `Dyn…Async` handle for all four kinds of methods | T1, T2 (direct calls), T5, T6. Done 6 October 2026: `//proto:generate_test`, `//rust/golden:direct_test`, `//rust/golden:streaming_test`, `//rust/protoc-gen-contract-rust:lib_test` |
+| C1 | Skeleton; `Error`, `Code`, `BoxFuture`, `BoxIter`, `BoxStream`, `Stream`; plugin emits both traits and the `Dyn…Async` handle for all four kinds of methods | T1, T2 (direct calls), T5, T6. Done 6 October 2026: `//proto:generate_test`, `//rust/golden:direct_test`, `//rust/golden:streaming_test`, `//rust/protoc-gen-contract-rust:lib_test` |
 | C2 | Bridges `Inline`, `Offload`, `Blocking`, for all four kinds of methods | T2 complete; O1, O5 answered. Done 6 October 2026: `//rust/golden:bridges_test`; plus connect-rust's output and Contract's mounted in one module per package (`//rust/golden`) and a `buf generate` with the release binary into a fresh crate outside Bazel |
-| C3 | Connect adapters | T3, T7 |
-| C4 | Validation wrapper | T4 |
+| C3 | ~~Connect adapters~~ dropped 7 October 2026 (item 32) | — |
+| C4 | ~~Validation wrapper~~ dropped 7 October 2026 (item 33) | — |
 | C5 | Release workflow for six platforms and static binaries; the `bazel_utils` catalog entry | Knowqore generates through `protoc.plugin`. Workflow and `dist` profile written 6 October 2026, run on GitHub not yet |
 
 C1, C2, and C5 are enough for Knowqore's first consumer, the format axis,
@@ -578,46 +620,53 @@ which is sync and stays in process. That pilot is planned in Knowqore.
 Each item has a recommendation. An item the owner does not mention is
 accepted. The owner accepted items 1–13 on 6 October 2026, then revised
 item 6 and accepted items 14–25 the same day, and accepted items 26–31,
-which came up in C2 and its review, the same day.
+which came up in C2 and its review, the same day. On 7 October 2026 the
+owner dropped the Connect adapters and the validation wrapper (items 32,
+33), which revises items 7, 8, 11, and 12.
 
-1. **Name.** Contract: repository `sonalect/protoc-gen-contract-rust`,
+1. **Name.** Contract: repository `sonalect/protoc-gen-contract-rust`
+   (renamed by the owner to `sonalect/proto-contract.rs`, 7 October 2026),
    crate `contract`, binary `protoc-gen-contract-rust`. The `-rust`
    suffix names the target language, as in `protoc-gen-connect-rust`; a
    crate needs none. Both names are free on crates.io on 6 October 2026.
    *Accepted 6 October 2026; renamed by the owner the same day from
-   Contratto (`contratto`, `protoc-gen-contratto-rust`).* A consumer
-   mounts the generated traits in a module not named `contract`, which
-   would make `contract::…` ambiguous with the crate.
+   Contratto (`contratto`, `protoc-gen-contratto-rust`).* *Revised 7
+   October 2026: the runtime crate is `protocontract` (item 37).* A
+   consumer mounts the generated traits in a module not named
+   `protocontract`, which would make `protocontract::…` ambiguous with the
+   crate.
 2. **No options in `.proto`; both forms are always generated** (§3).
    *Accepted 6 October 2026.*
 3. **Request by value in both forms** (§4). *Accepted 6 October 2026.*
-4. **Own `Status` mirroring `google.rpc.Status`, not `ConnectError`** (§5.1).
-   *Accepted 6 October 2026.*
+4. ~~Own `Status` mirroring `google.rpc.Status`, not `ConnectError`.~~
+   *Revised 7 October 2026: item 34.*
 5. **No context parameter in version 1** (§7). *Accepted 6 October 2026.*
 6. ~~Streaming refused in version 1.~~ *Revised 6 October 2026: version 1
    generates streaming methods (items 14–18).*
-7. **Validation as an opt-in wrapper** (§4.7). *Accepted 6 October 2026.*
-8. **Order C1 → C2 → C5, then C3 and C4** (§10). *Accepted 6 October 2026.*
+7. ~~Validation as an opt-in wrapper.~~ *Revised 7 October 2026: item 33.*
+8. **Order C1 → C2 → C5** (§10). *Accepted 6 October 2026; C3 and C4
+   dropped 7 October 2026.*
 9. **Repository shape as `serde_markdown`, English docs** (§9).
    *Accepted 6 October 2026.*
 10. **Trait names `<Service>Sync` and `<Service>Async`, handle
     `Dyn<Service>Async`** (§4, §6.3). The bare service name is
     connect-rust's server trait.
     *Accepted 6 October 2026.*
-11. **The connect client is wrapped in `Remote<C>`** (§4.6).
-    *Accepted 6 October 2026.*
-12. **Parameters and layouts mirror connect-rust** (§6.1, §6.2), with two
-    cfg gates of our own; no `build.rs` path in version 1.
-    *Accepted 6 October 2026.*
+11. ~~The connect client is wrapped in `Remote<C>`.~~ *Revised 7 October
+    2026: item 32.*
+12. **Parameters and layouts mirror connect-rust** (§6.1, §6.2), with one
+    cfg gate of our own (`gate_tokio_feature`); no `build.rs` path in
+    version 1. *Accepted 6 October 2026; the Connect gate went with item 32
+    on 7 October 2026.*
 13. **The plugin checks name clashes across the package** (§6.3), the
     handle and its private module included. *Accepted 6 October 2026.*
 14. **Sync streams are `BoxIter`**, so the sync trait stays dyn-compatible
     (§4.4). *Accepted 6 October 2026.*
 15. **Async streams are `futures_core::Stream`**, re-exported as
-    `contract::Stream` (§4.4). *Accepted 6 October 2026.*
+    `protocontract::Stream` (§4.4). *Accepted 6 October 2026.*
 16. **A reply stream sits inside the call's `Result`** (§4.4).
     *Accepted 6 October 2026.*
-17. **Inbound items are `Result<Req, Status>`** (§4.4).
+17. **Inbound items are `Result<Req, Error>`** (§4.4).
     *Accepted 6 October 2026.*
 18. **The test protos cover every kind of streaming, and T2 calls each**
     (§9.1). *Accepted 6 October 2026.*
@@ -630,8 +679,8 @@ which came up in C2 and its review, the same day.
     (§4.3). *Accepted 6 October 2026.*
 22. **Async reply streams do not borrow the service; inbound streams are
     `'static`** (§4.4). *Accepted 6 October 2026.*
-23. **Bridges and adapters implement the static async trait**, and any of
-    them fits in the handle (§4.5, §4.6). *Accepted 6 October 2026.*
+23. **Bridges implement the static async trait**, and any of them fits in
+    the handle (§4.5). *Accepted 6 October 2026.*
 24. **The clash check covers the handle and its module** (§6.3).
     *Accepted 6 October 2026.*
 25. **Streaming and the new async form land in C1**; the bridges stay in C2
@@ -658,3 +707,45 @@ which came up in C2 and its review, the same day.
     *Accepted 6 October 2026.*
 31. **`buffa_module=crate` is a valid mapping** (§6.1): the buffa output
     may sit at the crate root, as in Knowqore. *Accepted 6 October 2026.*
+32. **The traits are for calls inside one process only** (§1, §4.6). No
+    Connect adapters (`Served`, `Remote`), no `connect` feature, no
+    `connect_module` or `gate_connect_feature`: across processes a consumer
+    uses connect-rust's stubs, whose views buffa optimized for the wire.
+    *Decided by the owner, 7 October 2026.*
+33. **The plugin knows nothing of validation** (§4.6). No `Validated`
+    wrapper, no `validate` parameter or feature: protovalidate-buffa
+    generates `Validate` on the owned messages, and the caller or the
+    implementation decides when to call it. *Decided by the owner,
+    7 October 2026.*
+34. **One error type `protocontract::Error` for every contract, with open
+    codes** (§5.1): `Error` holds an `Arc<dyn Fault>` and a stack; codes
+    are any `ErrorCode`, declared by the contract as a proto enum;
+    `Fault` has `code`, `retryable` (default `false`), and `backtrace`;
+    `Failure` is the ready-made fault; `RuntimeCode` holds the bridges'
+    codes; no `google.rpc.Code`, no `details`, no `PartialEq`. Replaces
+    `protocontract::Status`. *Decided by the owner, 7 October 2026.*
+35. **An example of a contract in use** (§9, T8): `examples/glossary`,
+    provider and consumer in separate crates, wired by an application.
+    *Decided by the owner, 7 October 2026.*
+36. **A service's error codes are found by name** (§5.1): the enum
+    `<Service without "Service">ErrorCode` or `<Service>ErrorCode` in the
+    same package; the plugin emits the alias `<Service>ErrorCode` and names
+    it in the traits' rustdoc; no enum is not an error. *Decided by the
+    owner, 7 October 2026.*
+37. **The runtime crate is `protocontract`**, one word, in
+    `rust/protocontract`; the plugin's `runtime=` default is
+    `::protocontract`. The name `contract` was too general to sit next to a
+    consumer's own modules and crates; `protocontract` is free on
+    crates.io on 7 October 2026. The plugin binary and the Bazel module
+    keep their names. *Decided by the owner, 7 October 2026.*
+38. **Parameters are named after their message** (§4.2): `word: Word`,
+    `items` for an inbound stream of `Item`, instead of `request` and
+    `requests`, so a local contract with domain messages reads as plain
+    Rust. *Decided by the owner, 7 October 2026.*
+39. **Every proto of the repository is named as its Rust code reads**: the
+    test protos (`Greeter`, `Feed`, `Counter` over `Person`, `Limit`,
+    `Delta`, …) as the example's (`Glossary` over `Word`, `Term`). buf's
+    `SERVICE_SUFFIX` and the `RPC_*` naming rules are relaxed for them.
+    `ToolsService` alone keeps the `Service` suffix, so the golden run
+    still compiles the `<Service>ErrorCode` alias (`ToolsServiceErrorCode`).
+    *Decided by the owner, 7 October 2026.*

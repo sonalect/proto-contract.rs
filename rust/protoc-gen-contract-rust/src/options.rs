@@ -13,7 +13,7 @@ const SUPPORTED: &str = "buffa_module=<rust_path>, extern_path=<proto>=<rust_pat
 const DEFAULT_TOKIO_FEATURE: &str = "tokio";
 
 /// The runtime crate path when `runtime=` is not given.
-const DEFAULT_RUNTIME: &str = "::contract";
+const DEFAULT_RUNTIME: &str = "::protocontract";
 
 /// Parsed plugin parameters.
 #[derive(Debug, PartialEq, Eq)]
@@ -136,7 +136,7 @@ mod tests {
         let options = Options::parse(None).unwrap();
         assert!(options.extern_paths.is_empty());
         assert!(!options.file_per_package);
-        assert_eq!(options.runtime, "::contract");
+        assert_eq!(options.runtime, "::protocontract");
         assert_eq!(options.tokio_gate, None);
     }
 

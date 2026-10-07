@@ -52,9 +52,107 @@ impl ServiceNames {
     }
 }
 
+/// The enum of a service's error codes, found by its name.
+///
+/// For `service GlossaryService` it is the top-level enum
+/// `GlossaryErrorCode` (the service name without its `Service` suffix) or
+/// `GlossaryServiceErrorCode` (the whole name) in the same package, in that
+/// order. Contract names it in the traits' rustdoc and emits the alias
+/// `<Service>ErrorCode`, so a caller finds the codes from the trait.
+pub(crate) struct ErrorCodes {
+    /// The proto name of the enum, `.pkg.Name`.
+    pub(crate) fqn: String,
+    /// The enum's name in the package, `pkg.Name`.
+    pub(crate) qualified: String,
+    /// The alias `<Service>ErrorCode`; `None` when the enum has that name
+    /// already.
+    pub(crate) alias: Option<String>,
+}
+
+impl ErrorCodes {
+    /// The name a caller writes: the alias, or the enum's own name.
+    pub(crate) fn rust_name(&self) -> &str {
+        match &self.alias {
+            Some(alias) => alias,
+            None => self.qualified.rsplit('.').next().unwrap_or(&self.qualified),
+        }
+    }
+}
+
+/// The error-code enum of `service` in `package`, if the package has one.
+pub(crate) fn error_codes(
+    files: &[FileDescriptorProto],
+    package: &str,
+    service: &ServiceDescriptorProto,
+) -> Option<ErrorCodes> {
+    let name = service.name.as_deref().unwrap_or_default();
+    let base = name
+        .strip_suffix("Service")
+        .filter(|base| !base.is_empty())
+        .unwrap_or(name);
+    let alias = format!("{}ErrorCode", name.to_upper_camel_case());
+    [format!("{base}ErrorCode"), format!("{name}ErrorCode")]
+        .into_iter()
+        .find(|wanted| {
+            files
+                .iter()
+                .filter(|file| file.package.as_deref().unwrap_or_default() == package)
+                .flat_map(|file| &file.enum_type)
+                .any(|enumeration| enumeration.name.as_deref() == Some(wanted.as_str()))
+        })
+        .map(|found| {
+            let qualified = qualified(package, &found);
+            ErrorCodes {
+                fqn: format!(".{qualified}"),
+                alias: (found != alias).then_some(alias),
+                qualified,
+            }
+        })
+}
+
 /// The Rust method name of an RPC, as `protoc-gen-connect-rust` makes it.
 pub(crate) fn method_name(rpc: &str) -> String {
     rpc.to_snake_case()
+}
+
+/// The name of a method's parameter: the request message's name in snake
+/// case (`Word` gives `word`), plural for an inbound stream (`words`). A
+/// name the generated bodies use for a local of their own (`service`,
+/// `stream`) gets a trailing `_`.
+pub(crate) fn parameter_name(input_type: &str, streams_in: bool) -> String {
+    let short = input_type.rsplit('.').next().unwrap_or(input_type);
+    let mut name = short.to_snake_case();
+    if streams_in {
+        name = plural(&name);
+    }
+    if matches!(name.as_str(), "service" | "stream") {
+        name.push('_');
+    }
+    name
+}
+
+/// `word` in the plural, by the regular English rules: `item` gives
+/// `items`, `match` gives `matches`, `reply` gives `replies`. Irregular
+/// plurals are not known; the name stays readable either way.
+fn plural(word: &str) -> String {
+    let consonant_y = word.ends_with('y')
+        && !word
+            .chars()
+            .rev()
+            .nth(1)
+            .is_some_and(|c| matches!(c, 'a' | 'e' | 'i' | 'o' | 'u'));
+    if consonant_y {
+        format!("{}ies", &word[..word.len() - 1])
+    } else if ["s", "x", "z", "ch", "sh"]
+        .iter()
+        .any(|end| word.ends_with(end))
+    {
+        format!("{word}es")
+    } else if word.is_empty() {
+        "requests".to_string()
+    } else {
+        format!("{word}s")
+    }
 }
 
 /// `package.Name`, or `Name` in the empty package.
@@ -71,7 +169,7 @@ pub(crate) fn qualified(package: &str, name: &str) -> String {
 ///
 /// Items checked: messages and enums (buffa), the server trait and the `Ext`, `RegisterMarker`, `Server`, and `Client`
 /// items of every service (connect-rust), and the items of every other
-/// service (Contract). connect-rust's constants are upper snake case and
+/// service (Contract), the `<Service>ErrorCode` alias included. connect-rust's constants are upper snake case and
 /// its `Owned…View` aliases end in `View`, so neither can match a name that
 /// ends in `Sync` or `Async`.
 pub(crate) fn check_clashes(files: &[FileDescriptorProto], package: &str) -> Result<(), Error> {
@@ -122,7 +220,8 @@ pub(crate) fn check_clashes(files: &[FileDescriptorProto], package: &str) -> Res
         for service in &file.service {
             let name = service.name.as_deref().unwrap_or_default();
             let origin = format!("service {}", qualified(package, name));
-            for item in ServiceNames::of(service).all() {
+            let alias = error_codes(files, package, service).and_then(|codes| codes.alias);
+            for item in ServiceNames::of(service).all().into_iter().chain(alias) {
                 match taken.entry(item) {
                     Entry::Vacant(entry) => {
                         entry.insert(origin.clone());
@@ -148,7 +247,7 @@ mod tests {
         DescriptorProto, EnumDescriptorProto, FileDescriptorProto, ServiceDescriptorProto,
     };
 
-    use super::{ServiceNames, check_clashes, method_name};
+    use super::{ServiceNames, check_clashes, error_codes, method_name, parameter_name};
 
     fn service(name: &str) -> ServiceDescriptorProto {
         ServiceDescriptorProto {
@@ -195,6 +294,25 @@ mod tests {
         );
         assert_eq!(method_name("GetOptions"), "get_options");
         assert_eq!(method_name("HTTPGet"), "http_get");
+    }
+
+    #[test]
+    fn parameters_are_named_after_their_message() {
+        assert_eq!(parameter_name(".glossary.v1.Word", false), "word");
+        assert_eq!(parameter_name(".a.v1.GreetRequest", false), "greet_request");
+        assert_eq!(
+            parameter_name(".a.v1.GreetRequest.Options", false),
+            "options"
+        );
+        assert_eq!(parameter_name(".google.protobuf.Empty", false), "empty");
+        assert_eq!(parameter_name(".a.v1.Item", true), "items");
+        assert_eq!(parameter_name(".a.v1.Match", true), "matches");
+        assert_eq!(parameter_name(".a.v1.Reply", true), "replies");
+        assert_eq!(parameter_name(".a.v1.Key", true), "keys");
+        assert_eq!(parameter_name(".a.v1.Status", true), "statuses");
+        assert_eq!(parameter_name(".a.v1.Service", false), "service_");
+        assert_eq!(parameter_name(".a.v1.Stream", false), "stream_");
+        assert_eq!(parameter_name(".a.v1.Type", false), "type");
     }
 
     #[test]
@@ -252,6 +370,71 @@ mod tests {
         let files = [file("a.v1", &["DynFooAsync"], &["Foo"])];
         let error = check_clashes(&files, "a.v1").unwrap_err();
         assert!(error.message().contains("`DynFooAsync`"), "{error}");
+    }
+
+    fn with_enum(mut file: FileDescriptorProto, name: &str) -> FileDescriptorProto {
+        file.enum_type.push(EnumDescriptorProto {
+            name: Some(name.into()),
+            ..Default::default()
+        });
+        file
+    }
+
+    #[test]
+    fn error_codes_are_found_by_name() {
+        let files = [with_enum(
+            file("a.v1", &[], &["FooService"]),
+            "FooErrorCode",
+        )];
+        let codes = error_codes(&files, "a.v1", &service("FooService")).unwrap();
+        assert_eq!(codes.fqn, ".a.v1.FooErrorCode");
+        assert_eq!(codes.alias.as_deref(), Some("FooServiceErrorCode"));
+        assert_eq!(codes.rust_name(), "FooServiceErrorCode");
+    }
+
+    #[test]
+    fn error_codes_named_after_the_whole_service_need_no_alias() {
+        let files = [with_enum(file("a.v1", &[], &["Foo"]), "FooErrorCode")];
+        let codes = error_codes(&files, "a.v1", &service("Foo")).unwrap();
+        assert_eq!(codes.alias, None);
+        assert_eq!(codes.rust_name(), "FooErrorCode");
+        assert!(check_clashes(&files, "a.v1").is_ok());
+
+        let files = [with_enum(
+            file("a.v1", &[], &["FooService"]),
+            "FooServiceErrorCode",
+        )];
+        let codes = error_codes(&files, "a.v1", &service("FooService")).unwrap();
+        assert_eq!(codes.qualified, "a.v1.FooServiceErrorCode");
+        assert_eq!(codes.alias, None);
+    }
+
+    #[test]
+    fn error_codes_stay_in_their_package() {
+        let files = [
+            file("a.v1", &[], &["FooService"]),
+            with_enum(file("b.v1", &[], &[]), "FooErrorCode"),
+        ];
+        assert!(error_codes(&files, "a.v1", &service("FooService")).is_none());
+        let files = [with_enum(
+            file("a.v1", &[], &["FooService"]),
+            "BarErrorCode",
+        )];
+        assert!(error_codes(&files, "a.v1", &service("FooService")).is_none());
+    }
+
+    #[test]
+    fn clash_with_the_error_code_alias() {
+        let files = [with_enum(
+            file("a.v1", &["FooServiceErrorCode"], &["FooService"]),
+            "FooErrorCode",
+        )];
+        let error = check_clashes(&files, "a.v1").unwrap_err();
+        assert!(error.message().contains("`FooServiceErrorCode`"), "{error}");
+        assert!(
+            error.message().contains("message a.v1.FooServiceErrorCode"),
+            "{error}"
+        );
     }
 
     #[test]

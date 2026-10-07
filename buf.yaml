@@ -1,18 +1,23 @@
-# Workspace buf config (Buf LSP, lint, and the golden generate).
-# `proto/` holds the test protos the plugin is checked against.
+# Workspace buf config (Buf LSP, lint, and the generates).
+# `proto/` holds the test protos the plugin is checked against;
+# `examples/glossary/proto/` the contract of the glossary example.
 version: v2
 modules:
+  - path: examples/glossary/proto
   - path: proto
 lint:
   use:
     - STANDARD
   except:
-    # The test protos exercise shapes a real contract may have: a reply
-    # named `...Reply`, a well-known type or a message of another package
-    # as request or response, one message used by several methods.
+    # A contract that stays in one process is named as its Rust code reads,
+    # not as an RPC API: the service as its trait (`service Glossary` gives
+    # `GlossarySync`), the methods over the domain's own messages (`Word`,
+    # `Term`), a well-known type or a message of another package, and one
+    # message used by several methods.
     - RPC_REQUEST_RESPONSE_UNIQUE
     - RPC_REQUEST_STANDARD_NAME
     - RPC_RESPONSE_STANDARD_NAME
+    - SERVICE_SUFFIX
 breaking:
   use:
     - FILE

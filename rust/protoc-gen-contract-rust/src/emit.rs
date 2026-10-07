@@ -10,7 +10,7 @@ use quote::{format_ident, quote};
 use crate::Error;
 use crate::docs::{doc_attrs, method_comment, service_comment};
 use crate::methods::{Kind, Method};
-use crate::names::{ServiceNames, method_name, qualified};
+use crate::names::{ServiceNames, error_codes, method_name, parameter_name, qualified};
 use crate::options::Options;
 use crate::paths::path_tokens;
 use crate::resolve::TypeResolver;
@@ -26,6 +26,7 @@ pub(crate) struct OutputFile {
 
 /// The traits of every service of `file`.
 pub(crate) fn file_code(
+    files: &[FileDescriptorProto],
     file: &FileDescriptorProto,
     resolver: &TypeResolver<'_>,
     options: &Options,
@@ -34,7 +35,7 @@ pub(crate) fn file_code(
     let mut tokens = TokenStream::new();
     for (index, service) in file.service.iter().enumerate() {
         tokens.extend(service_tokens(
-            file, index, service, resolver, &rt, options,
+            files, file, index, service, resolver, &rt, options,
         )?);
     }
     let parsed = syn::parse2::<syn::File>(tokens).map_err(|error| {
@@ -97,6 +98,7 @@ pub(crate) fn layout(
 }
 
 fn service_tokens(
+    files: &[FileDescriptorProto],
     file: &FileDescriptorProto,
     index: usize,
     service: &ServiceDescriptorProto,
@@ -113,9 +115,21 @@ fn service_tokens(
     let comment = service_comment(file, index)
         .map(|comment| format!("{comment}\n\n"))
         .unwrap_or_default();
+    let codes = error_codes(files, package, service);
+    let fails_with = codes
+        .as_ref()
+        .map(|codes| {
+            format!(
+                " It fails with the codes of `{}` (`{}`): branch on them with \
+                 `Error::is` or `Error::code_as`.",
+                codes.rust_name(),
+                codes.qualified
+            )
+        })
+        .unwrap_or_default();
     let sync_doc = doc_attrs(&format!(
         "{comment}Blocking form of `{service_name}`: each method returns when the \
-         call is done. Streams are iterators.\n\nImplement it for work that \
+         call is done. Streams are iterators.{fails_with}\n\nImplement it for work that \
          computes; implement `{async_name}` for work that waits on I/O. The trait \
          is dyn-compatible: hold an implementation as `Arc<dyn {sync_name}>` to \
          choose it at run time. `Blocking` gives an `{async_name}` implementation \
@@ -123,7 +137,7 @@ fn service_tokens(
     ));
     let async_doc = doc_attrs(&format!(
         "{comment}Async form of `{service_name}`: each method returns a future of \
-         the result. Streams are `Stream`s.\n\nImplement it with plain `async fn` \
+         the result. Streams are `Stream`s.{fails_with}\n\nImplement it with plain `async fn` \
          for work that waits on I/O; implement `{sync_name}` for work that \
          computes. A reply stream must not borrow `self`. Generic callers \
          (`impl {async_name}`) call it without boxing; `{dyn_name}` holds an \
@@ -143,13 +157,16 @@ fn service_tokens(
     let mut methods = Vec::with_capacity(service.method.len());
     for (method_index, method) in service.method.iter().enumerate() {
         let rpc = method.name.as_deref().unwrap_or_default();
+        let kind = Kind::of(method);
+        let input = method.input_type.as_deref().unwrap_or_default();
         methods.push(Method {
-            kind: Kind::of(method),
+            kind,
             doc: doc_attrs(
                 &method_comment(file, index, method_index)
                     .unwrap_or_else(|| format!("Call `{service_name}.{rpc}`.")),
             ),
             ident: make_field_ident(&method_name(rpc)),
+            parameter: make_field_ident(&parameter_name(input, kind.streams_in())),
             request: resolver.rust_type(method.input_type.as_deref().unwrap_or_default())?,
             reply: resolver.rust_type(method.output_type.as_deref().unwrap_or_default())?,
             rt,
@@ -172,6 +189,27 @@ fn service_tokens(
         Some(feature) => quote!(#[cfg(feature = #feature)]),
         None => TokenStream::new(),
     };
+    let alias = match codes.as_ref() {
+        Some(codes) => match &codes.alias {
+            Some(alias) => {
+                let doc = doc_attrs(&format!(
+                    "The error codes of `{service_name}`: `{}`, the enum named after \
+                     the service. Every implementation reports its failures with \
+                     them; a caller branches on them with `Error::is` or \
+                     `Error::code_as`.",
+                    codes.qualified
+                ));
+                let ident = format_ident!("{}", alias);
+                let target = resolver.rust_type(&codes.fqn)?;
+                quote! {
+                    #doc
+                    pub type #ident = #target;
+                }
+            }
+            None => TokenStream::new(),
+        },
+        None => TokenStream::new(),
+    };
     let send = quote!(::core::marker::Send);
     let sync = quote!(::core::marker::Sync);
     Ok(quote! {
@@ -188,6 +226,8 @@ fn service_tokens(
         pub trait #async_trait: #send + #sync {
             #(#async_decls)*
         }
+
+        #alias
 
         #dyn_doc
         #[derive(Clone)]

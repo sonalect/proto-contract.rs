@@ -5,51 +5,62 @@ Plain Rust traits for protobuf services.
 `protoc-gen-contract-rust` turns each protobuf `service` into Rust traits
 over the message structs [buffa](https://github.com/anthropics/buffa)
 generates. A component in the same process is called by a method call: no
-encoding, no transport, no view types. The runtime crate `contract` holds
+encoding, no transport, no view types. The runtime crate `protocontract` holds
 the types the generated code names. Requires Rust 1.99.
 
 ## What is generated
 
 ```protobuf
-service GreeterService {
+service Greeter {
   // Greet a person by name.
-  rpc Greet(GreetRequest) returns (GreetReply);
+  rpc Greet(Person) returns (Greeting);
 }
 ```
+
+A contract that stays in one process reads best named the way the Rust
+code reads it: the service as the trait (`Greeter`, not `GreeterService`),
+the methods over the domain's own messages (`Person`, `Greeting`), not
+`…Request` and `…Response` wrappers. buf's `STANDARD` lint asks for the RPC
+style; relax `SERVICE_SUFFIX`, `RPC_REQUEST_STANDARD_NAME`,
+`RPC_RESPONSE_STANDARD_NAME`, and `RPC_REQUEST_RESPONSE_UNIQUE` for such
+protos. The plugin accepts either style.
 
 For each service, three items:
 
 ```rust
-/// The blocking form. Dyn-compatible: `Arc<dyn GreeterServiceSync>`.
-pub trait GreeterServiceSync: Send + Sync {
+/// The blocking form. Dyn-compatible: `Arc<dyn GreeterSync>`.
+pub trait GreeterSync: Send + Sync {
     /// Greet a person by name.
-    fn greet(&self, request: GreetRequest) -> Result<GreetReply, contract::Status>;
+    fn greet(&self, person: Person) -> Result<Greeting, protocontract::Error>;
 }
 
 /// The async form. Implementations write plain `async fn`; a generic
-/// caller (`impl GreeterServiceAsync`) pays no allocation.
-pub trait GreeterServiceAsync: Send + Sync {
+/// caller (`impl GreeterAsync`) pays no allocation.
+pub trait GreeterAsync: Send + Sync {
     /// Greet a person by name.
-    fn greet(&self, request: GreetRequest)
-        -> impl Future<Output = Result<GreetReply, contract::Status>> + Send;
+    fn greet(&self, person: Person)
+        -> impl Future<Output = Result<Greeting, protocontract::Error>> + Send;
 }
 
-/// Any `GreeterServiceAsync` behind dynamic dispatch, for an implementation
-/// chosen at run time. It implements `GreeterServiceAsync` itself; each call
+/// Any `GreeterAsync` behind dynamic dispatch, for an implementation
+/// chosen at run time. It implements `GreeterAsync` itself; each call
 /// boxes its future. Cloning shares the implementation; it also
 /// implements `Debug`.
 #[derive(Clone)]
-pub struct DynGreeterServiceAsync { /* … */ }
+pub struct DynGreeterAsync { /* … */ }
 
-impl DynGreeterServiceAsync {
-    pub fn new<T: GreeterServiceAsync + 'static>(service: T) -> Self;
-    pub fn from_arc<T: GreeterServiceAsync + 'static>(service: Arc<T>) -> Self;
+impl DynGreeterAsync {
+    pub fn new<T: GreeterAsync + 'static>(service: T) -> Self;
+    pub fn from_arc<T: GreeterAsync + 'static>(service: Arc<T>) -> Self;
 }
 ```
 
 Every method takes its request by value and returns its reply owned; the
-error is `contract::Status`, a mirror of `google.rpc.Status`. Comments in
-the `.proto` become rustdoc.
+error is `protocontract::Error` (see [Errors](#errors)). The parameter is
+named after its message in snake case (`Person` gives
+`person`), plural for an inbound stream (`Item` gives `items`); an
+implementation may name it as it likes. Comments in the `.proto` become
+rustdoc.
 
 Implement the form natural to the work: sync for computation, async for
 work that waits on I/O.
@@ -57,61 +68,252 @@ work that waits on I/O.
 ```rust
 struct Greeter;
 
-impl GreeterServiceAsync for Greeter {
-    async fn greet(&self, request: GreetRequest) -> Result<GreetReply, Status> {
+impl GreeterAsync for Greeter {
+    async fn greet(&self, request: Person) -> Result<Greeting, Error> {
         if request.name.is_empty() {
-            return Err(Status::invalid_argument("name is empty"));
+            return Err(Error::new(GreeterErrorCode::EmptyName, "name is empty"));
         }
-        Ok(GreetReply { text: format!("Hello, {}!", request.name), ..Default::default() })
+        Ok(Greeting { text: format!("Hello, {}!", request.name), ..Default::default() })
     }
 }
 
-let greeter = DynGreeterServiceAsync::new(Greeter);
+let greeter = DynGreeterAsync::new(Greeter);
 let reply = greeter.greet(request).await?;
 ```
 
 ### Streaming
 
 Methods of every kind are generated. The sync form takes and returns
-`contract::BoxIter`, the async form `contract::Stream`; the `Dyn…Async`
-handle boxes them as `contract::BoxStream`. Stream items are
-`Result<_, Status>`.
+`protocontract::BoxIter`, the async form `protocontract::Stream`; the `Dyn…Async`
+handle boxes them as `protocontract::BoxStream`. Stream items are
+`Result<_, Error>`.
 
 ```protobuf
-service FeedService {
-  rpc Watch(WatchRequest) returns (stream Item);  // server streaming
+service Feed {
+  rpc Watch(Limit) returns (stream Item);  // server streaming
   rpc Collect(stream Item) returns (Summary);     // client streaming
   rpc Echo(stream Item) returns (stream Item);    // bidirectional
 }
 ```
 
 ```rust
-pub trait FeedServiceSync: Send + Sync {
-    fn watch(&self, request: WatchRequest)
-        -> Result<BoxIter<'static, Result<Item, Status>>, Status>;
-    fn collect(&self, requests: BoxIter<'static, Result<Item, Status>>) -> Result<Summary, Status>;
-    fn echo(&self, requests: BoxIter<'static, Result<Item, Status>>)
-        -> Result<BoxIter<'static, Result<Item, Status>>, Status>;
+pub trait FeedSync: Send + Sync {
+    fn watch(&self, limit: Limit)
+        -> Result<BoxIter<'static, Result<Item, Error>>, Error>;
+    fn collect(&self, items: BoxIter<'static, Result<Item, Error>>) -> Result<Summary, Error>;
+    fn echo(&self, items: BoxIter<'static, Result<Item, Error>>)
+        -> Result<BoxIter<'static, Result<Item, Error>>, Error>;
 }
 
-pub trait FeedServiceAsync: Send + Sync {
-    fn watch(&self, request: WatchRequest) -> impl Future<
-        Output = Result<impl Stream<Item = Result<Item, Status>> + Send + use<Self>, Status>,
+pub trait FeedAsync: Send + Sync {
+    fn watch(&self, limit: Limit) -> impl Future<
+        Output = Result<impl Stream<Item = Result<Item, Error>> + Send + use<Self>, Error>,
     > + Send;
-    fn collect<R>(&self, requests: R) -> impl Future<Output = Result<Summary, Status>> + Send
+    fn collect<R>(&self, items: R) -> impl Future<Output = Result<Summary, Error>> + Send
     where
-        R: Stream<Item = Result<Item, Status>> + Send + 'static;
-    fn echo<R>(&self, requests: R) -> impl Future<
-        Output = Result<impl Stream<Item = Result<Item, Status>> + Send + use<Self, R>, Status>,
+        R: Stream<Item = Result<Item, Error>> + Send + 'static;
+    fn echo<R>(&self, items: R) -> impl Future<
+        Output = Result<impl Stream<Item = Result<Item, Error>> + Send + use<Self, R>, Error>,
     > + Send
     where
-        R: Stream<Item = Result<Item, Status>> + Send + 'static;
+        R: Stream<Item = Result<Item, Error>> + Send + 'static;
 }
 ```
 
 An `Err` before the first item fails the call; an `Err` item ends the
 stream. No stream borrows the service: an implementation clones what its
 stream needs, and a stream can outlive the call and move between threads.
+
+## Errors
+
+Every method of every service fails with one type, `protocontract::Error`. One
+type, not one per service, because:
+
+- an `Arc<dyn …Sync>` or a `Dyn…Async` handle holds implementations chosen
+  at run time, which must agree on the error type;
+- the bridges fail on their own (a panic, a runtime that cannot block) and
+  must build an error whatever the service;
+- `?` carries a failure from one contract into another without a
+  conversion.
+
+What a caller needs from a failure is said by the error itself, not by its
+type:
+
+| Part | What it says | Read with |
+| - | - | - |
+| code | the class of the failure, to branch on | `error.is(code)`, `error.code_as::<C>()`, `error.code()` |
+| retryable | whether the same call may succeed later | `error.retryable()` |
+| message | what happened, for a developer | `Display` |
+| source | the error that caused it | `std::error::Error::source` |
+| stack | the operations it passed on its way out, outermost first | `error.stack()` |
+| backtrace | where it was made (with `RUST_BACKTRACE` set) | `error.backtrace()` |
+
+### 1. The contract declares its codes
+
+A contract's failure codes are part of the contract: put them in the
+proto, as an `enum` next to the `service`, named `<Service>ErrorCode`.
+For `service Greeter` the enum is `GreeterErrorCode`:
+
+```protobuf
+// Greets people by name.
+service Greeter {
+  rpc Greet(Person) returns (Greeting);
+}
+
+// The failures of Greeter a caller may branch on.
+enum GreeterErrorCode {
+  GREETER_ERROR_CODE_UNSPECIFIED = 0;
+  // The name to greet is empty.
+  GREETER_ERROR_CODE_EMPTY_NAME = 1;
+  // The greeter cannot answer now; the same call may succeed later.
+  GREETER_ERROR_CODE_BUSY = 2;
+  // The greeter knows no such person.
+  GREETER_ERROR_CODE_NO_SUCH_PERSON = 3;
+}
+```
+
+Every implementation of the service fails with these codes, and every
+caller branches on them. A code that is not in the enum means nothing to a
+caller who knows only the contract.
+
+### 2. The plugin links the service to its codes
+
+The types cannot tie a service to its enum (the error type is shared by
+all services), so the plugin ties them by name. It looks in the service's
+package for a top-level enum named after the service, and names it in both
+traits' rustdoc:
+
+```rust
+/// Blocking form of `example.v1.Greeter`: … It fails with the codes of
+/// `GreeterErrorCode` (`example.v1.GreeterErrorCode`): branch on them with
+/// `Error::is` or `Error::code_as`.
+pub trait GreeterSync: Send + Sync { … }
+```
+
+So whoever holds a `GreeterSync` finds its codes in the trait's
+documentation. A service without such an enum gets no mention, and is
+generated as before.
+
+A service named in the RPC style, `GreeterService`, finds its codes too:
+the plugin looks for `GreeterErrorCode` first, then
+`GreeterServiceErrorCode`. When the enum is `GreeterErrorCode`, it also
+emits an alias named after the service, so the name still follows from the
+trait (`GreeterServiceSync` → `GreeterServiceErrorCode`):
+
+```rust
+pub type GreeterServiceErrorCode = crate::proto::example::v1::GreeterErrorCode;
+```
+
+The alias and the enum are one type; use either. A message or enum that
+already has the alias' name fails the run.
+
+buffa gives each enum value a short constant beside its proto name:
+`GreeterErrorCode::EmptyName` is `GREETER_ERROR_CODE_EMPTY_NAME`.
+
+### 3. An implementation fails with a code
+
+The common case is a code and a message:
+
+```rust
+use protocontract::{Error, Failure};
+
+fn greet(&self, request: Person) -> Result<Greeting, Error> {
+    if request.name.is_empty() {
+        return Err(Error::new(GreeterErrorCode::EmptyName, "name is empty"));
+    }
+    …
+}
+```
+
+`Failure` adds the rest, when there is more to say:
+
+```rust
+let backend = self.backend.lookup(&request.name).map_err(|cause| {
+    Failure::new(GreeterErrorCode::Busy, "the directory did not answer")
+        .with_retryable(true)   // the caller may try again later
+        .with_source(cause)     // the I/O error, kept as the source
+})?;
+```
+
+A failure with fields of its own (a path, a limit, the closest match)
+implements `protocontract::Fault` on its own type; `?` turns it into an
+`Error`:
+
+```rust
+#[derive(Debug)]
+struct NoSuchPerson { name: String, closest: Option<String> }
+
+impl std::fmt::Display for NoSuchPerson { … }
+impl std::error::Error for NoSuchPerson {}
+
+impl protocontract::Fault for NoSuchPerson {
+    fn code(&self) -> protocontract::Code {
+        GreeterErrorCode::NoSuchPerson.into()
+    }
+    // retryable() is false and backtrace() is None unless overridden.
+}
+```
+
+### 4. A caller branches on the code
+
+```rust
+use protocontract::Context;
+
+match greeter.greet(request) {
+    Ok(reply) => …,
+    Err(error) if error.is(GreeterErrorCode::EmptyName) => …,
+    Err(error) if error.retryable() => …,   // try again later
+    Err(error) => return Err(error.context("welcome")),
+}
+```
+
+or, for every code of the contract at once:
+
+```rust
+match error.code_as::<GreeterErrorCode>() {
+    Some(GreeterErrorCode::EmptyName) => …,
+    Some(_) => …,   // another code of this contract
+    None => …,      // not a code of this contract: a runtime code, or another contract's
+}
+```
+
+A code is compared together with its type. `GreeterErrorCode` value 1 and
+`FeedErrorCode` value 1 are different codes: `is` is `false` and
+`code_as` returns `None` for a code of another enum. A failure whose code
+the caller does not know falls through to its last branch; it still
+carries its message, source, and stack.
+
+On the way out, `context` adds an operation to the error's stack, and
+`Display` prints the stack before the code:
+
+```rust
+let reply = greeter.greet(request).context("welcome")?;
+// welcome: GREETER_ERROR_CODE_EMPTY_NAME: name is empty
+```
+
+`Context` works on any `Result` whose error converts into `Error`
+(`.context("…")`, or `.with_context(|| format!(…))` to build the frame only
+on failure). `error.downcast_ref::<NoSuchPerson>()` reaches an
+implementation's own fault type; use it for diagnostics only, since a
+caller that branches on it is bound to that implementation.
+
+### Codes outside the contract
+
+- `protocontract::RuntimeCode` holds the runtime's own codes: `PANICKED` (a
+  panic under `Offload`), `CANNOT_BLOCK` (`Blocking` inside a
+  current-thread runtime), and `CANCELLED` (a blocking call dropped by its
+  runtime).
+- A component may have codes of its own, outside any contract: a Rust enum
+  that implements `protocontract::ErrorCode` (`to_i32`, `from_i32`, `name`)
+  works like a protobuf enum.
+
+### What the compiler does not check
+
+That an implementation fails only with its contract's codes. Any enum is a
+valid code, so a provider can return a code its callers do not know; a
+caller then sees an unknown code and takes its fallback branch. Keep each
+implementation to its contract's enum, and let its tests check the codes
+it returns.
 
 ## Bridges
 
@@ -120,13 +322,13 @@ of one form can use an implementation of the other:
 
 | Wrapper | Gives | How |
 | - | - | - |
-| `contract::Inline<T>` | a sync impl the async form | runs the call inside `poll`; for calls of microseconds |
-| `contract::Offload<T>` | a sync impl the async form | runs the call on tokio's blocking pool, about 20 µs a call |
-| `contract::Blocking<T>` | an async impl the sync form | blocks the caller on a stored tokio runtime handle |
+| `protocontract::Inline<T>` | a sync impl the async form | runs the call inside `poll`; for calls of microseconds |
+| `protocontract::Offload<T>` | a sync impl the async form | runs the call on tokio's blocking pool, about 20 µs a call |
+| `protocontract::Blocking<T>` | an async impl the sync form | blocks the caller on a stored tokio runtime handle |
 
 ```rust
 // A sync implementation, called through the async form.
-let service = DynGreeterServiceAsync::new(Offload::new(MySyncGreeter, handle.clone()));
+let service = DynGreeterAsync::new(Offload::new(MySyncGreeter, handle.clone()));
 // The same, back in the sync form.
 let sync = Blocking::new(service.clone(), handle);
 ```
@@ -138,19 +340,26 @@ let sync = Blocking::new(service.clone(), handle);
   `Offload` and `Blocking` answer each request as it arrives.
 - `Blocking` works from any thread outside a runtime and inside a
   multi-thread runtime; inside a current-thread runtime it fails with
-  `FAILED_PRECONDITION` rather than block that runtime's only thread.
+  `RuntimeCode::CannotBlock` rather than block that runtime's only thread.
 - `Offload` turns a panic of the sync implementation into
-  `Status::internal`.
+  `RuntimeCode::Panicked`.
+
+## Example
+
+[`examples/glossary`](examples/glossary) is a whole contract in use: the
+proto, the generated crate, a provider that implements it, a consumer that
+calls it without knowing the provider, and the application that wires the
+two. `cargo run -p glossary-app` runs it.
 
 ## Use
 
 Get the plugin from the
-[Releases](https://github.com/sonalect/protoc-gen-contract-rust/releases)
+[Releases](https://github.com/sonalect/proto-contract.rs/releases)
 (from v0.1.0 on): static binaries for Linux, macOS, and Windows on amd64
 and arm64, with their sha256 in `checksums-sha256.txt`. Or build it:
 
 ```bash
-cargo install --locked --git https://github.com/sonalect/protoc-gen-contract-rust protoc-gen-contract-rust
+cargo install --locked --git https://github.com/sonalect/proto-contract.rs protoc-gen-contract-rust
 ```
 
 Run it next to `protoc-gen-buffa`, each into its own `out` directory:
@@ -172,8 +381,9 @@ plugins:
     opt: [filter=services]
 ```
 
-Mount both trees. Name the traits' module anything but `contract`: next to
-the crate `contract` the path `contract::…` would be ambiguous.
+Mount both trees. Name the traits' module anything but `protocontract`:
+next to the crate `protocontract` the path `protocontract::…` would be
+ambiguous.
 
 ```rust
 #[path = "generated/buffa/mod.rs"]
@@ -189,7 +399,7 @@ types). The runtime is published by git tag:
 
 ```toml
 [dependencies]
-contract = { git = "https://github.com/sonalect/protoc-gen-contract-rust", tag = "v0.1.0", features = ["tokio"] }
+protocontract = { git = "https://github.com/sonalect/proto-contract.rs", tag = "v0.1.0", features = ["tokio"] }
 ```
 
 To keep tokio optional, pass `gate_tokio_feature` to the plugin: the
@@ -198,10 +408,10 @@ crate, which turns on the runtime's:
 
 ```toml
 [dependencies]
-contract = { git = "https://github.com/sonalect/protoc-gen-contract-rust", tag = "v0.1.0" }
+protocontract = { git = "https://github.com/sonalect/proto-contract.rs", tag = "v0.1.0" }
 
 [features]
-tokio = ["contract/tokio"]
+tokio = ["protocontract/tokio"]
 ```
 
 `protoc-gen-connect-rust` may run on the same protos into the same crate,
@@ -217,7 +427,7 @@ existing one, naming both proto elements.
 | `extern_path=<proto>=<path>` | maps a proto package prefix to a Rust module; repeatable, longest prefix wins |
 | `file_per_package` | one `<dotted.pkg>.rs` per package instead of per-proto files and a stitcher; drop the packaging step and mount each file yourself |
 | `element_memory_limit=<bytes\|unlimited>` | decode bound of the request, as for `protoc-gen-buffa` |
-| `runtime=<path>` | path of the runtime crate; default `::contract` |
+| `runtime=<path>` | path of the runtime crate; default `::protocontract` |
 | `gate_tokio_feature[=<name>]` | `Offload` and `Blocking` impls under `#[cfg(feature = "<name>")]`; default `tokio` |
 
 Paths are absolute (`::…`, `crate`, or `crate::…`). Well-known types map
@@ -226,8 +436,12 @@ to `::buffa_types` on their own. Any other parameter fails the run.
 ## Status
 
 Under development; the design, its stages, and its decisions are in
-[DESIGN.md](DESIGN.md). Connect adapters (serving and calling a service
-over Connect through the same traits) and request validation come next.
+[DESIGN.md](DESIGN.md).
+
+The traits are for calls inside one process. Across processes, use
+connect-rust's stubs directly. Validation is not part of the plugin: run
+`protoc-gen-protovalidate-buffa` next to it, and call `validate()` on the
+owned messages where you decide to.
 
 ## Build
 

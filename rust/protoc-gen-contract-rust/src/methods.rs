@@ -26,7 +26,7 @@ impl Kind {
         }
     }
 
-    fn streams_in(self) -> bool {
+    pub(crate) fn streams_in(self) -> bool {
         matches!(self, Kind::ClientStreaming | Kind::Bidirectional)
     }
 
@@ -40,6 +40,8 @@ pub(crate) struct Method<'a> {
     pub(crate) kind: Kind,
     pub(crate) doc: TokenStream,
     pub(crate) ident: Ident,
+    /// The parameter: the request, or the inbound stream.
+    pub(crate) parameter: Ident,
     pub(crate) request: TokenStream,
     pub(crate) reply: TokenStream,
     /// The runtime crate path.
@@ -63,15 +65,15 @@ enum Capture {
 impl Method<'_> {
     fn reply_result(&self) -> TokenStream {
         let (reply, rt) = (&self.reply, self.rt);
-        quote!(::core::result::Result<#reply, #rt::Status>)
+        quote!(::core::result::Result<#reply, #rt::Error>)
     }
 
     fn request_item(&self) -> TokenStream {
         let (request, rt) = (&self.request, self.rt);
-        quote!(::core::result::Result<#request, #rt::Status>)
+        quote!(::core::result::Result<#request, #rt::Error>)
     }
 
-    /// `where R: Stream<Item = Result<Req, Status>> + Send + 'static`, for
+    /// `where R: Stream<Item = Result<Req, Error>> + Send + 'static`, for
     /// methods whose async form takes an inbound stream.
     fn inbound_bound(&self) -> TokenStream {
         if !self.kind.streams_in() {
@@ -86,14 +88,15 @@ impl Method<'_> {
     /// The signature of the method in the sync trait.
     fn sync_signature(&self) -> TokenStream {
         let (ident, request, rt) = (&self.ident, &self.request, self.rt);
+        let parameter = &self.parameter;
         let (reply, item) = (self.reply_result(), self.request_item());
         let input = if self.kind.streams_in() {
-            quote!(requests: #rt::BoxIter<'static, #item>)
+            quote!(#parameter: #rt::BoxIter<'static, #item>)
         } else {
-            quote!(request: #request)
+            quote!(#parameter: #request)
         };
         let output = if self.kind.streams_out() {
-            quote!(::core::result::Result<#rt::BoxIter<'static, #reply>, #rt::Status>)
+            quote!(::core::result::Result<#rt::BoxIter<'static, #reply>, #rt::Error>)
         } else {
             reply
         };
@@ -110,12 +113,13 @@ impl Method<'_> {
     /// `async fn … -> O`.
     fn async_signature_as(&self, capture: Capture, as_async_fn: bool) -> TokenStream {
         let (ident, request, rt) = (&self.ident, &self.request, self.rt);
+        let parameter = &self.parameter;
         let reply = self.reply_result();
         let send = quote!(::core::marker::Send);
         let (generics, input) = if self.kind.streams_in() {
-            (quote!(<R>), quote!(requests: R))
+            (quote!(<R>), quote!(#parameter: R))
         } else {
-            (TokenStream::new(), quote!(request: #request))
+            (TokenStream::new(), quote!(#parameter: #request))
         };
         let output = if self.kind.streams_out() {
             let captured = match (capture, self.kind.streams_in()) {
@@ -129,7 +133,7 @@ impl Method<'_> {
             quote! {
                 ::core::result::Result<
                     impl #rt::Stream<Item = #reply> + #send + #captured,
-                    #rt::Status,
+                    #rt::Error,
                 >
             }
         } else {
@@ -149,27 +153,25 @@ impl Method<'_> {
     /// The signature of the method in the dyn-compatible erased trait.
     fn erased_signature(&self) -> TokenStream {
         let (ident, request, rt) = (&self.ident, &self.request, self.rt);
+        let parameter = &self.parameter;
         let (reply, item) = (self.reply_result(), self.request_item());
         let input = if self.kind.streams_in() {
-            quote!(requests: #rt::BoxStream<'static, #item>)
+            quote!(#parameter: #rt::BoxStream<'static, #item>)
         } else {
-            quote!(request: #request)
+            quote!(#parameter: #request)
         };
         let output = if self.kind.streams_out() {
-            quote!(::core::result::Result<#rt::BoxStream<'static, #reply>, #rt::Status>)
+            quote!(::core::result::Result<#rt::BoxStream<'static, #reply>, #rt::Error>)
         } else {
             reply
         };
         quote!(fn #ident(&self, #input) -> #rt::BoxFuture<'_, #output>)
     }
 
-    /// The argument the method passes on: `request` or `requests`.
+    /// The argument the method passes on: its parameter.
     fn argument(&self) -> TokenStream {
-        if self.kind.streams_in() {
-            quote!(requests)
-        } else {
-            quote!(request)
-        }
+        let parameter = &self.parameter;
+        quote!(#parameter)
     }
 
     pub(crate) fn sync_decl(&self) -> TokenStream {
@@ -213,22 +215,22 @@ impl Method<'_> {
 
     /// The handle's method: forward to the erased trait.
     pub(crate) fn dyn_impl(&self) -> TokenStream {
-        let ident = &self.ident;
+        let (ident, parameter) = (&self.ident, &self.parameter);
         let signature = self.async_signature(Capture::Nothing);
         let argument = if self.kind.streams_in() {
-            quote!(::std::boxed::Box::pin(requests))
+            quote!(::std::boxed::Box::pin(#parameter))
         } else {
-            quote!(request)
+            quote!(#parameter)
         };
         quote!(#signature { self.inner.#ident(#argument) })
     }
 
     /// `Inline<T>`: run the sync method inside the future's poll.
     pub(crate) fn inline_impl(&self) -> TokenStream {
-        let (ident, sync_trait) = (&self.ident, self.sync_trait);
+        let (ident, sync_trait, parameter) = (&self.ident, self.sync_trait, &self.parameter);
         let signature = self.async_signature_as(Capture::BridgeParam, true);
         let buffer = if self.kind.streams_in() {
-            quote!(let requests = Self::buffer(requests).await;)
+            quote!(let #parameter = Self::buffer(#parameter).await;)
         } else {
             TokenStream::new()
         };
@@ -244,20 +246,20 @@ impl Method<'_> {
 
     /// `Offload<T>`: run the sync method on the blocking pool.
     pub(crate) fn offload_impl(&self) -> TokenStream {
-        let (ident, sync_trait) = (&self.ident, self.sync_trait);
+        let (ident, sync_trait, parameter) = (&self.ident, self.sync_trait, &self.parameter);
         let signature = self.async_signature(Capture::BridgeParam);
         let body = match self.kind {
             Kind::Unary => quote! {
-                Self::call(self, move |service| <T as #sync_trait>::#ident(service, request))
+                Self::call(self, move |service| <T as #sync_trait>::#ident(service, #parameter))
             },
             Kind::ServerStreaming => quote! {
-                Self::server_streaming(self, move |service| <T as #sync_trait>::#ident(service, request))
+                Self::server_streaming(self, move |service| <T as #sync_trait>::#ident(service, #parameter))
             },
             Kind::ClientStreaming => quote! {
-                Self::client_streaming(self, requests, <T as #sync_trait>::#ident)
+                Self::client_streaming(self, #parameter, <T as #sync_trait>::#ident)
             },
             Kind::Bidirectional => quote! {
-                Self::bidirectional(self, requests, <T as #sync_trait>::#ident)
+                Self::bidirectional(self, #parameter, <T as #sync_trait>::#ident)
             },
         };
         quote!(#signature { #body })
@@ -265,10 +267,10 @@ impl Method<'_> {
 
     /// `Blocking<T>`: block on the async method.
     pub(crate) fn blocking_impl(&self) -> TokenStream {
-        let (ident, async_trait) = (&self.ident, self.async_trait);
+        let (ident, async_trait, parameter) = (&self.ident, self.async_trait, &self.parameter);
         let signature = self.sync_signature();
         let feed = if self.kind.streams_in() {
-            quote!(let requests = Self::feed(self, requests);)
+            quote!(let #parameter = Self::feed(self, #parameter);)
         } else {
             TokenStream::new()
         };

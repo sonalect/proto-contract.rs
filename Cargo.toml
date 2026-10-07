@@ -1,7 +1,11 @@
 [workspace]
 resolver = "3"
 members = [
-    "rust/contract",
+    "examples/glossary/api",
+    "examples/glossary/app",
+    "examples/glossary/consumer",
+    "examples/glossary/provider",
+    "rust/protocontract",
     "rust/golden",
     "rust/protoc-gen-contract-rust",
 ]
@@ -10,15 +14,18 @@ members = [
 edition = "2024"
 rust-version = "1.99.0"
 license = "Apache-2.0"
-repository = "https://github.com/sonalect/protoc-gen-contract-rust"
+repository = "https://github.com/sonalect/proto-contract.rs"
 version = "0.1.0"
 
 [workspace.dependencies]
+glossary-api = { path = "examples/glossary/api" }
+glossary-consumer = { path = "examples/glossary/consumer" }
+glossary-provider = { path = "examples/glossary/provider" }
+protocontract = { path = "rust/protocontract" }
 buffa = "=0.9.2"
 buffa-codegen = "=0.9.2"
 buffa-types = "=0.9.2"
 connectrpc = { version = "=0.9.1", default-features = false }
-contract = { path = "rust/contract" }
 futures-core = "=0.3.34"
 heck = "=0.5.0"
 prettyplease = "=0.3.0"

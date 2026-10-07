@@ -12,7 +12,7 @@ description: >-
 # Versioning
 
 One release version for the whole repository: the runtime crate
-`contract`, the plugin crate `protoc-gen-contract-rust`, and the Bazel
+`protocontract`, the plugin crate `protoc-gen-contract-rust`, and the Bazel
 module. The status line of `DESIGN.md` is **not** this number.
 
 ## Scheme
@@ -37,7 +37,7 @@ wants a stable public API.
 **Breaking** means consumer-visible (`.claude/rules/consumers.md`): a
 renamed or removed generated item, a changed generated signature or module
 layout, a removed or re-meant plugin parameter or default, a changed
-runtime type, or a changed `Status` mapping. Toolchain and CI pins (Bazel,
+runtime type, or a changed error code. Toolchain and CI pins (Bazel,
 rustc) are a patch (0.x) or minor (≥1.0) unless they force a breaking
 change. A bump of the pinned buffa or connect-rust that changes the
 generated code is breaking.

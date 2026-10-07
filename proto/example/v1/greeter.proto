@@ -7,15 +7,15 @@ import "example/shared/v1/label.proto";
 import "google/protobuf/empty.proto";
 
 // Greets people by name.
-service GreeterService {
+service Greeter {
   // Greet a person by name.
-  rpc Greet(GreetRequest) returns (GreetReply);
+  rpc Greet(Person) returns (Greeting);
 
   // Greet a person given only a name from another package.
-  rpc GreetName(example.common.v1.Name) returns (GreetReply);
+  rpc GreetName(example.common.v1.Name) returns (Greeting);
 
-  // Report the options the greeter uses by default.
-  rpc GetOptions(google.protobuf.Empty) returns (GreetRequest.Options);
+  // Report the style the greeter uses by default.
+  rpc GetStyle(google.protobuf.Empty) returns (Person.Style);
 
   // Echo a label of a package that `extern_path` maps elsewhere.
   rpc EchoLabel(example.shared.v1.Label) returns (example.shared.v1.Label);
@@ -24,21 +24,30 @@ service GreeterService {
 }
 
 // Who to greet, and how.
-message GreetRequest {
+message Person {
   // How the greeting is formed.
-  message Options {
+  message Style {
     // Upper-case the greeting.
     bool shout = 1;
   }
 
-  // The person to greet.
+  // The person's name.
   example.common.v1.Name name = 1;
-  // How to greet.
-  Options options = 2;
+  // How to greet the person.
+  Style style = 2;
 }
 
 // The greeting.
-message GreetReply {
+message Greeting {
   // The text of the greeting.
   string text = 1;
+}
+
+// Failures a Greeter caller can branch on.
+enum GreeterErrorCode {
+  GREETER_ERROR_CODE_UNSPECIFIED = 0;
+  // The name to greet is empty.
+  GREETER_ERROR_CODE_EMPTY_NAME = 1;
+  // The greeter does not support the call.
+  GREETER_ERROR_CODE_NOT_SUPPORTED = 2;
 }

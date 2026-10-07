@@ -8,6 +8,65 @@ changes to the generated code or the runtime bump the minor.
 
 ## [Unreleased]
 
+### Added
+
+- `examples/glossary`: a contract in use. A proto with a service and its
+  error codes, the crate generated from it, a provider that implements the
+  traits, a consumer that calls them without knowing the provider, and the
+  application that wires the two (`cargo run -p glossary-app`).
+- Open error codes: `protocontract::ErrorCode`, implemented by every protobuf
+  enum that `protoc-gen-buffa` generates and by hand for a Rust enum, and
+  `protocontract::Code`, a code with its type erased. A contract declares the
+  codes its callers may branch on as an `enum` next to its `service`.
+- `protocontract::Fault`, the trait of a failure (`code`, `retryable`,
+  `backtrace`), and `protocontract::Failure`, the ready-made fault (code,
+  message, `with_retryable`, `with_source`, a captured backtrace). Any
+  `Fault` converts into `protocontract::Error` with `?`.
+- `Error::is`, `code_as`, `retryable`, `stack`, `backtrace`,
+  `downcast_ref`, and `context`; the `protocontract::Context` extension adds a
+  stack frame to the error of a `Result` (`.context("load")`,
+  `.with_context(|| …)`).
+- The plugin finds a service's error-code enum by name
+  (`GreeterErrorCode`, then `GreeterServiceErrorCode`, in the package of
+  `GreeterService`), emits the alias `GreeterServiceErrorCode` next to the
+  traits, and names it in their rustdoc. A service without such an enum is
+  generated as before; a message or enum already named like the alias
+  fails the run.
+- `protocontract::RuntimeCode`: `PANICKED` (`Offload`), `CANNOT_BLOCK`
+  (`Blocking` inside a current-thread runtime), `CANCELLED` (a blocking
+  task dropped by its runtime).
+
+### Changed
+
+- **Breaking.** The runtime crate `contract` is now `protocontract`
+  (directory `rust/protocontract`, Bazel target `//rust/protocontract`).
+  Depend on `protocontract` and replace `contract::` paths; the plugin's
+  `runtime=` default is `::protocontract`. A crate that mounts the traits
+  may now name their module `contract`.
+- **Breaking.** `contract::Status` is now `protocontract::Error`: every
+  generated method returns `Result<_, protocontract::Error>`. Build one with
+  `Error::new(code, message)`, where `code` is a value of the contract's
+  error enum, or from a `Failure` or a `Fault` of your own.
+- **Breaking.** The bridges report `RuntimeCode` values instead of
+  `INTERNAL` and `FAILED_PRECONDITION`.
+- The runtime depends on `buffa` (for `ErrorCode` on its enums) instead of
+  `buffa-types`.
+- Each method's parameter is named after its message in snake case
+  (`word: Word`, `greet_request: GreetRequest`), plural for an inbound
+  stream (`items`), instead of `request` and `requests`. Implementations
+  are unaffected: Rust does not bind parameter names.
+
+### Removed
+
+- **Breaking.** The fixed `google.rpc.Code` set (`contract::Code` as an
+  enum) and the per-code constructors (`Status::invalid_argument`, …):
+  codes are open (see Added).
+- **Breaking.** `Status::with_details`, `details`, and `into_parts`: the
+  calls stay in one process, so the wire payloads of `google.rpc.Status`
+  have no use.
+- **Breaking.** `PartialEq` on the error: a fault cannot be compared.
+  Compare codes (`error.is(code)`) instead.
+
 ## [0.1.0] - 2026-10-06
 
 First release.
@@ -67,5 +126,5 @@ First release.
 - [Unreleased]
 - [0.1.0]
 
-[Unreleased]: https://github.com/sonalect/protoc-gen-contract-rust/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/sonalect/protoc-gen-contract-rust/releases/tag/v0.1.0
+[Unreleased]: https://github.com/sonalect/proto-contract.rs/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/sonalect/proto-contract.rs/releases/tag/v0.1.0

@@ -3,23 +3,23 @@
 
 /// Who to greet, and how.
 #[derive(Clone, Debug, Default)]
-pub struct GreetRequestView<'a> {
-    /// The person to greet.
+pub struct PersonView<'a> {
+    /// The person's name.
     ///
     /// Field 1: `name`
     pub name: ::buffa::MessageFieldView<
         super::super::super::common::v1::__buffa::view::NameView<'a>,
     >,
-    /// How to greet.
+    /// How to greet the person.
     ///
-    /// Field 2: `options`
-    pub options: ::buffa::MessageFieldView<
-        super::super::__buffa::view::greet_request::OptionsView<'a>,
+    /// Field 2: `style`
+    pub style: ::buffa::MessageFieldView<
+        super::super::__buffa::view::person::StyleView<'a>,
     >,
     pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
 }
-impl<'a> ::buffa::MessageView<'a> for GreetRequestView<'a> {
-    type Owned = super::super::GreetRequest;
+impl<'a> ::buffa::MessageView<'a> for PersonView<'a> {
+    type Owned = super::super::Person;
     fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
         let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
@@ -76,13 +76,13 @@ impl<'a> ::buffa::MessageView<'a> for GreetRequestView<'a> {
                 )?;
                 let __sub_ctx = ctx.descend()?;
                 let sub = ::buffa::types::borrow_bytes(&mut cur)?;
-                match view.options.as_mut() {
+                match view.style.as_mut() {
                     Some(existing) => {
                         ::buffa::MessageView::merge_into_view(existing, sub, __sub_ctx)?
                     }
                     None => {
-                        view.options = ::buffa::MessageFieldView::set(
-                            <super::super::__buffa::view::greet_request::OptionsView as ::buffa::MessageView>::decode_view_ctx(
+                        view.style = ::buffa::MessageFieldView::set(
+                            <super::super::__buffa::view::person::StyleView as ::buffa::MessageView>::decode_view_ctx(
                                 sub,
                                 __sub_ctx,
                             )?,
@@ -100,18 +100,18 @@ impl<'a> ::buffa::MessageView<'a> for GreetRequestView<'a> {
     }
     fn to_owned_message(
         &self,
-    ) -> ::core::result::Result<super::super::GreetRequest, ::buffa::DecodeError> {
+    ) -> ::core::result::Result<super::super::Person, ::buffa::DecodeError> {
         self.to_owned_from_source(None)
     }
     #[allow(clippy::useless_conversion, clippy::needless_update)]
     fn to_owned_from_source(
         &self,
         __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
-    ) -> ::core::result::Result<super::super::GreetRequest, ::buffa::DecodeError> {
+    ) -> ::core::result::Result<super::super::Person, ::buffa::DecodeError> {
         #[allow(unused_imports)]
         use ::buffa::alloc::string::ToString as _;
         let _ = __buffa_src;
-        ::core::result::Result::Ok(super::super::GreetRequest {
+        ::core::result::Result::Ok(super::super::Person {
             name: match self.name.as_option() {
                 Some(v) => {
                     ::buffa::MessageField::<
@@ -121,11 +121,11 @@ impl<'a> ::buffa::MessageView<'a> for GreetRequestView<'a> {
                 }
                 None => ::buffa::MessageField::none(),
             },
-            options: match self.options.as_option() {
+            style: match self.style.as_option() {
                 Some(v) => {
                     ::buffa::MessageField::<
-                        super::super::greet_request::Options,
-                        ::buffa::Inline<super::super::greet_request::Options>,
+                        super::super::person::Style,
+                        ::buffa::Inline<super::super::person::Style>,
                     >::some(v.to_owned_from_source(__buffa_src)?)
                 }
                 None => ::buffa::MessageField::none(),
@@ -135,7 +135,7 @@ impl<'a> ::buffa::MessageView<'a> for GreetRequestView<'a> {
         })
     }
 }
-impl<'a> ::buffa::ViewEncode<'a> for GreetRequestView<'a> {
+impl<'a> ::buffa::ViewEncode<'a> for PersonView<'a> {
     #[allow(clippy::needless_borrow, clippy::let_and_return)]
     fn compute_size(&self, __cache: &mut ::buffa::SizeCache) -> u32 {
         #[allow(unused_imports)]
@@ -149,9 +149,9 @@ impl<'a> ::buffa::ViewEncode<'a> for GreetRequestView<'a> {
                 += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
                     + inner_size as u64;
         }
-        if self.options.is_set() {
+        if self.style.is_set() {
             let __slot = __cache.reserve();
-            let inner_size = self.options.compute_size(__cache);
+            let inner_size = self.style.compute_size(__cache);
             __cache.set(__slot, inner_size);
             size
                 += 1u64 + ::buffa::encoding::varint_len(inner_size as u64) as u64
@@ -176,33 +176,33 @@ impl<'a> ::buffa::ViewEncode<'a> for GreetRequestView<'a> {
             );
             self.name.write_to(__cache, buf);
         }
-        if self.options.is_set() {
+        if self.style.is_set() {
             ::buffa::types::put_len_delimited_header(
                 2u32,
                 u64::from(__cache.consume_next()),
                 buf,
             );
-            self.options.write_to(__cache, buf);
+            self.style.write_to(__cache, buf);
         }
         self.__buffa_unknown_fields.write_to(buf);
     }
 }
-impl<'a> ::buffa::MessageName for GreetRequestView<'a> {
+impl<'a> ::buffa::MessageName for PersonView<'a> {
     const PACKAGE: &'static str = "example.v1";
-    const NAME: &'static str = "GreetRequest";
-    const FULL_NAME: &'static str = "example.v1.GreetRequest";
-    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.GreetRequest";
+    const NAME: &'static str = "Person";
+    const FULL_NAME: &'static str = "example.v1.Person";
+    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.Person";
 }
-::buffa::impl_default_view_instance!(GreetRequestView);
-::buffa::impl_view_reborrow!(GreetRequestView);
-/** Self-contained, `'static` owned view of a `GreetRequest` message.
+::buffa::impl_default_view_instance!(PersonView);
+::buffa::impl_view_reborrow!(PersonView);
+/** Self-contained, `'static` owned view of a `Person` message.
 
- Wraps [`::buffa::OwnedView`]`<`[`GreetRequestView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+ Wraps [`::buffa::OwnedView`]`<`[`PersonView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
 
- Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`GreetRequestView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`PersonView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
 #[derive(Clone, Debug)]
-pub struct GreetRequestOwnedView(::buffa::OwnedView<GreetRequestView<'static>>);
-impl GreetRequestOwnedView {
+pub struct PersonOwnedView(::buffa::OwnedView<PersonView<'static>>);
+impl PersonOwnedView {
     /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
     ///
     /// The view borrows directly from the buffer's data; the buffer is
@@ -215,9 +215,7 @@ impl GreetRequestOwnedView {
     pub fn decode(
         bytes: ::buffa::bytes::Bytes,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-        ::core::result::Result::Ok(
-            GreetRequestOwnedView(::buffa::OwnedView::decode(bytes)?),
-        )
+        ::core::result::Result::Ok(PersonOwnedView(::buffa::OwnedView::decode(bytes)?))
     }
     /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
     /// max message size).
@@ -231,7 +229,7 @@ impl GreetRequestOwnedView {
         opts: &::buffa::DecodeOptions,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         ::core::result::Result::Ok(
-            GreetRequestOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
+            PersonOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
         )
     }
     /// Build from an owned message via an encode → decode round-trip.
@@ -243,15 +241,13 @@ impl GreetRequestOwnedView {
     /// another [`::buffa::DecodeError`] if the re-encoded bytes are
     /// somehow invalid (should not happen for well-formed messages).
     pub fn from_owned(
-        msg: &super::super::GreetRequest,
+        msg: &super::super::Person,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-        ::core::result::Result::Ok(
-            GreetRequestOwnedView(::buffa::OwnedView::from_owned(msg)?),
-        )
+        ::core::result::Result::Ok(PersonOwnedView(::buffa::OwnedView::from_owned(msg)?))
     }
-    /// Borrow the full [`GreetRequestView`] with its lifetime tied to `&self`.
+    /// Borrow the full [`PersonView`] with its lifetime tied to `&self`.
     #[must_use]
-    pub fn view(&self) -> &GreetRequestView<'_> {
+    pub fn view(&self) -> &PersonView<'_> {
         self.0.reborrow()
     }
     /// Convert to the owned message type.
@@ -262,7 +258,7 @@ impl GreetRequestOwnedView {
     /// whose contract also governs handles converted from a raw
     /// [`::buffa::OwnedView`].
     #[must_use]
-    pub fn to_owned_message(&self) -> super::super::GreetRequest {
+    pub fn to_owned_message(&self) -> super::super::Person {
         self.0.to_owned_message()
     }
     /// The underlying bytes buffer.
@@ -275,7 +271,7 @@ impl GreetRequestOwnedView {
     pub fn into_bytes(self) -> ::buffa::bytes::Bytes {
         self.0.into_bytes()
     }
-    /// The person to greet.
+    /// The person's name.
     ///
     /// Field 1: `name`
     #[must_use]
@@ -286,54 +282,50 @@ impl GreetRequestOwnedView {
     > {
         &self.0.reborrow().name
     }
-    /// How to greet.
+    /// How to greet the person.
     ///
-    /// Field 2: `options`
+    /// Field 2: `style`
     #[must_use]
-    pub fn options(
+    pub fn style(
         &self,
-    ) -> &::buffa::MessageFieldView<
-        super::super::__buffa::view::greet_request::OptionsView<'_>,
-    > {
-        &self.0.reborrow().options
+    ) -> &::buffa::MessageFieldView<super::super::__buffa::view::person::StyleView<'_>> {
+        &self.0.reborrow().style
     }
 }
-impl ::core::convert::From<::buffa::OwnedView<GreetRequestView<'static>>>
-for GreetRequestOwnedView {
-    fn from(inner: ::buffa::OwnedView<GreetRequestView<'static>>) -> Self {
-        GreetRequestOwnedView(inner)
+impl ::core::convert::From<::buffa::OwnedView<PersonView<'static>>> for PersonOwnedView {
+    fn from(inner: ::buffa::OwnedView<PersonView<'static>>) -> Self {
+        PersonOwnedView(inner)
     }
 }
-impl ::core::convert::From<GreetRequestOwnedView>
-for ::buffa::OwnedView<GreetRequestView<'static>> {
-    fn from(wrapper: GreetRequestOwnedView) -> Self {
+impl ::core::convert::From<PersonOwnedView> for ::buffa::OwnedView<PersonView<'static>> {
+    fn from(wrapper: PersonOwnedView) -> Self {
         wrapper.0
     }
 }
-impl ::core::convert::AsRef<::buffa::OwnedView<GreetRequestView<'static>>>
-for GreetRequestOwnedView {
-    fn as_ref(&self) -> &::buffa::OwnedView<GreetRequestView<'static>> {
+impl ::core::convert::AsRef<::buffa::OwnedView<PersonView<'static>>>
+for PersonOwnedView {
+    fn as_ref(&self) -> &::buffa::OwnedView<PersonView<'static>> {
         &self.0
     }
 }
-impl ::buffa::HasMessageView for super::super::GreetRequest {
-    type View<'a> = GreetRequestView<'a>;
-    type ViewHandle = GreetRequestOwnedView;
+impl ::buffa::HasMessageView for super::super::Person {
+    type View<'a> = PersonView<'a>;
+    type ViewHandle = PersonOwnedView;
 }
-pub mod greet_request {
+pub mod person {
     #[allow(unused_imports)]
     use super::*;
     /// How the greeting is formed.
     #[derive(Clone, Debug, Default)]
-    pub struct OptionsView<'a> {
+    pub struct StyleView<'a> {
         /// Upper-case the greeting.
         ///
         /// Field 1: `shout`
         pub shout: ::core::option::Option<bool>,
         pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
     }
-    impl<'a> ::buffa::MessageView<'a> for OptionsView<'a> {
-        type Owned = super::super::super::greet_request::Options;
+    impl<'a> ::buffa::MessageView<'a> for StyleView<'a> {
+        type Owned = super::super::super::person::Style;
         fn decode_view(
             buf: &'a [u8],
         ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
@@ -382,7 +374,7 @@ pub mod greet_request {
         fn to_owned_message(
             &self,
         ) -> ::core::result::Result<
-            super::super::super::greet_request::Options,
+            super::super::super::person::Style,
             ::buffa::DecodeError,
         > {
             self.to_owned_from_source(None)
@@ -392,20 +384,20 @@ pub mod greet_request {
             &self,
             __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
         ) -> ::core::result::Result<
-            super::super::super::greet_request::Options,
+            super::super::super::person::Style,
             ::buffa::DecodeError,
         > {
             #[allow(unused_imports)]
             use ::buffa::alloc::string::ToString as _;
             let _ = __buffa_src;
-            ::core::result::Result::Ok(super::super::super::greet_request::Options {
+            ::core::result::Result::Ok(super::super::super::person::Style {
                 shout: self.shout,
                 __buffa_unknown_fields: self.__buffa_unknown_fields.to_owned()?.into(),
                 ..::core::default::Default::default()
             })
         }
     }
-    impl<'a> ::buffa::ViewEncode<'a> for OptionsView<'a> {
+    impl<'a> ::buffa::ViewEncode<'a> for StyleView<'a> {
         #[allow(clippy::needless_borrow, clippy::let_and_return)]
         fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
             #[allow(unused_imports)]
@@ -431,22 +423,22 @@ pub mod greet_request {
             self.__buffa_unknown_fields.write_to(buf);
         }
     }
-    impl<'a> ::buffa::MessageName for OptionsView<'a> {
+    impl<'a> ::buffa::MessageName for StyleView<'a> {
         const PACKAGE: &'static str = "example.v1";
-        const NAME: &'static str = "GreetRequest.Options";
-        const FULL_NAME: &'static str = "example.v1.GreetRequest.Options";
-        const TYPE_URL: &'static str = "type.googleapis.com/example.v1.GreetRequest.Options";
+        const NAME: &'static str = "Person.Style";
+        const FULL_NAME: &'static str = "example.v1.Person.Style";
+        const TYPE_URL: &'static str = "type.googleapis.com/example.v1.Person.Style";
     }
-    ::buffa::impl_default_view_instance!(OptionsView);
-    ::buffa::impl_view_reborrow!(OptionsView);
-    /** Self-contained, `'static` owned view of a `Options` message.
+    ::buffa::impl_default_view_instance!(StyleView);
+    ::buffa::impl_view_reborrow!(StyleView);
+    /** Self-contained, `'static` owned view of a `Style` message.
 
- Wraps [`::buffa::OwnedView`]`<`[`OptionsView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+ Wraps [`::buffa::OwnedView`]`<`[`StyleView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
 
- Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`OptionsView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`StyleView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
     #[derive(Clone, Debug)]
-    pub struct OptionsOwnedView(::buffa::OwnedView<OptionsView<'static>>);
-    impl OptionsOwnedView {
+    pub struct StyleOwnedView(::buffa::OwnedView<StyleView<'static>>);
+    impl StyleOwnedView {
         /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
         ///
         /// The view borrows directly from the buffer's data; the buffer is
@@ -460,7 +452,7 @@ pub mod greet_request {
             bytes: ::buffa::bytes::Bytes,
         ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
             ::core::result::Result::Ok(
-                OptionsOwnedView(::buffa::OwnedView::decode(bytes)?),
+                StyleOwnedView(::buffa::OwnedView::decode(bytes)?),
             )
         }
         /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
@@ -475,7 +467,7 @@ pub mod greet_request {
             opts: &::buffa::DecodeOptions,
         ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
             ::core::result::Result::Ok(
-                OptionsOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
+                StyleOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
             )
         }
         /// Build from an owned message via an encode → decode round-trip.
@@ -487,15 +479,15 @@ pub mod greet_request {
         /// another [`::buffa::DecodeError`] if the re-encoded bytes are
         /// somehow invalid (should not happen for well-formed messages).
         pub fn from_owned(
-            msg: &super::super::super::greet_request::Options,
+            msg: &super::super::super::person::Style,
         ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
             ::core::result::Result::Ok(
-                OptionsOwnedView(::buffa::OwnedView::from_owned(msg)?),
+                StyleOwnedView(::buffa::OwnedView::from_owned(msg)?),
             )
         }
-        /// Borrow the full [`OptionsView`] with its lifetime tied to `&self`.
+        /// Borrow the full [`StyleView`] with its lifetime tied to `&self`.
         #[must_use]
-        pub fn view(&self) -> &OptionsView<'_> {
+        pub fn view(&self) -> &StyleView<'_> {
             self.0.reborrow()
         }
         /// Convert to the owned message type.
@@ -506,7 +498,7 @@ pub mod greet_request {
         /// whose contract also governs handles converted from a raw
         /// [`::buffa::OwnedView`].
         #[must_use]
-        pub fn to_owned_message(&self) -> super::super::super::greet_request::Options {
+        pub fn to_owned_message(&self) -> super::super::super::person::Style {
             self.0.to_owned_message()
         }
         /// The underlying bytes buffer.
@@ -527,40 +519,40 @@ pub mod greet_request {
             self.0.reborrow().shout
         }
     }
-    impl ::core::convert::From<::buffa::OwnedView<OptionsView<'static>>>
-    for OptionsOwnedView {
-        fn from(inner: ::buffa::OwnedView<OptionsView<'static>>) -> Self {
-            OptionsOwnedView(inner)
+    impl ::core::convert::From<::buffa::OwnedView<StyleView<'static>>>
+    for StyleOwnedView {
+        fn from(inner: ::buffa::OwnedView<StyleView<'static>>) -> Self {
+            StyleOwnedView(inner)
         }
     }
-    impl ::core::convert::From<OptionsOwnedView>
-    for ::buffa::OwnedView<OptionsView<'static>> {
-        fn from(wrapper: OptionsOwnedView) -> Self {
+    impl ::core::convert::From<StyleOwnedView>
+    for ::buffa::OwnedView<StyleView<'static>> {
+        fn from(wrapper: StyleOwnedView) -> Self {
             wrapper.0
         }
     }
-    impl ::core::convert::AsRef<::buffa::OwnedView<OptionsView<'static>>>
-    for OptionsOwnedView {
-        fn as_ref(&self) -> &::buffa::OwnedView<OptionsView<'static>> {
+    impl ::core::convert::AsRef<::buffa::OwnedView<StyleView<'static>>>
+    for StyleOwnedView {
+        fn as_ref(&self) -> &::buffa::OwnedView<StyleView<'static>> {
             &self.0
         }
     }
-    impl ::buffa::HasMessageView for super::super::super::greet_request::Options {
-        type View<'a> = OptionsView<'a>;
-        type ViewHandle = OptionsOwnedView;
+    impl ::buffa::HasMessageView for super::super::super::person::Style {
+        type View<'a> = StyleView<'a>;
+        type ViewHandle = StyleOwnedView;
     }
 }
 /// The greeting.
 #[derive(Clone, Debug, Default)]
-pub struct GreetReplyView<'a> {
+pub struct GreetingView<'a> {
     /// The text of the greeting.
     ///
     /// Field 1: `text`
     pub text: ::core::option::Option<&'a str>,
     pub __buffa_unknown_fields: ::buffa::UnknownFieldsView<'a>,
 }
-impl<'a> ::buffa::MessageView<'a> for GreetReplyView<'a> {
-    type Owned = super::super::GreetReply;
+impl<'a> ::buffa::MessageView<'a> for GreetingView<'a> {
+    type Owned = super::super::Greeting;
     fn decode_view(buf: &'a [u8]) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         let __limit = ::core::cell::Cell::new(::buffa::DEFAULT_UNKNOWN_FIELD_LIMIT);
         let __elem = ::core::cell::Cell::new(::buffa::DEFAULT_ELEMENT_MEMORY_LIMIT);
@@ -606,25 +598,25 @@ impl<'a> ::buffa::MessageView<'a> for GreetReplyView<'a> {
     }
     fn to_owned_message(
         &self,
-    ) -> ::core::result::Result<super::super::GreetReply, ::buffa::DecodeError> {
+    ) -> ::core::result::Result<super::super::Greeting, ::buffa::DecodeError> {
         self.to_owned_from_source(None)
     }
     #[allow(clippy::useless_conversion, clippy::needless_update)]
     fn to_owned_from_source(
         &self,
         __buffa_src: ::core::option::Option<&::buffa::bytes::Bytes>,
-    ) -> ::core::result::Result<super::super::GreetReply, ::buffa::DecodeError> {
+    ) -> ::core::result::Result<super::super::Greeting, ::buffa::DecodeError> {
         #[allow(unused_imports)]
         use ::buffa::alloc::string::ToString as _;
         let _ = __buffa_src;
-        ::core::result::Result::Ok(super::super::GreetReply {
+        ::core::result::Result::Ok(super::super::Greeting {
             text: self.text.map(|s| s.to_string()),
             __buffa_unknown_fields: self.__buffa_unknown_fields.to_owned()?.into(),
             ..::core::default::Default::default()
         })
     }
 }
-impl<'a> ::buffa::ViewEncode<'a> for GreetReplyView<'a> {
+impl<'a> ::buffa::ViewEncode<'a> for GreetingView<'a> {
     #[allow(clippy::needless_borrow, clippy::let_and_return)]
     fn compute_size(&self, _cache: &mut ::buffa::SizeCache) -> u32 {
         #[allow(unused_imports)]
@@ -650,22 +642,22 @@ impl<'a> ::buffa::ViewEncode<'a> for GreetReplyView<'a> {
         self.__buffa_unknown_fields.write_to(buf);
     }
 }
-impl<'a> ::buffa::MessageName for GreetReplyView<'a> {
+impl<'a> ::buffa::MessageName for GreetingView<'a> {
     const PACKAGE: &'static str = "example.v1";
-    const NAME: &'static str = "GreetReply";
-    const FULL_NAME: &'static str = "example.v1.GreetReply";
-    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.GreetReply";
+    const NAME: &'static str = "Greeting";
+    const FULL_NAME: &'static str = "example.v1.Greeting";
+    const TYPE_URL: &'static str = "type.googleapis.com/example.v1.Greeting";
 }
-::buffa::impl_default_view_instance!(GreetReplyView);
-::buffa::impl_view_reborrow!(GreetReplyView);
-/** Self-contained, `'static` owned view of a `GreetReply` message.
+::buffa::impl_default_view_instance!(GreetingView);
+::buffa::impl_view_reborrow!(GreetingView);
+/** Self-contained, `'static` owned view of a `Greeting` message.
 
- Wraps [`::buffa::OwnedView`]`<`[`GreetReplyView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
+ Wraps [`::buffa::OwnedView`]`<`[`GreetingView`]`<'static>>`: the decoded view and the [`::buffa::bytes::Bytes`] buffer it borrows from travel together, so the handle is `'static` and `Send + Sync` — suitable for async handlers, spawned tasks, and anywhere a `'static` bound is required.
 
- Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`GreetReplyView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
+ Field accessors return borrows tied to `&self`. Use [`Self::view`] to get the full [`GreetingView`] when you need struct patterns, iteration helpers, or to pass the view to lifetime-parameterised code.*/
 #[derive(Clone, Debug)]
-pub struct GreetReplyOwnedView(::buffa::OwnedView<GreetReplyView<'static>>);
-impl GreetReplyOwnedView {
+pub struct GreetingOwnedView(::buffa::OwnedView<GreetingView<'static>>);
+impl GreetingOwnedView {
     /// Decode an owned view from a [`::buffa::bytes::Bytes`] buffer.
     ///
     /// The view borrows directly from the buffer's data; the buffer is
@@ -678,9 +670,7 @@ impl GreetReplyOwnedView {
     pub fn decode(
         bytes: ::buffa::bytes::Bytes,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
-        ::core::result::Result::Ok(
-            GreetReplyOwnedView(::buffa::OwnedView::decode(bytes)?),
-        )
+        ::core::result::Result::Ok(GreetingOwnedView(::buffa::OwnedView::decode(bytes)?))
     }
     /// Decode with custom [`::buffa::DecodeOptions`] (recursion limit,
     /// max message size).
@@ -694,7 +684,7 @@ impl GreetReplyOwnedView {
         opts: &::buffa::DecodeOptions,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         ::core::result::Result::Ok(
-            GreetReplyOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
+            GreetingOwnedView(::buffa::OwnedView::decode_with_options(bytes, opts)?),
         )
     }
     /// Build from an owned message via an encode → decode round-trip.
@@ -706,15 +696,15 @@ impl GreetReplyOwnedView {
     /// another [`::buffa::DecodeError`] if the re-encoded bytes are
     /// somehow invalid (should not happen for well-formed messages).
     pub fn from_owned(
-        msg: &super::super::GreetReply,
+        msg: &super::super::Greeting,
     ) -> ::core::result::Result<Self, ::buffa::DecodeError> {
         ::core::result::Result::Ok(
-            GreetReplyOwnedView(::buffa::OwnedView::from_owned(msg)?),
+            GreetingOwnedView(::buffa::OwnedView::from_owned(msg)?),
         )
     }
-    /// Borrow the full [`GreetReplyView`] with its lifetime tied to `&self`.
+    /// Borrow the full [`GreetingView`] with its lifetime tied to `&self`.
     #[must_use]
-    pub fn view(&self) -> &GreetReplyView<'_> {
+    pub fn view(&self) -> &GreetingView<'_> {
         self.0.reborrow()
     }
     /// Convert to the owned message type.
@@ -725,7 +715,7 @@ impl GreetReplyOwnedView {
     /// whose contract also governs handles converted from a raw
     /// [`::buffa::OwnedView`].
     #[must_use]
-    pub fn to_owned_message(&self) -> super::super::GreetReply {
+    pub fn to_owned_message(&self) -> super::super::Greeting {
         self.0.to_owned_message()
     }
     /// The underlying bytes buffer.
@@ -746,25 +736,25 @@ impl GreetReplyOwnedView {
         self.0.reborrow().text
     }
 }
-impl ::core::convert::From<::buffa::OwnedView<GreetReplyView<'static>>>
-for GreetReplyOwnedView {
-    fn from(inner: ::buffa::OwnedView<GreetReplyView<'static>>) -> Self {
-        GreetReplyOwnedView(inner)
+impl ::core::convert::From<::buffa::OwnedView<GreetingView<'static>>>
+for GreetingOwnedView {
+    fn from(inner: ::buffa::OwnedView<GreetingView<'static>>) -> Self {
+        GreetingOwnedView(inner)
     }
 }
-impl ::core::convert::From<GreetReplyOwnedView>
-for ::buffa::OwnedView<GreetReplyView<'static>> {
-    fn from(wrapper: GreetReplyOwnedView) -> Self {
+impl ::core::convert::From<GreetingOwnedView>
+for ::buffa::OwnedView<GreetingView<'static>> {
+    fn from(wrapper: GreetingOwnedView) -> Self {
         wrapper.0
     }
 }
-impl ::core::convert::AsRef<::buffa::OwnedView<GreetReplyView<'static>>>
-for GreetReplyOwnedView {
-    fn as_ref(&self) -> &::buffa::OwnedView<GreetReplyView<'static>> {
+impl ::core::convert::AsRef<::buffa::OwnedView<GreetingView<'static>>>
+for GreetingOwnedView {
+    fn as_ref(&self) -> &::buffa::OwnedView<GreetingView<'static>> {
         &self.0
     }
 }
-impl ::buffa::HasMessageView for super::super::GreetReply {
-    type View<'a> = GreetReplyView<'a>;
-    type ViewHandle = GreetReplyOwnedView;
+impl ::buffa::HasMessageView for super::super::Greeting {
+    type View<'a> = GreetingView<'a>;
+    type ViewHandle = GreetingOwnedView;
 }

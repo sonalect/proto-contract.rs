@@ -30,7 +30,7 @@ pub fn code(&self) -> Code {
 }
 
 // GOOD
-/// Class of the failure, one of the `google.rpc.Code` values.
+/// The class of the failure, which a caller branches on.
 pub fn code(&self) -> Code {
     self.code
 }
@@ -52,7 +52,7 @@ the citation.
 
 // GOOD
 /// Async face of a sync service: each call runs the sync method on
-/// tokio's blocking pool. A join failure becomes `Status::internal`.
+/// tokio's blocking pool. A panic becomes `RuntimeCode::Panicked`.
 ///
 /// Use it for calls longer than a few microseconds; `Inline` runs the
 /// call inside `poll` without a thread hop.

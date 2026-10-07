@@ -17,10 +17,10 @@ client = []
 tokio = []
 
 [dependencies]
+protocontract = { workspace = true, features = ["tokio"] }
 buffa = { workspace = true }
 buffa-types = { workspace = true }
 connectrpc = { workspace = true }
-contract = { workspace = true, features = ["tokio"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "rt-multi-thread", "sync", "time"] }

@@ -3,476 +3,434 @@
 
 /// Greets people by name.
 ///
-/// Blocking form of `example.v1.GreeterService`: each method returns when the call is done. Streams are iterators.
+/// Blocking form of `example.v1.Greeter`: each method returns when the call is done. Streams are iterators. It fails with the codes of `GreeterErrorCode` (`example.v1.GreeterErrorCode`): branch on them with `Error::is` or `Error::code_as`.
 ///
-/// Implement it for work that computes; implement `GreeterServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn GreeterServiceSync>` to choose it at run time. `Blocking` gives an `GreeterServiceAsync` implementation this form.
+/// Implement it for work that computes; implement `GreeterAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn GreeterSync>` to choose it at run time. `Blocking` gives an `GreeterAsync` implementation this form.
 #[allow(clippy::wrong_self_convention)]
-pub trait GreeterServiceSync: ::core::marker::Send + ::core::marker::Sync {
+pub trait GreeterSync: ::core::marker::Send + ::core::marker::Sync {
     /// Greet a person by name.
     fn greet(
         &self,
-        request: crate::proto::example::v1::GreetRequest,
+        person: crate::proto::example::v1::Person,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::GreetReply,
-        ::contract::Status,
+        crate::proto::example::v1::Greeting,
+        ::protocontract::Error,
     >;
     /// Greet a person given only a name from another package.
     fn greet_name(
         &self,
-        request: crate::proto::example::common::v1::Name,
+        name: crate::proto::example::common::v1::Name,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::GreetReply,
-        ::contract::Status,
+        crate::proto::example::v1::Greeting,
+        ::protocontract::Error,
     >;
-    /// Report the options the greeter uses by default.
-    fn get_options(
+    /// Report the style the greeter uses by default.
+    fn get_style(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::greet_request::Options,
-        ::contract::Status,
+        crate::proto::example::v1::person::Style,
+        ::protocontract::Error,
     >;
     /// Echo a label of a package that `extern_path` maps elsewhere.
     fn echo_label(
         &self,
-        request: crate::shared::v1::Label,
-    ) -> ::core::result::Result<crate::shared::v1::Label, ::contract::Status>;
-    /// Call `example.v1.GreeterService.Reset`.
+        label: crate::shared::v1::Label,
+    ) -> ::core::result::Result<crate::shared::v1::Label, ::protocontract::Error>;
+    /// Call `example.v1.Greeter.Reset`.
     fn reset(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
         ::buffa_types::google::protobuf::Empty,
-        ::contract::Status,
+        ::protocontract::Error,
     >;
 }
 /// Greets people by name.
 ///
-/// Async form of `example.v1.GreeterService`: each method returns a future of the result. Streams are `Stream`s.
+/// Async form of `example.v1.Greeter`: each method returns a future of the result. Streams are `Stream`s. It fails with the codes of `GreeterErrorCode` (`example.v1.GreeterErrorCode`): branch on them with `Error::is` or `Error::code_as`.
 ///
-/// Implement it with plain `async fn` for work that waits on I/O; implement `GreeterServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl GreeterServiceAsync`) call it without boxing; `DynGreeterServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `GreeterServiceSync` implementation this form.
+/// Implement it with plain `async fn` for work that waits on I/O; implement `GreeterSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl GreeterAsync`) call it without boxing; `DynGreeterAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `GreeterSync` implementation this form.
 #[allow(clippy::wrong_self_convention)]
-pub trait GreeterServiceAsync: ::core::marker::Send + ::core::marker::Sync {
+pub trait GreeterAsync: ::core::marker::Send + ::core::marker::Sync {
     /// Greet a person by name.
     fn greet(
         &self,
-        request: crate::proto::example::v1::GreetRequest,
+        person: crate::proto::example::v1::Person,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::GreetReply,
-            ::contract::Status,
+            crate::proto::example::v1::Greeting,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
     /// Greet a person given only a name from another package.
     fn greet_name(
         &self,
-        request: crate::proto::example::common::v1::Name,
+        name: crate::proto::example::common::v1::Name,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::GreetReply,
-            ::contract::Status,
+            crate::proto::example::v1::Greeting,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
-    /// Report the options the greeter uses by default.
-    fn get_options(
+    /// Report the style the greeter uses by default.
+    fn get_style(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::greet_request::Options,
-            ::contract::Status,
+            crate::proto::example::v1::person::Style,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
     /// Echo a label of a package that `extern_path` maps elsewhere.
     fn echo_label(
         &self,
-        request: crate::shared::v1::Label,
+        label: crate::shared::v1::Label,
     ) -> impl ::core::future::Future<
-        Output = ::core::result::Result<crate::shared::v1::Label, ::contract::Status>,
+        Output = ::core::result::Result<crate::shared::v1::Label, ::protocontract::Error>,
     > + ::core::marker::Send;
-    /// Call `example.v1.GreeterService.Reset`.
+    /// Call `example.v1.Greeter.Reset`.
     fn reset(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             ::buffa_types::google::protobuf::Empty,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
 }
-/// Any `GreeterServiceAsync` implementation behind dynamic dispatch, for an implementation chosen at run time. It implements `GreeterServiceAsync` itself, so generic code takes it like any other implementation.
+/// Any `GreeterAsync` implementation behind dynamic dispatch, for an implementation chosen at run time. It implements `GreeterAsync` itself, so generic code takes it like any other implementation.
 ///
 /// Each call boxes its future, and its reply stream if there is one. Cloning shares the implementation.
 #[derive(Clone)]
-pub struct DynGreeterServiceAsync {
-    inner: ::std::sync::Arc<dyn __dyn_greeter_service_async::Erased>,
+pub struct DynGreeterAsync {
+    inner: ::std::sync::Arc<dyn __dyn_greeter_async::Erased>,
 }
-impl ::core::fmt::Debug for DynGreeterServiceAsync {
+impl ::core::fmt::Debug for DynGreeterAsync {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-        f.debug_struct("DynGreeterServiceAsync").finish_non_exhaustive()
+        f.debug_struct("DynGreeterAsync").finish_non_exhaustive()
     }
 }
-impl DynGreeterServiceAsync {
+impl DynGreeterAsync {
     /// Put `service` behind dynamic dispatch.
-    pub fn new<T: GreeterServiceAsync + 'static>(service: T) -> Self {
+    pub fn new<T: GreeterAsync + 'static>(service: T) -> Self {
         Self {
             inner: ::std::sync::Arc::new(service),
         }
     }
     /// Put a shared `service` behind dynamic dispatch.
-    pub fn from_arc<T: GreeterServiceAsync + 'static>(
-        service: ::std::sync::Arc<T>,
-    ) -> Self {
+    pub fn from_arc<T: GreeterAsync + 'static>(service: ::std::sync::Arc<T>) -> Self {
         Self { inner: service }
     }
 }
-impl GreeterServiceAsync for DynGreeterServiceAsync {
+impl GreeterAsync for DynGreeterAsync {
     fn greet(
         &self,
-        request: crate::proto::example::v1::GreetRequest,
+        person: crate::proto::example::v1::Person,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::GreetReply,
-            ::contract::Status,
+            crate::proto::example::v1::Greeting,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.greet(request)
+        self.inner.greet(person)
     }
     fn greet_name(
         &self,
-        request: crate::proto::example::common::v1::Name,
+        name: crate::proto::example::common::v1::Name,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::GreetReply,
-            ::contract::Status,
+            crate::proto::example::v1::Greeting,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.greet_name(request)
+        self.inner.greet_name(name)
     }
-    fn get_options(
+    fn get_style(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::greet_request::Options,
-            ::contract::Status,
+            crate::proto::example::v1::person::Style,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.get_options(request)
+        self.inner.get_style(empty)
     }
     fn echo_label(
         &self,
-        request: crate::shared::v1::Label,
+        label: crate::shared::v1::Label,
     ) -> impl ::core::future::Future<
-        Output = ::core::result::Result<crate::shared::v1::Label, ::contract::Status>,
+        Output = ::core::result::Result<crate::shared::v1::Label, ::protocontract::Error>,
     > + ::core::marker::Send {
-        self.inner.echo_label(request)
+        self.inner.echo_label(label)
     }
     fn reset(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             ::buffa_types::google::protobuf::Empty,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.reset(request)
+        self.inner.reset(empty)
     }
 }
 /// The dyn-compatible face behind the handle: every future and reply
 /// stream boxed.
 #[allow(clippy::type_complexity, clippy::wrong_self_convention)]
-mod __dyn_greeter_service_async {
+mod __dyn_greeter_async {
     pub trait Erased: ::core::marker::Send + ::core::marker::Sync {
         fn greet(
             &self,
-            request: crate::proto::example::v1::GreetRequest,
-        ) -> ::contract::BoxFuture<
+            person: crate::proto::example::v1::Person,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::GreetReply,
-                ::contract::Status,
+                crate::proto::example::v1::Greeting,
+                ::protocontract::Error,
             >,
         >;
         fn greet_name(
             &self,
-            request: crate::proto::example::common::v1::Name,
-        ) -> ::contract::BoxFuture<
+            name: crate::proto::example::common::v1::Name,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::GreetReply,
-                ::contract::Status,
+                crate::proto::example::v1::Greeting,
+                ::protocontract::Error,
             >,
         >;
-        fn get_options(
+        fn get_style(
             &self,
-            request: ::buffa_types::google::protobuf::Empty,
-        ) -> ::contract::BoxFuture<
+            empty: ::buffa_types::google::protobuf::Empty,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::greet_request::Options,
-                ::contract::Status,
+                crate::proto::example::v1::person::Style,
+                ::protocontract::Error,
             >,
         >;
         fn echo_label(
             &self,
-            request: crate::shared::v1::Label,
-        ) -> ::contract::BoxFuture<
+            label: crate::shared::v1::Label,
+        ) -> ::protocontract::BoxFuture<
             '_,
-            ::core::result::Result<crate::shared::v1::Label, ::contract::Status>,
+            ::core::result::Result<crate::shared::v1::Label, ::protocontract::Error>,
         >;
         fn reset(
             &self,
-            request: ::buffa_types::google::protobuf::Empty,
-        ) -> ::contract::BoxFuture<
+            empty: ::buffa_types::google::protobuf::Empty,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
                 ::buffa_types::google::protobuf::Empty,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         >;
     }
-    impl<T: super::GreeterServiceAsync + 'static> Erased for T {
+    impl<T: super::GreeterAsync + 'static> Erased for T {
         fn greet(
             &self,
-            request: crate::proto::example::v1::GreetRequest,
-        ) -> ::contract::BoxFuture<
+            person: crate::proto::example::v1::Person,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::GreetReply,
-                ::contract::Status,
+                crate::proto::example::v1::Greeting,
+                ::protocontract::Error,
             >,
         > {
-            ::std::boxed::Box::pin(
-                <T as super::GreeterServiceAsync>::greet(self, request),
-            )
+            ::std::boxed::Box::pin(<T as super::GreeterAsync>::greet(self, person))
         }
         fn greet_name(
             &self,
-            request: crate::proto::example::common::v1::Name,
-        ) -> ::contract::BoxFuture<
+            name: crate::proto::example::common::v1::Name,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::GreetReply,
-                ::contract::Status,
+                crate::proto::example::v1::Greeting,
+                ::protocontract::Error,
             >,
         > {
-            ::std::boxed::Box::pin(
-                <T as super::GreeterServiceAsync>::greet_name(self, request),
-            )
+            ::std::boxed::Box::pin(<T as super::GreeterAsync>::greet_name(self, name))
         }
-        fn get_options(
+        fn get_style(
             &self,
-            request: ::buffa_types::google::protobuf::Empty,
-        ) -> ::contract::BoxFuture<
+            empty: ::buffa_types::google::protobuf::Empty,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                crate::proto::example::v1::greet_request::Options,
-                ::contract::Status,
+                crate::proto::example::v1::person::Style,
+                ::protocontract::Error,
             >,
         > {
-            ::std::boxed::Box::pin(
-                <T as super::GreeterServiceAsync>::get_options(self, request),
-            )
+            ::std::boxed::Box::pin(<T as super::GreeterAsync>::get_style(self, empty))
         }
         fn echo_label(
             &self,
-            request: crate::shared::v1::Label,
-        ) -> ::contract::BoxFuture<
+            label: crate::shared::v1::Label,
+        ) -> ::protocontract::BoxFuture<
             '_,
-            ::core::result::Result<crate::shared::v1::Label, ::contract::Status>,
+            ::core::result::Result<crate::shared::v1::Label, ::protocontract::Error>,
         > {
-            ::std::boxed::Box::pin(
-                <T as super::GreeterServiceAsync>::echo_label(self, request),
-            )
+            ::std::boxed::Box::pin(<T as super::GreeterAsync>::echo_label(self, label))
         }
         fn reset(
             &self,
-            request: ::buffa_types::google::protobuf::Empty,
-        ) -> ::contract::BoxFuture<
+            empty: ::buffa_types::google::protobuf::Empty,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
                 ::buffa_types::google::protobuf::Empty,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         > {
-            ::std::boxed::Box::pin(
-                <T as super::GreeterServiceAsync>::reset(self, request),
-            )
+            ::std::boxed::Box::pin(<T as super::GreeterAsync>::reset(self, empty))
         }
     }
 }
-impl<T: GreeterServiceSync> GreeterServiceAsync for ::contract::Inline<T> {
+impl<T: GreeterSync> GreeterAsync for ::protocontract::Inline<T> {
     async fn greet(
         &self,
-        request: crate::proto::example::v1::GreetRequest,
+        person: crate::proto::example::v1::Person,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::GreetReply,
-        ::contract::Status,
+        crate::proto::example::v1::Greeting,
+        ::protocontract::Error,
     > {
-        <T as GreeterServiceSync>::greet(Self::get_ref(self), request)
+        <T as GreeterSync>::greet(Self::get_ref(self), person)
     }
     async fn greet_name(
         &self,
-        request: crate::proto::example::common::v1::Name,
+        name: crate::proto::example::common::v1::Name,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::GreetReply,
-        ::contract::Status,
+        crate::proto::example::v1::Greeting,
+        ::protocontract::Error,
     > {
-        <T as GreeterServiceSync>::greet_name(Self::get_ref(self), request)
+        <T as GreeterSync>::greet_name(Self::get_ref(self), name)
     }
-    async fn get_options(
+    async fn get_style(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::greet_request::Options,
-        ::contract::Status,
+        crate::proto::example::v1::person::Style,
+        ::protocontract::Error,
     > {
-        <T as GreeterServiceSync>::get_options(Self::get_ref(self), request)
+        <T as GreeterSync>::get_style(Self::get_ref(self), empty)
     }
     async fn echo_label(
         &self,
-        request: crate::shared::v1::Label,
-    ) -> ::core::result::Result<crate::shared::v1::Label, ::contract::Status> {
-        <T as GreeterServiceSync>::echo_label(Self::get_ref(self), request)
+        label: crate::shared::v1::Label,
+    ) -> ::core::result::Result<crate::shared::v1::Label, ::protocontract::Error> {
+        <T as GreeterSync>::echo_label(Self::get_ref(self), label)
     }
     async fn reset(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
         ::buffa_types::google::protobuf::Empty,
-        ::contract::Status,
+        ::protocontract::Error,
     > {
-        <T as GreeterServiceSync>::reset(Self::get_ref(self), request)
+        <T as GreeterSync>::reset(Self::get_ref(self), empty)
     }
 }
-impl<T: GreeterServiceSync + 'static> GreeterServiceAsync for ::contract::Offload<T> {
+impl<T: GreeterSync + 'static> GreeterAsync for ::protocontract::Offload<T> {
     fn greet(
         &self,
-        request: crate::proto::example::v1::GreetRequest,
+        person: crate::proto::example::v1::Person,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::GreetReply,
-            ::contract::Status,
+            crate::proto::example::v1::Greeting,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        Self::call(
-            self,
-            move |service| <T as GreeterServiceSync>::greet(service, request),
-        )
+        Self::call(self, move |service| <T as GreeterSync>::greet(service, person))
     }
     fn greet_name(
         &self,
-        request: crate::proto::example::common::v1::Name,
+        name: crate::proto::example::common::v1::Name,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::GreetReply,
-            ::contract::Status,
+            crate::proto::example::v1::Greeting,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        Self::call(
-            self,
-            move |service| <T as GreeterServiceSync>::greet_name(service, request),
-        )
+        Self::call(self, move |service| <T as GreeterSync>::greet_name(service, name))
     }
-    fn get_options(
+    fn get_style(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            crate::proto::example::v1::greet_request::Options,
-            ::contract::Status,
+            crate::proto::example::v1::person::Style,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        Self::call(
-            self,
-            move |service| <T as GreeterServiceSync>::get_options(service, request),
-        )
+        Self::call(self, move |service| <T as GreeterSync>::get_style(service, empty))
     }
     fn echo_label(
         &self,
-        request: crate::shared::v1::Label,
+        label: crate::shared::v1::Label,
     ) -> impl ::core::future::Future<
-        Output = ::core::result::Result<crate::shared::v1::Label, ::contract::Status>,
+        Output = ::core::result::Result<crate::shared::v1::Label, ::protocontract::Error>,
     > + ::core::marker::Send {
-        Self::call(
-            self,
-            move |service| <T as GreeterServiceSync>::echo_label(service, request),
-        )
+        Self::call(self, move |service| <T as GreeterSync>::echo_label(service, label))
     }
     fn reset(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             ::buffa_types::google::protobuf::Empty,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        Self::call(
-            self,
-            move |service| <T as GreeterServiceSync>::reset(service, request),
-        )
+        Self::call(self, move |service| <T as GreeterSync>::reset(service, empty))
     }
 }
-impl<T: GreeterServiceAsync + 'static> GreeterServiceSync for ::contract::Blocking<T> {
+impl<T: GreeterAsync + 'static> GreeterSync for ::protocontract::Blocking<T> {
     fn greet(
         &self,
-        request: crate::proto::example::v1::GreetRequest,
+        person: crate::proto::example::v1::Person,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::GreetReply,
-        ::contract::Status,
+        crate::proto::example::v1::Greeting,
+        ::protocontract::Error,
     > {
-        Self::block_on(
-            self,
-            <T as GreeterServiceAsync>::greet(Self::get_ref(self), request),
-        )
+        Self::block_on(self, <T as GreeterAsync>::greet(Self::get_ref(self), person))
     }
     fn greet_name(
         &self,
-        request: crate::proto::example::common::v1::Name,
+        name: crate::proto::example::common::v1::Name,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::GreetReply,
-        ::contract::Status,
+        crate::proto::example::v1::Greeting,
+        ::protocontract::Error,
     > {
-        Self::block_on(
-            self,
-            <T as GreeterServiceAsync>::greet_name(Self::get_ref(self), request),
-        )
+        Self::block_on(self, <T as GreeterAsync>::greet_name(Self::get_ref(self), name))
     }
-    fn get_options(
+    fn get_style(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
-        crate::proto::example::v1::greet_request::Options,
-        ::contract::Status,
+        crate::proto::example::v1::person::Style,
+        ::protocontract::Error,
     > {
-        Self::block_on(
-            self,
-            <T as GreeterServiceAsync>::get_options(Self::get_ref(self), request),
-        )
+        Self::block_on(self, <T as GreeterAsync>::get_style(Self::get_ref(self), empty))
     }
     fn echo_label(
         &self,
-        request: crate::shared::v1::Label,
-    ) -> ::core::result::Result<crate::shared::v1::Label, ::contract::Status> {
-        Self::block_on(
-            self,
-            <T as GreeterServiceAsync>::echo_label(Self::get_ref(self), request),
-        )
+        label: crate::shared::v1::Label,
+    ) -> ::core::result::Result<crate::shared::v1::Label, ::protocontract::Error> {
+        Self::block_on(self, <T as GreeterAsync>::echo_label(Self::get_ref(self), label))
     }
     fn reset(
         &self,
-        request: ::buffa_types::google::protobuf::Empty,
+        empty: ::buffa_types::google::protobuf::Empty,
     ) -> ::core::result::Result<
         ::buffa_types::google::protobuf::Empty,
-        ::contract::Status,
+        ::protocontract::Error,
     > {
-        Self::block_on(
-            self,
-            <T as GreeterServiceAsync>::reset(Self::get_ref(self), request),
-        )
+        Self::block_on(self, <T as GreeterAsync>::reset(Self::get_ref(self), empty))
     }
 }

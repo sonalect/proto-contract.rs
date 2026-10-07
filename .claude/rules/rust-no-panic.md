@@ -11,7 +11,7 @@ Allowed only: `todo!`, `unimplemented!`, `unreachable!`.
 
 Forbidden: `panic!`, `unwrap`, `expect`, `unwrap_err`, `unwrap_unchecked`,
 `assert!`, `assert_eq!`, `assert_ne!`. Recoverable failure is `Result`:
-`contract::Status` in the runtime crate; in the plugin, an error that
+`protocontract::Error` in the runtime crate; in the plugin, an error that
 reaches protoc as `CodeGeneratorResponse.error` and names the proto
 element (file, service, method) it is about.
 
@@ -21,10 +21,10 @@ let id = map.get("id").unwrap();
 panic!("missing id");
 
 // GOOD
-fn load_id(map: &Map) -> Result<&str, Status> {
+fn load_id(map: &Map) -> Result<&str, Error> {
     match map.get("id").and_then(Value::as_str) {
         Some(id) => Ok(id),
-        None => Err(Status::invalid_argument("missing id")),
+        None => Err(Error::new(StoreCode::MissingId, "missing id")),
     }
 }
 

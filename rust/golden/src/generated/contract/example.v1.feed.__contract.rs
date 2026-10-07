@@ -3,280 +3,293 @@
 
 /// Moves items in every direction a method can stream.
 ///
-/// Blocking form of `example.v1.FeedService`: each method returns when the call is done. Streams are iterators.
+/// Blocking form of `example.v1.Feed`: each method returns when the call is done. Streams are iterators. It fails with the codes of `FeedErrorCode` (`example.v1.FeedErrorCode`): branch on them with `Error::is` or `Error::code_as`.
 ///
-/// Implement it for work that computes; implement `FeedServiceAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn FeedServiceSync>` to choose it at run time. `Blocking` gives an `FeedServiceAsync` implementation this form.
+/// Implement it for work that computes; implement `FeedAsync` for work that waits on I/O. The trait is dyn-compatible: hold an implementation as `Arc<dyn FeedSync>` to choose it at run time. `Blocking` gives an `FeedAsync` implementation this form.
 #[allow(clippy::wrong_self_convention)]
-pub trait FeedServiceSync: ::core::marker::Send + ::core::marker::Sync {
-    /// Stream the first `count` items of the feed, one reply per item.
+pub trait FeedSync: ::core::marker::Send + ::core::marker::Sync {
+    /// Stream the first `count` items of the feed, one item per message.
     fn watch(
         &self,
-        request: crate::proto::example::v1::WatchRequest,
+        limit: crate::proto::example::v1::Limit,
     ) -> ::core::result::Result<
-        ::contract::BoxIter<
+        ::protocontract::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contract::Status>,
+            ::core::result::Result<
+                crate::proto::example::v1::Item,
+                ::protocontract::Error,
+            >,
         >,
-        ::contract::Status,
+        ::protocontract::Error,
     >;
     /// Collect a stream of items into one summary.
     fn collect(
         &self,
-        requests: ::contract::BoxIter<
+        items: ::protocontract::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contract::Status>,
+            ::core::result::Result<
+                crate::proto::example::v1::Item,
+                ::protocontract::Error,
+            >,
         >,
-    ) -> ::core::result::Result<crate::proto::example::v1::Summary, ::contract::Status>;
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::Summary,
+        ::protocontract::Error,
+    >;
     /// Echo each item back as it arrives.
     fn echo(
         &self,
-        requests: ::contract::BoxIter<
+        items: ::protocontract::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contract::Status>,
+            ::core::result::Result<
+                crate::proto::example::v1::Item,
+                ::protocontract::Error,
+            >,
         >,
     ) -> ::core::result::Result<
-        ::contract::BoxIter<
+        ::protocontract::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contract::Status>,
+            ::core::result::Result<
+                crate::proto::example::v1::Item,
+                ::protocontract::Error,
+            >,
         >,
-        ::contract::Status,
+        ::protocontract::Error,
     >;
 }
 /// Moves items in every direction a method can stream.
 ///
-/// Async form of `example.v1.FeedService`: each method returns a future of the result. Streams are `Stream`s.
+/// Async form of `example.v1.Feed`: each method returns a future of the result. Streams are `Stream`s. It fails with the codes of `FeedErrorCode` (`example.v1.FeedErrorCode`): branch on them with `Error::is` or `Error::code_as`.
 ///
-/// Implement it with plain `async fn` for work that waits on I/O; implement `FeedServiceSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl FeedServiceAsync`) call it without boxing; `DynFeedServiceAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `FeedServiceSync` implementation this form.
+/// Implement it with plain `async fn` for work that waits on I/O; implement `FeedSync` for work that computes. A reply stream must not borrow `self`. Generic callers (`impl FeedAsync`) call it without boxing; `DynFeedAsync` holds an implementation chosen at run time. `Inline` and `Offload` give a `FeedSync` implementation this form.
 #[allow(clippy::wrong_self_convention)]
-pub trait FeedServiceAsync: ::core::marker::Send + ::core::marker::Sync {
-    /// Stream the first `count` items of the feed, one reply per item.
+pub trait FeedAsync: ::core::marker::Send + ::core::marker::Sync {
+    /// Stream the first `count` items of the feed, one item per message.
     fn watch(
         &self,
-        request: crate::proto::example::v1::WatchRequest,
+        limit: crate::proto::example::v1::Limit,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contract::Stream<
+            impl ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + use<Self>,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send;
     /// Collect a stream of items into one summary.
     fn collect<R>(
         &self,
-        requests: R,
+        items: R,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::Summary,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send
     where
-        R: ::contract::Stream<
+        R: ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + 'static;
     /// Echo each item back as it arrives.
     fn echo<R>(
         &self,
-        requests: R,
+        items: R,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contract::Stream<
+            impl ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + use<Self, R>,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send
     where
-        R: ::contract::Stream<
+        R: ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + 'static;
 }
-/// Any `FeedServiceAsync` implementation behind dynamic dispatch, for an implementation chosen at run time. It implements `FeedServiceAsync` itself, so generic code takes it like any other implementation.
+/// Any `FeedAsync` implementation behind dynamic dispatch, for an implementation chosen at run time. It implements `FeedAsync` itself, so generic code takes it like any other implementation.
 ///
 /// Each call boxes its future, and its reply stream if there is one. Cloning shares the implementation.
 #[derive(Clone)]
-pub struct DynFeedServiceAsync {
-    inner: ::std::sync::Arc<dyn __dyn_feed_service_async::Erased>,
+pub struct DynFeedAsync {
+    inner: ::std::sync::Arc<dyn __dyn_feed_async::Erased>,
 }
-impl ::core::fmt::Debug for DynFeedServiceAsync {
+impl ::core::fmt::Debug for DynFeedAsync {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-        f.debug_struct("DynFeedServiceAsync").finish_non_exhaustive()
+        f.debug_struct("DynFeedAsync").finish_non_exhaustive()
     }
 }
-impl DynFeedServiceAsync {
+impl DynFeedAsync {
     /// Put `service` behind dynamic dispatch.
-    pub fn new<T: FeedServiceAsync + 'static>(service: T) -> Self {
+    pub fn new<T: FeedAsync + 'static>(service: T) -> Self {
         Self {
             inner: ::std::sync::Arc::new(service),
         }
     }
     /// Put a shared `service` behind dynamic dispatch.
-    pub fn from_arc<T: FeedServiceAsync + 'static>(
-        service: ::std::sync::Arc<T>,
-    ) -> Self {
+    pub fn from_arc<T: FeedAsync + 'static>(service: ::std::sync::Arc<T>) -> Self {
         Self { inner: service }
     }
 }
-impl FeedServiceAsync for DynFeedServiceAsync {
+impl FeedAsync for DynFeedAsync {
     fn watch(
         &self,
-        request: crate::proto::example::v1::WatchRequest,
+        limit: crate::proto::example::v1::Limit,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contract::Stream<
+            impl ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + use<>,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
-        self.inner.watch(request)
+        self.inner.watch(limit)
     }
     fn collect<R>(
         &self,
-        requests: R,
+        items: R,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::Summary,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send
     where
-        R: ::contract::Stream<
+        R: ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + 'static,
     {
-        self.inner.collect(::std::boxed::Box::pin(requests))
+        self.inner.collect(::std::boxed::Box::pin(items))
     }
     fn echo<R>(
         &self,
-        requests: R,
+        items: R,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contract::Stream<
+            impl ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + use<R>,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send
     where
-        R: ::contract::Stream<
+        R: ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + 'static,
     {
-        self.inner.echo(::std::boxed::Box::pin(requests))
+        self.inner.echo(::std::boxed::Box::pin(items))
     }
 }
 /// The dyn-compatible face behind the handle: every future and reply
 /// stream boxed.
 #[allow(clippy::type_complexity, clippy::wrong_self_convention)]
-mod __dyn_feed_service_async {
+mod __dyn_feed_async {
     pub trait Erased: ::core::marker::Send + ::core::marker::Sync {
         fn watch(
             &self,
-            request: crate::proto::example::v1::WatchRequest,
-        ) -> ::contract::BoxFuture<
+            limit: crate::proto::example::v1::Limit,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                ::contract::BoxStream<
+                ::protocontract::BoxStream<
                     'static,
                     ::core::result::Result<
                         crate::proto::example::v1::Item,
-                        ::contract::Status,
+                        ::protocontract::Error,
                     >,
                 >,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         >;
         fn collect(
             &self,
-            requests: ::contract::BoxStream<
+            items: ::protocontract::BoxStream<
                 'static,
                 ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             >,
-        ) -> ::contract::BoxFuture<
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
                 crate::proto::example::v1::Summary,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         >;
         fn echo(
             &self,
-            requests: ::contract::BoxStream<
+            items: ::protocontract::BoxStream<
                 'static,
                 ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             >,
-        ) -> ::contract::BoxFuture<
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                ::contract::BoxStream<
+                ::protocontract::BoxStream<
                     'static,
                     ::core::result::Result<
                         crate::proto::example::v1::Item,
-                        ::contract::Status,
+                        ::protocontract::Error,
                     >,
                 >,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         >;
     }
-    impl<T: super::FeedServiceAsync + 'static> Erased for T {
+    impl<T: super::FeedAsync + 'static> Erased for T {
         fn watch(
             &self,
-            request: crate::proto::example::v1::WatchRequest,
-        ) -> ::contract::BoxFuture<
+            limit: crate::proto::example::v1::Limit,
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                ::contract::BoxStream<
+                ::protocontract::BoxStream<
                     'static,
                     ::core::result::Result<
                         crate::proto::example::v1::Item,
-                        ::contract::Status,
+                        ::protocontract::Error,
                     >,
                 >,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         > {
             ::std::boxed::Box::pin(async move {
-                let stream = <T as super::FeedServiceAsync>::watch(self, request).await?;
+                let stream = <T as super::FeedAsync>::watch(self, limit).await?;
                 ::core::result::Result::Ok(
                     ::std::boxed::Box::pin(stream)
-                        as ::contract::BoxStream<
+                        as ::protocontract::BoxStream<
                             'static,
                             ::core::result::Result<
                                 crate::proto::example::v1::Item,
-                                ::contract::Status,
+                                ::protocontract::Error,
                             >,
                         >,
                 )
@@ -284,55 +297,53 @@ mod __dyn_feed_service_async {
         }
         fn collect(
             &self,
-            requests: ::contract::BoxStream<
+            items: ::protocontract::BoxStream<
                 'static,
                 ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             >,
-        ) -> ::contract::BoxFuture<
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
                 crate::proto::example::v1::Summary,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         > {
-            ::std::boxed::Box::pin(
-                <T as super::FeedServiceAsync>::collect(self, requests),
-            )
+            ::std::boxed::Box::pin(<T as super::FeedAsync>::collect(self, items))
         }
         fn echo(
             &self,
-            requests: ::contract::BoxStream<
+            items: ::protocontract::BoxStream<
                 'static,
                 ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             >,
-        ) -> ::contract::BoxFuture<
+        ) -> ::protocontract::BoxFuture<
             '_,
             ::core::result::Result<
-                ::contract::BoxStream<
+                ::protocontract::BoxStream<
                     'static,
                     ::core::result::Result<
                         crate::proto::example::v1::Item,
-                        ::contract::Status,
+                        ::protocontract::Error,
                     >,
                 >,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         > {
             ::std::boxed::Box::pin(async move {
-                let stream = <T as super::FeedServiceAsync>::echo(self, requests).await?;
+                let stream = <T as super::FeedAsync>::echo(self, items).await?;
                 ::core::result::Result::Ok(
                     ::std::boxed::Box::pin(stream)
-                        as ::contract::BoxStream<
+                        as ::protocontract::BoxStream<
                             'static,
                             ::core::result::Result<
                                 crate::proto::example::v1::Item,
-                                ::contract::Status,
+                                ::protocontract::Error,
                             >,
                         >,
                 )
@@ -340,172 +351,179 @@ mod __dyn_feed_service_async {
         }
     }
 }
-impl<T: FeedServiceSync> FeedServiceAsync for ::contract::Inline<T> {
+impl<T: FeedSync> FeedAsync for ::protocontract::Inline<T> {
     async fn watch(
         &self,
-        request: crate::proto::example::v1::WatchRequest,
+        limit: crate::proto::example::v1::Limit,
     ) -> ::core::result::Result<
-        impl ::contract::Stream<
+        impl ::protocontract::Stream<
             Item = ::core::result::Result<
                 crate::proto::example::v1::Item,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         > + ::core::marker::Send + use<T>,
-        ::contract::Status,
+        ::protocontract::Error,
     > {
-        <T as FeedServiceSync>::watch(Self::get_ref(self), request)
-            .map(Self::reply_stream)
+        <T as FeedSync>::watch(Self::get_ref(self), limit).map(Self::reply_stream)
     }
     async fn collect<R>(
         &self,
-        requests: R,
-    ) -> ::core::result::Result<crate::proto::example::v1::Summary, ::contract::Status>
+        items: R,
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::Summary,
+        ::protocontract::Error,
+    >
     where
-        R: ::contract::Stream<
+        R: ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + 'static,
     {
-        let requests = Self::buffer(requests).await;
-        <T as FeedServiceSync>::collect(Self::get_ref(self), requests)
+        let items = Self::buffer(items).await;
+        <T as FeedSync>::collect(Self::get_ref(self), items)
     }
     async fn echo<R>(
         &self,
-        requests: R,
+        items: R,
     ) -> ::core::result::Result<
-        impl ::contract::Stream<
+        impl ::protocontract::Stream<
             Item = ::core::result::Result<
                 crate::proto::example::v1::Item,
-                ::contract::Status,
+                ::protocontract::Error,
             >,
         > + ::core::marker::Send + use<T, R>,
-        ::contract::Status,
+        ::protocontract::Error,
     >
     where
-        R: ::contract::Stream<
+        R: ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + 'static,
     {
-        let requests = Self::buffer(requests).await;
-        <T as FeedServiceSync>::echo(Self::get_ref(self), requests)
-            .map(Self::reply_stream)
+        let items = Self::buffer(items).await;
+        <T as FeedSync>::echo(Self::get_ref(self), items).map(Self::reply_stream)
     }
 }
-impl<T: FeedServiceSync + 'static> FeedServiceAsync for ::contract::Offload<T> {
+impl<T: FeedSync + 'static> FeedAsync for ::protocontract::Offload<T> {
     fn watch(
         &self,
-        request: crate::proto::example::v1::WatchRequest,
+        limit: crate::proto::example::v1::Limit,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contract::Stream<
+            impl ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + use<T>,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send {
         Self::server_streaming(
             self,
-            move |service| <T as FeedServiceSync>::watch(service, request),
+            move |service| <T as FeedSync>::watch(service, limit),
         )
     }
     fn collect<R>(
         &self,
-        requests: R,
+        items: R,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
             crate::proto::example::v1::Summary,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send
     where
-        R: ::contract::Stream<
+        R: ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + 'static,
     {
-        Self::client_streaming(self, requests, <T as FeedServiceSync>::collect)
+        Self::client_streaming(self, items, <T as FeedSync>::collect)
     }
     fn echo<R>(
         &self,
-        requests: R,
+        items: R,
     ) -> impl ::core::future::Future<
         Output = ::core::result::Result<
-            impl ::contract::Stream<
+            impl ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + use<T, R>,
-            ::contract::Status,
+            ::protocontract::Error,
         >,
     > + ::core::marker::Send
     where
-        R: ::contract::Stream<
+        R: ::protocontract::Stream<
                 Item = ::core::result::Result<
                     crate::proto::example::v1::Item,
-                    ::contract::Status,
+                    ::protocontract::Error,
                 >,
             > + ::core::marker::Send + 'static,
     {
-        Self::bidirectional(self, requests, <T as FeedServiceSync>::echo)
+        Self::bidirectional(self, items, <T as FeedSync>::echo)
     }
 }
-impl<T: FeedServiceAsync + 'static> FeedServiceSync for ::contract::Blocking<T> {
+impl<T: FeedAsync + 'static> FeedSync for ::protocontract::Blocking<T> {
     fn watch(
         &self,
-        request: crate::proto::example::v1::WatchRequest,
+        limit: crate::proto::example::v1::Limit,
     ) -> ::core::result::Result<
-        ::contract::BoxIter<
+        ::protocontract::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contract::Status>,
+            ::core::result::Result<
+                crate::proto::example::v1::Item,
+                ::protocontract::Error,
+            >,
         >,
-        ::contract::Status,
+        ::protocontract::Error,
     > {
-        Self::block_on_stream(
-            self,
-            <T as FeedServiceAsync>::watch(Self::get_ref(self), request),
-        )
+        Self::block_on_stream(self, <T as FeedAsync>::watch(Self::get_ref(self), limit))
     }
     fn collect(
         &self,
-        requests: ::contract::BoxIter<
+        items: ::protocontract::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contract::Status>,
+            ::core::result::Result<
+                crate::proto::example::v1::Item,
+                ::protocontract::Error,
+            >,
         >,
-    ) -> ::core::result::Result<crate::proto::example::v1::Summary, ::contract::Status> {
-        let requests = Self::feed(self, requests);
-        Self::block_on(
-            self,
-            <T as FeedServiceAsync>::collect(Self::get_ref(self), requests),
-        )
+    ) -> ::core::result::Result<
+        crate::proto::example::v1::Summary,
+        ::protocontract::Error,
+    > {
+        let items = Self::feed(self, items);
+        Self::block_on(self, <T as FeedAsync>::collect(Self::get_ref(self), items))
     }
     fn echo(
         &self,
-        requests: ::contract::BoxIter<
+        items: ::protocontract::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contract::Status>,
+            ::core::result::Result<
+                crate::proto::example::v1::Item,
+                ::protocontract::Error,
+            >,
         >,
     ) -> ::core::result::Result<
-        ::contract::BoxIter<
+        ::protocontract::BoxIter<
             'static,
-            ::core::result::Result<crate::proto::example::v1::Item, ::contract::Status>,
+            ::core::result::Result<
+                crate::proto::example::v1::Item,
+                ::protocontract::Error,
+            >,
         >,
-        ::contract::Status,
+        ::protocontract::Error,
     > {
-        let requests = Self::feed(self, requests);
-        Self::block_on_stream(
-            self,
-            <T as FeedServiceAsync>::echo(Self::get_ref(self), requests),
-        )
+        let items = Self::feed(self, items);
+        Self::block_on_stream(self, <T as FeedAsync>::echo(Self::get_ref(self), items))
     }
 }

@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package glossary.v1;
+
+// A glossary of terms: the contract between the provider that holds the
+// terms and the consumers that look them up.
+//
+// The contract stays in one process, so it is named the way the Rust code
+// reads it, not the way an RPC API is: the service is the trait
+// (`GlossarySync`, `GlossaryAsync`), and the methods take and return the
+// domain's own messages instead of request and response wrappers.
+service Glossary {
+  // The definition of a word. Fails with `GLOSSARY_ERROR_CODE_EMPTY_TERM`,
+  // `GLOSSARY_ERROR_CODE_UNKNOWN_TERM`, or `GLOSSARY_ERROR_CODE_BUSY`.
+  rpc Define(Word) returns (Term);
+
+  // Every term whose name starts with the prefix, in alphabetical order.
+  rpc Terms(Prefix) returns (stream Term);
+}
+
+// A word to look up, matched without regard to case.
+message Word {
+  string text = 1;
+}
+
+// The start of a term's name, matched without regard to case; empty for
+// every term.
+message Prefix {
+  string text = 1;
+}
+
+// A term and its definition.
+message Term {
+  // The term as the glossary spells it.
+  string name = 1;
+  // One sentence that defines the term.
+  string definition = 2;
+}
+
+// The failures of `Glossary` a caller may branch on. Every implementation
+// reports its failures with these codes.
+enum GlossaryErrorCode {
+  GLOSSARY_ERROR_CODE_UNSPECIFIED = 0;
+  // The word is empty.
+  GLOSSARY_ERROR_CODE_EMPTY_TERM = 1;
+  // The glossary has no such term.
+  GLOSSARY_ERROR_CODE_UNKNOWN_TERM = 2;
+  // The glossary cannot answer now; the same call may succeed later.
+  GLOSSARY_ERROR_CODE_BUSY = 3;
+}
