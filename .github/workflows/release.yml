@@ -42,7 +42,7 @@ defaults:
 jobs:
   version:
     name: Version
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
       - name: Check out repository
@@ -89,13 +89,13 @@ jobs:
       matrix:
         include:
           - platform: linux-amd64
-            runner: ubuntu-24.04
+            runner: ubuntu-26.04
             bazelisk: bazelisk-linux-amd64
             bazelisk_sha256: 5a408715e932c0250d28bd84555f12edbf70117de42f9181691c736eacc4a992
             target: x86_64-unknown-linux-musl
             file: linux-x86_64
           - platform: linux-arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-26.04-arm
             bazelisk: bazelisk-linux-arm64
             bazelisk_sha256: e20e8b0f4f240091b7a55bf17b9398bd4f40ee70ae0208dff95dd4c445fb4010
             target: aarch64-unknown-linux-musl
@@ -311,7 +311,7 @@ jobs:
 
       # The binary itself, not a zip: the artifact takes the file's name.
       - name: Upload the binary
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: dist/*
           archive: false
@@ -322,7 +322,7 @@ jobs:
   release:
     name: Release
     needs: platform
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: write
@@ -333,7 +333,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download the binaries
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: ${{ env.PLUGIN }}-*
           path: dist

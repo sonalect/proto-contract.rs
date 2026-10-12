@@ -8,6 +8,14 @@ changes to the generated code or the runtime bump the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- The plugin's release binaries are built and checked on Ubuntu 26.04 for
+  Linux (amd64 and arm64). They stay static musl binaries.
+- Build pins refreshed: Bazel 9.3.0, `bazel_utils` 0.3.1,
+  `protoc-gen-connect-rust` v0.9.1 for the golden generate, and `syn` 3.0.7.
+  The generated code is unchanged.
+
 ## [0.2.0] - 2026-10-07
 
 ### Added
