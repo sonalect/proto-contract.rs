@@ -8,6 +8,8 @@ changes to the generated code or the runtime bump the minor.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-12
+
 ### Changed
 
 - The plugin's release binaries are built and checked on Ubuntu 26.04 for
@@ -134,9 +136,11 @@ First release.
 ## Links
 
 - [Unreleased]
+- [0.2.1]
 - [0.2.0]
 - [0.1.0]
 
-[Unreleased]: https://github.com/sonalect/proto-contract.rs/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/sonalect/proto-contract.rs/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/sonalect/proto-contract.rs/releases/tag/v0.2.1
 [0.2.0]: https://github.com/sonalect/proto-contract.rs/releases/tag/v0.2.0
 [0.1.0]: https://github.com/sonalect/proto-contract.rs/releases/tag/v0.1.0

@@ -1,5 +1,5 @@
 {
-  "checksum": "060e3e3ad63a4bee0ce4384c38f1b56c512da6344d7803c203283c3d202fa9cd",
+  "checksum": "bf71173621850e8f6b76432afa864244e9ec8ec4dfc8a6d0172cf56d4e6300ed",
   "conditions": {
     "aarch64-apple-darwin": [
       "aarch64-apple-darwin"
@@ -557,7 +557,7 @@
       ],
       "version": "0.9.1"
     },
-    "contract-golden 0.2.0": {
+    "contract-golden 0.2.1": {
       "common_attrs": {
         "crate_features": [
           "default",
@@ -601,7 +601,7 @@
           }
         }
       ],
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
     "defmt 1.1.1": {
       "build_script_attrs": {
@@ -1196,7 +1196,7 @@
       ],
       "version": "0.3.34"
     },
-    "glossary-api 0.2.0": {
+    "glossary-api 0.2.1": {
       "common_attrs": {
         "deps": [
           {
@@ -1222,9 +1222,9 @@
           }
         }
       ],
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
-    "glossary-app 0.2.0": {
+    "glossary-app 0.2.1": {
       "common_attrs": {
         "edition": "2024"
       },
@@ -1236,9 +1236,9 @@
       "package_url": "https://github.com/sonalect/proto-contract.rs",
       "repository": null,
       "targets": [],
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
-    "glossary-consumer 0.2.0": {
+    "glossary-consumer 0.2.1": {
       "common_attrs": {
         "edition": "2024"
       },
@@ -1258,9 +1258,9 @@
           }
         }
       ],
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
-    "glossary-provider 0.2.0": {
+    "glossary-provider 0.2.1": {
       "common_attrs": {
         "edition": "2024"
       },
@@ -1280,7 +1280,7 @@
           }
         }
       ],
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
     "hashbrown 0.15.5": {
       "common_attrs": {
@@ -2212,7 +2212,7 @@
       ],
       "version": "1.0.107"
     },
-    "protoc-gen-contract-rust 0.2.0": {
+    "protoc-gen-contract-rust 0.2.1": {
       "common_attrs": {
         "deps": [
           {
@@ -2262,9 +2262,9 @@
           }
         }
       ],
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
-    "protocontract 0.2.0": {
+    "protocontract 0.2.1": {
       "common_attrs": {
         "crate_features": [
           "tokio"
@@ -2301,7 +2301,7 @@
           }
         }
       ],
-      "version": "0.2.0"
+      "version": "0.2.1"
     },
     "quote 1.0.47": {
       "build_script_attrs": {},
@@ -3736,12 +3736,12 @@
   ],
   "direct_dev_deps": [],
   "workspace_members": {
-    "contract-golden 0.2.0": "rust/golden",
-    "glossary-api 0.2.0": "examples/glossary/api",
-    "glossary-app 0.2.0": "examples/glossary/app",
-    "glossary-consumer 0.2.0": "examples/glossary/consumer",
-    "glossary-provider 0.2.0": "examples/glossary/provider",
-    "protoc-gen-contract-rust 0.2.0": "rust/protoc-gen-contract-rust",
-    "protocontract 0.2.0": "rust/protocontract"
+    "contract-golden 0.2.1": "rust/golden",
+    "glossary-api 0.2.1": "examples/glossary/api",
+    "glossary-app 0.2.1": "examples/glossary/app",
+    "glossary-consumer 0.2.1": "examples/glossary/consumer",
+    "glossary-provider 0.2.1": "examples/glossary/provider",
+    "protoc-gen-contract-rust 0.2.1": "rust/protoc-gen-contract-rust",
+    "protocontract 0.2.1": "rust/protocontract"
   }
 }
