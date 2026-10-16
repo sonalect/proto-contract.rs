@@ -529,8 +529,9 @@ Layout as `serde_markdown`: a Cargo workspace and a Bazel module
 `bazel_utils`); `rust/protocontract`, `rust/protoc-gen-protocontract-buffa`,
 `proto/` with the test protos, `rust/golden`, which compiles the golden
 output and runs the behaviour tests against it, and `examples/glossary`, a
-contract in use by a provider and a consumer. Edition 2024, `rust-version = "1.99.1"`,
-Apache-2.0, English docs.
+contract in use by a provider and a consumer. Edition 2024; `rust-version` is
+1.92 for the runtime and the generated code (what a consumer compiles) and
+1.99.1, the pinned toolchain, for the plugin. Apache-2.0, English docs.
 
 Release: a version tag, and nothing else, starts
 `.github/workflows/release.yml` (decided by the owner, 6 October 2026). It

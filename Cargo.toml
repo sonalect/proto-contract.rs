@@ -12,7 +12,11 @@ members = [
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.99.1"
+# The floor for code a consumer compiles: `protocontract`, the generated
+# code (golden, glossary). 1.92 is the oldest rustc that compiles the
+# generated bidi-streaming handles; the release workflow checks it. The
+# plugin, a binary we build, sets its own (rust/protoc-gen-protocontract-buffa).
+rust-version = "1.92"
 license = "Apache-2.0"
 repository = "https://github.com/sonalect/protocontract-buffa.rs"
 version = "0.2.2"

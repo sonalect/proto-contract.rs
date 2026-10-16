@@ -2,7 +2,9 @@
 name = "protoc-gen-protocontract-buffa"
 version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
+# A binary built with the pinned toolchain (rust-toolchain.toml): the
+# plugin may use every feature up to it. Consumers never compile it.
+rust-version = "1.99.1"
 license.workspace = true
 repository.workspace = true
 description = "protoc plugin: plain Rust sync and async traits for protobuf services, over buffa message types"

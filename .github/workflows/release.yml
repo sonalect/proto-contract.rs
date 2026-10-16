@@ -5,8 +5,10 @@ name: Release
 #      notes in its message (.claude/rules/release-tag.md), and match the
 #      version in Cargo.toml, MODULE.bazel, and CHANGELOG.md;
 #   2. on six platforms: the full `bazel build //...` and `bazel test //...`,
-#      then the plugin's static release binary built by Cargo;
-#   3. when all six pass, the GitHub Release for the tag: the six binaries
+#      then the plugin's static release binary built by Cargo; and, once,
+#      the runtime and the generated code built and tested with the
+#      minimum Rust version (`rust-version` in Cargo.toml);
+#   3. when all of these pass, the GitHub Release for the tag: the six binaries
 #      and checksums-sha256.txt (as buffa publishes it; bazel_utils'
 #      registry.bzl takes each platform's sha256 from it), titled with the tag message's subject, the
 #      message's body as notes.
@@ -317,11 +319,45 @@ jobs:
           archive: false
           if-no-files-found: error
 
+  # What a consumer compiles (the runtime and the generated code) must
+  # build with the workspace's rust-version, older than the pinned
+  # toolchain. Cargo only, on one platform: the code is the same on all.
+  msrv:
+    name: Minimum Rust version
+    needs: version
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust
+        run: |
+          set -euo pipefail
+          if ! command -v rustup >/dev/null; then
+            curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
+            echo "${HOME}/.cargo/bin" >> "${GITHUB_PATH}"
+          fi
+
+      # The version comes from Cargo.toml, so the check cannot drift from
+      # the declared floor. `+<version>` overrides rust-toolchain.toml.
+      - name: Build and test with the minimum Rust version
+        run: |
+          set -euo pipefail
+          msrv="$(sed -n 's/^rust-version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)"
+          test -n "${msrv}"
+          echo "rust-version ${msrv}"
+          rustup toolchain install "${msrv}" --profile minimal
+          cargo "+${msrv}" check --locked -p protocontract --no-default-features
+          cargo "+${msrv}" test --locked -p protocontract --all-features
+          cargo "+${msrv}" test --locked -p contract-golden \
+            -p glossary-api -p glossary-consumer -p glossary-provider -p glossary-app
+
   # Runs in the dry run too, up to the publish step, so the hand-over of
   # the binaries and their checksums is tested before a tag.
   release:
     name: Release
-    needs: platform
+    needs: [platform, msrv]
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
