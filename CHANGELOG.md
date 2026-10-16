@@ -8,6 +8,13 @@ changes to the generated code or the runtime bump the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- Build pins refreshed: `bazel_utils` 0.3.4 (a prebuilt `protoc` on
+  Windows ARM64 instead of one compiled from source), Rust toolchain 1.99.1,
+  `syn` 3.0.9, and `tokio` 1.53.3. The generated code is unchanged.
+- The minimum Rust version (`rust-version`) is 1.99.1.
+
 ## [0.2.1] - 2026-10-12
 
 ### Changed

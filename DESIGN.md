@@ -529,7 +529,7 @@ Layout as `serde_markdown`: a Cargo workspace and a Bazel module
 `bazel_utils`); `rust/protocontract`, `rust/protoc-gen-contract-rust`,
 `proto/` with the test protos, `rust/golden`, which compiles the golden
 output and runs the behaviour tests against it, and `examples/glossary`, a
-contract in use by a provider and a consumer. Edition 2024, `rust-version = "1.99.0"`,
+contract in use by a provider and a consumer. Edition 2024, `rust-version = "1.99.1"`,
 Apache-2.0, English docs.
 
 Release: a version tag, and nothing else, starts

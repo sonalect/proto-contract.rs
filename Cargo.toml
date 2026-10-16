@@ -12,7 +12,7 @@ members = [
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.99.0"
+rust-version = "1.99.1"
 license = "Apache-2.0"
 repository = "https://github.com/sonalect/proto-contract.rs"
 version = "0.2.1"
@@ -31,8 +31,8 @@ heck = "=0.5.0"
 prettyplease = "=0.3.0"
 proc-macro2 = "=1.0.107"
 quote = "=1.0.47"
-syn = { version = "=3.0.7", features = ["full"] }
-tokio = { version = "=1.53.2", default-features = false }
+syn = { version = "=3.0.9", features = ["full"] }
+tokio = { version = "=1.53.3", default-features = false }
 
 [workspace.lints.rust]
 warnings = "deny"

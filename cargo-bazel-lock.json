@@ -1,5 +1,5 @@
 {
-  "checksum": "bf71173621850e8f6b76432afa864244e9ec8ec4dfc8a6d0172cf56d4e6300ed",
+  "checksum": "ede0c298646b768584735e4367b8bb17a7270f902d20a6185f913e2c8d7c7995",
   "conditions": {
     "aarch64-apple-darwin": [
       "aarch64-apple-darwin"
@@ -37,7 +37,7 @@
             "target": "quote"
           },
           {
-            "id": "syn 3.0.7",
+            "id": "syn 3.0.9",
             "target": "syn"
           }
         ],
@@ -488,7 +488,7 @@
               "target": "serde"
             },
             {
-              "id": "serde_json 1.0.151",
+              "id": "serde_json 1.0.154",
               "target": "serde_json"
             },
             {
@@ -500,7 +500,7 @@
               "target": "thiserror"
             },
             {
-              "id": "tokio 1.53.2",
+              "id": "tokio 1.53.3",
               "target": "tokio"
             },
             {
@@ -579,7 +579,7 @@
         ],
         "deps_dev": [
           {
-            "id": "tokio 1.53.2",
+            "id": "tokio 1.53.3",
             "target": "tokio"
           }
         ],
@@ -1014,7 +1014,7 @@
             "target": "quote"
           },
           {
-            "id": "syn 3.0.7",
+            "id": "syn 3.0.9",
             "target": "syn"
           }
         ],
@@ -2123,7 +2123,7 @@
             "target": "proc_macro2"
           },
           {
-            "id": "syn 3.0.7",
+            "id": "syn 3.0.9",
             "target": "syn"
           }
         ],
@@ -2172,7 +2172,7 @@
         ],
         "deps": [
           {
-            "id": "unicode-ident 1.0.26",
+            "id": "unicode-ident 1.0.27",
             "target": "unicode_ident"
           }
         ],
@@ -2240,7 +2240,7 @@
             "target": "quote"
           },
           {
-            "id": "syn 3.0.7",
+            "id": "syn 3.0.9",
             "target": "syn"
           }
         ],
@@ -2279,7 +2279,7 @@
             "target": "futures_core"
           },
           {
-            "id": "tokio 1.53.2",
+            "id": "tokio 1.53.3",
             "target": "tokio"
           }
         ],
@@ -2519,7 +2519,7 @@
             "target": "quote"
           },
           {
-            "id": "syn 3.0.7",
+            "id": "syn 3.0.9",
             "target": "syn"
           }
         ],
@@ -2550,7 +2550,7 @@
       ],
       "version": "1.0.229"
     },
-    "serde_json 1.0.151": {
+    "serde_json 1.0.154": {
       "build_script_attrs": {},
       "common_attrs": {
         "crate_features": [
@@ -2601,8 +2601,8 @@
       "package_url": "https://github.com/serde-rs/json",
       "repository": {
         "Http": {
-          "sha256": "c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14",
-          "url": "https://static.crates.io/crates/serde_json/1.0.151/download"
+          "sha256": "e7e9cc8b1b85264074fbcc02a88680c4096b1e47df8f739dceb03bf482f04bd6",
+          "url": "https://static.crates.io/crates/serde_json/1.0.154/download"
         }
       },
       "targets": [
@@ -2619,7 +2619,7 @@
           }
         }
       ],
-      "version": "1.0.151"
+      "version": "1.0.154"
     },
     "simdutf8 0.1.5": {
       "common_attrs": {
@@ -2744,7 +2744,7 @@
             "target": "quote"
           },
           {
-            "id": "unicode-ident 1.0.26",
+            "id": "unicode-ident 1.0.27",
             "target": "unicode_ident"
           }
         ],
@@ -2775,7 +2775,7 @@
       ],
       "version": "2.0.119"
     },
-    "syn 3.0.7": {
+    "syn 3.0.9": {
       "common_attrs": {
         "crate_features": [
           "clone-impls",
@@ -2799,7 +2799,7 @@
             "target": "quote"
           },
           {
-            "id": "unicode-ident 1.0.26",
+            "id": "unicode-ident 1.0.27",
             "target": "unicode_ident"
           }
         ],
@@ -2816,8 +2816,8 @@
       "package_url": "https://github.com/dtolnay/syn",
       "repository": {
         "Http": {
-          "sha256": "d62a2e0561533f2ca2561d0cf27fd9fedb640a1bf2616ff5d5c80d99017faadc",
-          "url": "https://static.crates.io/crates/syn/3.0.7/download"
+          "sha256": "d78c8dee4c7bf0e14673097256fed6142ce9d3b85a408189d07482442145823b",
+          "url": "https://static.crates.io/crates/syn/3.0.9/download"
         }
       },
       "targets": [
@@ -2828,7 +2828,7 @@
           }
         }
       ],
-      "version": "3.0.7"
+      "version": "3.0.9"
     },
     "sync_wrapper 1.0.2": {
       "common_attrs": {
@@ -2919,7 +2919,7 @@
             "target": "quote"
           },
           {
-            "id": "syn 3.0.7",
+            "id": "syn 3.0.9",
             "target": "syn"
           }
         ],
@@ -2950,7 +2950,7 @@
       ],
       "version": "2.0.21"
     },
-    "tokio 1.53.2": {
+    "tokio 1.53.3": {
       "common_attrs": {
         "crate_features": [
           "bytes",
@@ -2991,8 +2991,8 @@
       "package_url": "https://github.com/tokio-rs/tokio",
       "repository": {
         "Http": {
-          "sha256": "e95f91fcc7a621e8b030f6aa23c71fe9838ae2fb4d8118b75602a328f5144044",
-          "url": "https://static.crates.io/crates/tokio/1.53.2/download"
+          "sha256": "ce3335fa71841cda333a58d7615b03901380ecf09d59b3296d21f8bbac0dde4e",
+          "url": "https://static.crates.io/crates/tokio/1.53.3/download"
         }
       },
       "targets": [
@@ -3003,7 +3003,7 @@
           }
         }
       ],
-      "version": "1.53.2"
+      "version": "1.53.3"
     },
     "tokio-macros 2.7.2": {
       "common_attrs": {
@@ -3017,7 +3017,7 @@
             "target": "quote"
           },
           {
-            "id": "syn 3.0.7",
+            "id": "syn 3.0.9",
             "target": "syn"
           }
         ],
@@ -3073,7 +3073,7 @@
               "target": "pin_project_lite"
             },
             {
-              "id": "tokio 1.53.2",
+              "id": "tokio 1.53.3",
               "target": "tokio"
             }
           ],
@@ -3161,7 +3161,7 @@
             "target": "sync_wrapper"
           },
           {
-            "id": "tokio 1.53.2",
+            "id": "tokio 1.53.3",
             "target": "tokio"
           },
           {
@@ -3393,7 +3393,7 @@
       ],
       "version": "0.1.36"
     },
-    "unicode-ident 1.0.26": {
+    "unicode-ident 1.0.27": {
       "common_attrs": {
         "edition": "2021"
       },
@@ -3409,8 +3409,8 @@
       "package_url": "https://github.com/dtolnay/unicode-ident",
       "repository": {
         "Http": {
-          "sha256": "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954",
-          "url": "https://static.crates.io/crates/unicode-ident/1.0.26/download"
+          "sha256": "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563",
+          "url": "https://static.crates.io/crates/unicode-ident/1.0.27/download"
         }
       },
       "targets": [
@@ -3421,7 +3421,7 @@
           }
         }
       ],
-      "version": "1.0.26"
+      "version": "1.0.27"
     },
     "wasm-bindgen 0.2.129": {
       "build_script_attrs": {
@@ -3512,7 +3512,7 @@
           "selects": {
             "cfg(all(target_os = \"emscripten\", wasm_bindgen_unstable_tokio))": [
               {
-                "id": "tokio 1.53.2",
+                "id": "tokio 1.53.3",
                 "target": "tokio"
               }
             ]
@@ -3600,7 +3600,7 @@
             "target": "quote"
           },
           {
-            "id": "syn 3.0.7",
+            "id": "syn 3.0.9",
             "target": "syn"
           },
           {
@@ -3642,7 +3642,7 @@
       "common_attrs": {
         "deps": [
           {
-            "id": "unicode-ident 1.0.26",
+            "id": "unicode-ident 1.0.27",
             "target": "unicode_ident"
           }
         ],
@@ -3731,8 +3731,8 @@
     "prettyplease 0.3.0",
     "proc-macro2 1.0.107",
     "quote 1.0.47",
-    "syn 3.0.7",
-    "tokio 1.53.2"
+    "syn 3.0.9",
+    "tokio 1.53.3"
   ],
   "direct_dev_deps": [],
   "workspace_members": {
