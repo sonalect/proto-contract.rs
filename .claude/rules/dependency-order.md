@@ -33,7 +33,7 @@ tokio = { workspace = true, optional = true }
 ## BUILD.bazel
 
 `deps` / `proc_macro_deps` lists: alphabetical. Workspace `//rust/…` first,
-then `@contract_cargo//:…`. `bazel run //bazel:format` sorts what
+then `@protocontract_buffa_cargo//:…`. `bazel run //bazel:format` sorts what
 buildifier can.
 
 Does not replace `dependency-quarantine.md` or the crate_universe repin

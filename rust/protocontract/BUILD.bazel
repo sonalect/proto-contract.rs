@@ -10,9 +10,9 @@ rust_library(
     crate_name = "protocontract",
     visibility = ["//visibility:public"],
     deps = [
-        "@contract_cargo//:buffa",
-        "@contract_cargo//:futures-core",
-        "@contract_cargo//:tokio",
+        "@protocontract_buffa_cargo//:buffa",
+        "@protocontract_buffa_cargo//:futures-core",
+        "@protocontract_buffa_cargo//:tokio",
     ],
 )
 
@@ -41,8 +41,8 @@ rust_library(
     crate_name = "protocontract",
     visibility = ["//rust:__pkg__"],
     deps = [
-        "@contract_cargo//:buffa",
-        "@contract_cargo//:futures-core",
+        "@protocontract_buffa_cargo//:buffa",
+        "@protocontract_buffa_cargo//:futures-core",
     ],
 )
 

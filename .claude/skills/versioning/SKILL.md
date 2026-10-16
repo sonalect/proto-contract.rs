@@ -1,7 +1,7 @@
 ---
 name: versioning
 description: >-
-  Bump the Contract crates and Bazel module versions in lockstep
+  Bump the protocontract-buffa crates and Bazel module versions in lockstep
   (Rust-style 0.x or SemVer after 1.0.0), update CHANGELOG.md, create the
   matching GitHub tag, whose CI workflow tests six platforms and publishes
   the GitHub Release with the plugin binaries. Use when releasing, tagging, publishing a GitHub release,
@@ -12,7 +12,7 @@ description: >-
 # Versioning
 
 One release version for the whole repository: the runtime crate
-`protocontract`, the plugin crate `protoc-gen-contract-rust`, and the Bazel
+`protocontract`, the plugin crate `protoc-gen-protocontract-buffa`, and the Bazel
 module. The status line of `DESIGN.md` is **not** this number.
 
 ## Scheme
@@ -86,7 +86,7 @@ The tag starts `.github/workflows/release.yml`; nothing else does. It:
    `windows_amd64`, `windows_arm64`), and on each builds the plugin's
    static release binary with Cargo (`--profile dist`);
 3. when all six pass, publishes the GitHub Release for the tag: the six
-   binaries, named `protoc-gen-contract-rust-{tag}-{file}` (`DESIGN.md`
+   binaries, named `protoc-gen-protocontract-buffa-{tag}-{file}` (`DESIGN.md`
    §9), and `checksums-sha256.txt` for all six; the tag message's subject is the title,
    its body the notes. Not a draft, not a prerelease.
 

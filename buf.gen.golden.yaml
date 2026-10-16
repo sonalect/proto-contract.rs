@@ -1,6 +1,6 @@
 # Golden generate for the test protos (`bazel run //proto:generate`).
-# buffa writes the messages, connect-rust its service items, and Contract
-# both layouts of its traits. rust/golden mounts buffa's and Contract's
+# buffa writes the messages, connect-rust its service items, and protocontract-buffa
+# both layouts of its traits. rust/golden mounts buffa's and protocontract-buffa's
 # output as separate trees, and all three once into one module per package.
 # The `file_per_package` run also gates its bridges (`gate_tokio_feature`)
 # and names the runtime through a re-export (`runtime=crate::rt`).
@@ -16,7 +16,7 @@ plugins:
   - local: protoc-gen-buffa-packaging
     out: rust/golden/src/generated/buffa
     strategy: all
-  - local: protoc-gen-contract-rust
+  - local: protoc-gen-protocontract-buffa
     out: rust/golden/src/generated/contract
     strategy: all
     opt:
@@ -27,7 +27,7 @@ plugins:
     strategy: all
     opt:
       - filter=services
-  - local: protoc-gen-contract-rust
+  - local: protoc-gen-protocontract-buffa
     out: rust/golden/src/generated/per_package
     strategy: all
     opt:

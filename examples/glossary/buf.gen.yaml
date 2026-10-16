@@ -1,5 +1,5 @@
 # Generate for the glossary example (`bazel run //examples/glossary:generate`).
-# buffa writes the messages, Contract the traits of the service; both land
+# buffa writes the messages, protocontract-buffa the traits of the service; both land
 # in the `glossary-api` crate, which is all a provider or a consumer
 # depends on. Both forms of the traits are generated; the example calls
 # the sync one. The async traits need no runtime, but the bridges `Offload`
@@ -15,7 +15,7 @@ plugins:
   - local: protoc-gen-buffa-packaging
     out: examples/glossary/api/src/generated/buffa
     strategy: all
-  - local: protoc-gen-contract-rust
+  - local: protoc-gen-protocontract-buffa
     out: examples/glossary/api/src/generated/contract
     strategy: all
     opt:

@@ -5,7 +5,7 @@
 //! (`bazel run //examples/glossary:generate`):
 //!
 //! - the messages, by `protoc-gen-buffa`;
-//! - [`GlossarySync`] (and its async form), by `protoc-gen-contract-rust`;
+//! - [`GlossarySync`] (and its async form), by `protoc-gen-protocontract-buffa`;
 //! - [`GlossaryErrorCode`], the failures a caller may branch on, declared
 //!   in the proto next to the service. Its name is `<Service>ErrorCode`, so
 //!   the plugin finds it and names it in the traits' rustdoc: from the
@@ -21,7 +21,7 @@
 mod proto;
 
 /// The traits of `glossary.v1.Glossary`, as
-/// `protoc-gen-contract-rust` writes them.
+/// `protoc-gen-protocontract-buffa` writes them.
 #[rustfmt::skip]
 mod traits {
     include!("generated/contract/glossary.v1.rs");

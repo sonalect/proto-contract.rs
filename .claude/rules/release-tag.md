@@ -32,7 +32,7 @@ v0.1.0: sync and async traits for protobuf services
 
 ### Added
 
-- `protoc-gen-contract-rust` emits `<Service>Sync`, `<Service>Async`, and
+- `protoc-gen-protocontract-buffa` emits `<Service>Sync`, `<Service>Async`, and
   `Dyn<Service>Async` for every service, streaming methods included.
 NOTES
 git tag -a v0.1.0 -F "$notes" --cleanup=verbatim

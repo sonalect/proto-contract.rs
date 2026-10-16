@@ -13,6 +13,6 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         "//rust/protocontract",
-        "@contract_cargo//:buffa",
+        "@protocontract_buffa_cargo//:buffa",
     ],
 )

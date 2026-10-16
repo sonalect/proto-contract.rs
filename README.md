@@ -1,8 +1,8 @@
-# Contract
+# protocontract-buffa
 
 Plain Rust traits for protobuf services.
 
-`protoc-gen-contract-rust` turns each protobuf `service` into Rust traits
+`protoc-gen-protocontract-buffa` turns each protobuf `service` into Rust traits
 over the message structs [buffa](https://github.com/anthropics/buffa)
 generates. A component in the same process is called by a method call: no
 encoding, no transport, no view types. The runtime crate `protocontract` holds
@@ -354,12 +354,12 @@ two. `cargo run -p glossary-app` runs it.
 ## Use
 
 Get the plugin from the
-[Releases](https://github.com/sonalect/proto-contract.rs/releases)
+[Releases](https://github.com/sonalect/protocontract-buffa.rs/releases)
 (from v0.1.0 on): static binaries for Linux, macOS, and Windows on amd64
 and arm64, with their sha256 in `checksums-sha256.txt`. Or build it:
 
 ```bash
-cargo install --locked --git https://github.com/sonalect/proto-contract.rs protoc-gen-contract-rust
+cargo install --locked --git https://github.com/sonalect/protocontract-buffa.rs protoc-gen-protocontract-buffa
 ```
 
 Run it next to `protoc-gen-buffa`, each into its own `out` directory:
@@ -372,7 +372,7 @@ plugins:
   - local: protoc-gen-buffa-packaging
     out: src/generated/buffa
     strategy: all
-  - local: protoc-gen-contract-rust
+  - local: protoc-gen-protocontract-buffa
     out: src/generated/contract
     opt: [buffa_module=crate::proto]
   - local: protoc-gen-buffa-packaging
@@ -399,7 +399,7 @@ types). The runtime is published by git tag:
 
 ```toml
 [dependencies]
-protocontract = { git = "https://github.com/sonalect/proto-contract.rs", tag = "v0.2.2", features = ["tokio"] }
+protocontract = { git = "https://github.com/sonalect/protocontract-buffa.rs", tag = "v0.2.2", features = ["tokio"] }
 ```
 
 To keep tokio optional, pass `gate_tokio_feature` to the plugin: the
@@ -408,14 +408,14 @@ crate, which turns on the runtime's:
 
 ```toml
 [dependencies]
-protocontract = { git = "https://github.com/sonalect/proto-contract.rs", tag = "v0.2.2" }
+protocontract = { git = "https://github.com/sonalect/protocontract-buffa.rs", tag = "v0.2.2" }
 
 [features]
 tokio = ["protocontract/tokio"]
 ```
 
 `protoc-gen-connect-rust` may run on the same protos into the same crate,
-even into the same modules: Contract takes no name and no file that
+even into the same modules: protocontract-buffa takes no name and no file that
 connect-rust takes, and the run fails if a generated name meets an
 existing one, naming both proto elements.
 
@@ -452,7 +452,7 @@ bazel run //proto:generate  # refresh the golden files after a plugin change
 
 # a static release binary of the plugin, as the release workflow builds it
 # (RUSTFLAGS unset: it would replace the static flags of .cargo/config.toml)
-env -u RUSTFLAGS cargo build --locked --profile dist --target x86_64-unknown-linux-musl -p protoc-gen-contract-rust
+env -u RUSTFLAGS cargo build --locked --profile dist --target x86_64-unknown-linux-musl -p protoc-gen-protocontract-buffa
 ```
 
 An annotated version tag `vX.Y.Z` on `main` runs the release workflow:

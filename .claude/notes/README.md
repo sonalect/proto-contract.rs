@@ -6,7 +6,7 @@ before planning; open a note when its topic comes up.
 
 | Note | What it holds |
 | - | - |
-| [bazel-utils-catalog.md](bazel-utils-catalog.md) | The plugin's bazel_utils catalog entry: prepared on a local branch, deferred until the repository is public; the old repository URL left in bazel_utils and Knowqore |
+| [bazel-utils-catalog.md](bazel-utils-catalog.md) | The plugin's bazel_utils catalog entry: catalogued under the old name `protoc-gen-contract-rust`; the steps for the renamed plugin in bazel_utils and Knowqore |
 
 ## References
 

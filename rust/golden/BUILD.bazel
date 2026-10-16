@@ -14,9 +14,9 @@ rust_library(
     visibility = ["//rust:__pkg__"],
     deps = [
         "//rust/protocontract",
-        "@contract_cargo//:buffa",
-        "@contract_cargo//:buffa-types",
-        "@contract_cargo//:connectrpc",
+        "@protocontract_buffa_cargo//:buffa",
+        "@protocontract_buffa_cargo//:buffa-types",
+        "@protocontract_buffa_cargo//:connectrpc",
     ],
 )
 
@@ -29,9 +29,9 @@ rust_library(
     visibility = ["//rust:__pkg__"],
     deps = [
         "//rust/protocontract",
-        "@contract_cargo//:buffa",
-        "@contract_cargo//:buffa-types",
-        "@contract_cargo//:connectrpc",
+        "@protocontract_buffa_cargo//:buffa",
+        "@protocontract_buffa_cargo//:buffa-types",
+        "@protocontract_buffa_cargo//:connectrpc",
     ],
 )
 
@@ -44,8 +44,8 @@ rust_library(
         deps = [
             ":golden",
             "//rust/protocontract",
-            "@contract_cargo//:buffa-types",
-            "@contract_cargo//:tokio",
+            "@protocontract_buffa_cargo//:buffa-types",
+            "@protocontract_buffa_cargo//:tokio",
         ],
     )
     for test in [

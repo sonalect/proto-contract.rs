@@ -1,5 +1,5 @@
 {
-  "checksum": "408c3167d45d663ed250c6493b2bbb4fedcd47428dbf37c783003eaccec6e505",
+  "checksum": "5ae0dfe504b1329d83f53637b3beea89d8427f75d1fb776cbb94a87f96442c7b",
   "conditions": {
     "aarch64-apple-darwin": [
       "aarch64-apple-darwin"
@@ -591,7 +591,7 @@
         "Apache-2.0"
       ],
       "name": "contract-golden",
-      "package_url": "https://github.com/sonalect/proto-contract.rs",
+      "package_url": "https://github.com/sonalect/protocontract-buffa.rs",
       "repository": null,
       "targets": [
         {
@@ -1212,7 +1212,7 @@
         "Apache-2.0"
       ],
       "name": "glossary-api",
-      "package_url": "https://github.com/sonalect/proto-contract.rs",
+      "package_url": "https://github.com/sonalect/protocontract-buffa.rs",
       "repository": null,
       "targets": [
         {
@@ -1233,7 +1233,7 @@
         "Apache-2.0"
       ],
       "name": "glossary-app",
-      "package_url": "https://github.com/sonalect/proto-contract.rs",
+      "package_url": "https://github.com/sonalect/protocontract-buffa.rs",
       "repository": null,
       "targets": [],
       "version": "0.2.2"
@@ -1248,7 +1248,7 @@
         "Apache-2.0"
       ],
       "name": "glossary-consumer",
-      "package_url": "https://github.com/sonalect/proto-contract.rs",
+      "package_url": "https://github.com/sonalect/protocontract-buffa.rs",
       "repository": null,
       "targets": [
         {
@@ -1270,7 +1270,7 @@
         "Apache-2.0"
       ],
       "name": "glossary-provider",
-      "package_url": "https://github.com/sonalect/proto-contract.rs",
+      "package_url": "https://github.com/sonalect/protocontract-buffa.rs",
       "repository": null,
       "targets": [
         {
@@ -2212,7 +2212,7 @@
       ],
       "version": "1.0.107"
     },
-    "protoc-gen-contract-rust 0.2.2": {
+    "protoc-gen-protocontract-buffa 0.2.2": {
       "common_attrs": {
         "deps": [
           {
@@ -2246,18 +2246,18 @@
         ],
         "edition": "2024"
       },
-      "library_target_name": "protoc_gen_contract_rust",
+      "library_target_name": "protoc_gen_protocontract_buffa",
       "license": "Apache-2.0",
       "license_ids": [
         "Apache-2.0"
       ],
-      "name": "protoc-gen-contract-rust",
-      "package_url": "https://github.com/sonalect/proto-contract.rs",
+      "name": "protoc-gen-protocontract-buffa",
+      "package_url": "https://github.com/sonalect/protocontract-buffa.rs",
       "repository": null,
       "targets": [
         {
           "Library": {
-            "crate_name": "protoc_gen_contract_rust",
+            "crate_name": "protoc_gen_protocontract_buffa",
             "crate_root": "src/lib.rs"
           }
         }
@@ -2291,7 +2291,7 @@
         "Apache-2.0"
       ],
       "name": "protocontract",
-      "package_url": "https://github.com/sonalect/proto-contract.rs",
+      "package_url": "https://github.com/sonalect/protocontract-buffa.rs",
       "repository": null,
       "targets": [
         {
@@ -3741,7 +3741,7 @@
     "glossary-app 0.2.2": "examples/glossary/app",
     "glossary-consumer 0.2.2": "examples/glossary/consumer",
     "glossary-provider 0.2.2": "examples/glossary/provider",
-    "protoc-gen-contract-rust 0.2.2": "rust/protoc-gen-contract-rust",
+    "protoc-gen-protocontract-buffa 0.2.2": "rust/protoc-gen-protocontract-buffa",
     "protocontract 0.2.2": "rust/protocontract"
   }
 }

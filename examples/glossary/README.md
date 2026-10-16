@@ -81,7 +81,7 @@ in both traits' rustdoc: a consumer reading `GlossarySync` learns there
 which codes the service fails with.
 
 [`buf.gen.yaml`](buf.gen.yaml) runs `protoc-gen-buffa` for the messages
-and `protoc-gen-contract-rust` for the traits; both write into
+and `protoc-gen-protocontract-buffa` for the traits; both write into
 `api/src/generated`, checked in. [`api/src/lib.rs`](api/src/lib.rs) mounts
 them and re-exports the runtime types (`Error`, `Failure`, `Context`, …),
 so the other crates depend on `glossary-api` alone.

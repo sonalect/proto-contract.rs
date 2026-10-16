@@ -1,6 +1,6 @@
 //! Names of the generated items, and the check that they are free.
 //!
-//! Contract's output is often mounted into the module that already holds
+//! protocontract-buffa's output is often mounted into the module that already holds
 //! a package's buffa messages and connect-rust's service items. Two items
 //! with one name in one module do not compile (E0428), so the run fails
 //! first and names both proto elements.
@@ -13,7 +13,7 @@ use heck::{ToSnakeCase, ToUpperCamelCase};
 
 use crate::Error;
 
-/// The names Contract gives the items of one service.
+/// The names protocontract-buffa gives the items of one service.
 pub(crate) struct ServiceNames {
     /// The blocking trait, `<Service>Sync`.
     pub(crate) sync: String,
@@ -57,7 +57,7 @@ impl ServiceNames {
 /// For `service GlossaryService` it is the top-level enum
 /// `GlossaryErrorCode` (the service name without its `Service` suffix) or
 /// `GlossaryServiceErrorCode` (the whole name) in the same package, in that
-/// order. Contract names it in the traits' rustdoc and emits the alias
+/// order. protocontract-buffa names it in the traits' rustdoc and emits the alias
 /// `<Service>ErrorCode`, so a caller finds the codes from the trait.
 pub(crate) struct ErrorCodes {
     /// The proto name of the enum, `.pkg.Name`.
@@ -164,12 +164,12 @@ pub(crate) fn qualified(package: &str, name: &str) -> String {
     }
 }
 
-/// Fail if a name Contract gives an item of a service in `package` is
+/// Fail if a name protocontract-buffa gives an item of a service in `package` is
 /// also the name of another item of the package's Rust module.
 ///
 /// Items checked: messages and enums (buffa), the server trait and the `Ext`, `RegisterMarker`, `Server`, and `Client`
 /// items of every service (connect-rust), and the items of every other
-/// service (Contract), the `<Service>ErrorCode` alias included. connect-rust's constants are upper snake case and
+/// service (protocontract-buffa), the `<Service>ErrorCode` alias included. connect-rust's constants are upper snake case and
 /// its `Owned…View` aliases end in `View`, so neither can match a name that
 /// ends in `Sync` or `Async`.
 pub(crate) fn check_clashes(files: &[FileDescriptorProto], package: &str) -> Result<(), Error> {

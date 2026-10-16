@@ -1,4 +1,4 @@
-//! `protoc-gen-contract-rust`: a protoc plugin that turns each protobuf
+//! `protoc-gen-protocontract-buffa`: a protoc plugin that turns each protobuf
 //! `service` into plain Rust traits over the message structs
 //! `protoc-gen-buffa` generates.
 //!

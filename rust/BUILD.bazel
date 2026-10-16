@@ -22,9 +22,9 @@ rust_clippy_test(
         "//rust/golden:bridges_test",
         "//rust/golden:direct_test",
         "//rust/golden:streaming_test",
-        "//rust/protoc-gen-contract-rust",
-        "//rust/protoc-gen-contract-rust:lib",
-        "//rust/protoc-gen-contract-rust:lib_test",
+        "//rust/protoc-gen-protocontract-buffa",
+        "//rust/protoc-gen-protocontract-buffa:lib",
+        "//rust/protoc-gen-protocontract-buffa:lib_test",
     ],
 )
 

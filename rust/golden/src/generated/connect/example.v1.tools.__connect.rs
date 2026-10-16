@@ -36,7 +36,7 @@ pub const TOOLS_SERVICE_SERVER_STREAMING_SPEC: ::connectrpc::Spec = ::connectrpc
         ::connectrpc::StreamType::ServerStream,
     )
     .with_idempotency_level(::connectrpc::IdempotencyLevel::Unknown);
-/// Methods named like the helpers of Contract's bridges: the generated
+/// Methods named like the helpers of protocontract-buffa's bridges: the generated
 /// code must call the helpers, and callers must reach these methods.
 ///
 /// The service keeps the `Service` suffix on purpose: with the enum

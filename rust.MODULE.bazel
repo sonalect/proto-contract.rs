@@ -18,7 +18,7 @@ cargo = use_extension(
     "crate",
 )
 cargo.from_cargo(
-    name = "contract_cargo",
+    name = "protocontract_buffa_cargo",
     cargo_lockfile = "//:Cargo.lock",
     lockfile = "//:cargo-bazel-lock.json",
     manifests = [
@@ -36,4 +36,4 @@ cargo.from_cargo(
         "x86_64-unknown-linux-gnu",
     ],
 )
-use_repo(cargo, "contract_cargo")
+use_repo(cargo, "protocontract_buffa_cargo")

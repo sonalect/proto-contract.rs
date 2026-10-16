@@ -33,7 +33,7 @@ permissions:
 
 env:
   BAZELISK_VERSION: 1.29.0
-  PLUGIN: protoc-gen-contract-rust
+  PLUGIN: protoc-gen-protocontract-buffa
 
 defaults:
   run:
@@ -220,7 +220,7 @@ jobs:
             //rust/golden:bridges_test \
             //rust/golden:direct_test \
             //rust/golden:streaming_test \
-            //rust/protoc-gen-contract-rust:lib_test
+            //rust/protoc-gen-protocontract-buffa:lib_test
 
       # Stopped before the caches are saved, so nothing writes them then.
       - name: Stop Bazel

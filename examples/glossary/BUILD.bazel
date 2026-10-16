@@ -14,7 +14,7 @@ filegroup(
 buf_generate(
     name = "generated",
     module = "//proto:module",
-    plugins = ["//rust/protoc-gen-contract-rust"],
+    plugins = ["//rust/protoc-gen-protocontract-buffa"],
     target_compatible_with = NOT_WINDOWS_ARM64,
     template = "buf.gen.yaml",
 )

@@ -1,4 +1,4 @@
-//! Runtime for the code that `protoc-gen-contract-rust` generates.
+//! Runtime for the code that `protoc-gen-protocontract-buffa` generates.
 //!
 //! For each protobuf `service`, the plugin emits:
 //!
