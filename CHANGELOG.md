@@ -8,6 +8,8 @@ changes to the generated code or the runtime bump the minor.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-16
+
 ### Changed
 
 - Build pins refreshed: `bazel_utils` 0.3.4 (a prebuilt `protoc` on
@@ -143,11 +145,13 @@ First release.
 ## Links
 
 - [Unreleased]
+- [0.2.2]
 - [0.2.1]
 - [0.2.0]
 - [0.1.0]
 
-[Unreleased]: https://github.com/sonalect/proto-contract.rs/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/sonalect/proto-contract.rs/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/sonalect/proto-contract.rs/releases/tag/v0.2.2
 [0.2.1]: https://github.com/sonalect/proto-contract.rs/releases/tag/v0.2.1
 [0.2.0]: https://github.com/sonalect/proto-contract.rs/releases/tag/v0.2.0
 [0.1.0]: https://github.com/sonalect/proto-contract.rs/releases/tag/v0.1.0
