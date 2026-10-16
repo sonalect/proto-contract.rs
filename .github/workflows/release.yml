@@ -215,6 +215,10 @@ jobs:
       # one, so a platform that cannot build them fails instead of passing
       # with nothing run.
       - name: Bazel test
+        # Git Bash on Windows rewrites an argument that starts with `//` and
+        # has no other `/` as a Windows switch (`//proto:lint` -> `/proto:lint`).
+        env:
+          MSYS_NO_PATHCONV: "1"
         run: |
           bazel test //... --keep_going --test_output=errors \
             //rust/protocontract:protocontract_no_tokio_test \
