@@ -8,6 +8,18 @@ changes to the generated code or the runtime bump the minor.
 
 ## [Unreleased]
 
+### Changed
+
+- Build pins: `bazel_utils` 0.4.0 and Buf CLI v1.74.0. The generated code is
+  unchanged.
+- buildifier, markdownlint, buf lint, rustfmt, and cargo-audit now run on
+  Windows too, and the golden checks of the generated code on Windows
+  ARM64: the reasons they were off are gone (`bazel_utils` runs its test
+  scripts on Windows since 0.3.0, and catalogs every plugin there). Only
+  the rustdoc tests stay off on Windows, where rules_rust cannot link them;
+  `cargo test` runs them. The release workflow names each of these tests,
+  so a platform that cannot run one fails.
+
 ## [0.3.1] - 2026-10-16
 
 ### Added

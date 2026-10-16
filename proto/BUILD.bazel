@@ -1,6 +1,5 @@
 load("@bazel_lib//lib:write_source_files.bzl", "write_source_files")
 load("@bazel_utils_buf//:buf.bzl", "buf_format", "buf_generate", "buf_lint_test", "buf_module")
-load("//bazel:compat.bzl", "NOT_WINDOWS", "NOT_WINDOWS_ARM64")
 
 filegroup(
     name = "protos",
@@ -24,7 +23,6 @@ buf_lint_test(
     name = "lint",
     size = "small",
     module = ":module",
-    target_compatible_with = NOT_WINDOWS,
 )
 
 buf_format(
@@ -37,7 +35,6 @@ buf_generate(
     name = "golden",
     module = ":module",
     plugins = ["//rust/protoc-gen-protocontract-buffa"],
-    target_compatible_with = NOT_WINDOWS_ARM64,
     template = "//:buf.gen.golden.yaml",
 )
 
@@ -49,5 +46,4 @@ write_source_files(
     files = {
         "//rust/golden:src/generated": ":golden",
     },
-    target_compatible_with = NOT_WINDOWS_ARM64,
 )

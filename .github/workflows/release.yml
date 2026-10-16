@@ -222,7 +222,15 @@ jobs:
             //rust/golden:bridges_test \
             //rust/golden:direct_test \
             //rust/golden:streaming_test \
-            //rust/protoc-gen-protocontract-buffa:lib_test
+            //rust/protoc-gen-protocontract-buffa:lib_test \
+            //proto:generate_test \
+            //examples/glossary:generate_test \
+            //proto:lint \
+            //rust:lint \
+            //rust:fmt \
+            //rust:vuln \
+            //bazel:lint \
+            //bazel:markdown
 
       # Stopped before the caches are saved, so nothing writes them then.
       - name: Stop Bazel

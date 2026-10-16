@@ -1,7 +1,7 @@
 """Buf CLI and prebuilt protoc-gen plugins for the golden generate and proto lint."""
 
 buf = use_extension("@bazel_utils_buf//:extensions.bzl", "buf")
-buf.toolchains(version = "v1.73.0")
+buf.toolchains(version = "v1.74.0")
 use_repo(buf, "buf")
 
 # Root `protoc.plugin` tags are on PATH for every `buf_generate`. The plugin

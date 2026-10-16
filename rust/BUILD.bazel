@@ -1,6 +1,5 @@
 load("@bazel_utils_rust//:rust.bzl", "cargo_audit_test")
 load("@rules_rust//rust:defs.bzl", "rust_clippy_test", "rustfmt_test")
-load("//bazel:compat.bzl", "NOT_WINDOWS")
 
 # Every Rust target of the workspace, for clippy and rustfmt.
 RUST_TARGETS = [
@@ -39,17 +38,14 @@ GENERATED_SRCS = [
     "//rust/golden:golden_no_tokio",
 ]
 
-# `cargo fmt --check`, with the pinned toolchain's rustfmt. Formatting is
-# the same on every platform, so the Linux and macOS runs check it.
+# `cargo fmt --check`, with the pinned toolchain's rustfmt.
 rustfmt_test(
     name = "fmt",
     size = "small",
-    target_compatible_with = NOT_WINDOWS,
     targets = [t for t in RUST_TARGETS if t not in GENERATED_SRCS],
 )
 
 cargo_audit_test(
     name = "vuln",
     size = "small",
-    target_compatible_with = NOT_WINDOWS,
 )
