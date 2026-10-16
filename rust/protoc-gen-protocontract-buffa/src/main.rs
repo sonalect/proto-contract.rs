@@ -15,7 +15,9 @@ fn main() -> ExitCode {
     }
     let response = protoc_gen_protocontract_buffa::run(&input);
     if let Err(error) = io::stdout().write_all(&response.encode_to_vec()) {
-        eprintln!("protoc-gen-protocontract-buffa: failed to write the response to stdout: {error}");
+        eprintln!(
+            "protoc-gen-protocontract-buffa: failed to write the response to stdout: {error}"
+        );
         return ExitCode::FAILURE;
     }
     ExitCode::SUCCESS
