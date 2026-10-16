@@ -6,7 +6,9 @@ Plain Rust traits for protobuf services.
 over the message structs [buffa](https://github.com/anthropics/buffa)
 generates. A component in the same process is called by a method call: no
 encoding, no transport, no view types. The runtime crate `protocontract` holds
-the types the generated code names. Requires Rust 1.99.
+the types the generated code names. The runtime and the generated code need
+Rust 1.92 or newer; building the plugin from source needs Rust 1.99.1 (the
+release binaries need no Rust at all).
 
 ## What is generated
 
