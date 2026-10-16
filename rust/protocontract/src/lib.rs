@@ -65,6 +65,11 @@
 //! [`Failure`] is the ready-made fault; an implementation with more to say
 //! implements [`Fault`] on a type of its own.
 
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/sonalect/protocontract-buffa.rs/main/assets/logo.svg",
+    html_favicon_url = "https://raw.githubusercontent.com/sonalect/protocontract-buffa.rs/main/assets/logo.svg"
+)]
+
 #[cfg(feature = "tokio")]
 mod blocking;
 mod code;

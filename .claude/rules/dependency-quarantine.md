@@ -30,3 +30,19 @@ not a third-party supply chain.
 - The exemption covers the organization's own repositories only. Whatever
   such a project pulls in from outside (crates, npm, other registries) stays
   under the quarantine when this repository adds or bumps it directly.
+
+## Cargo: ranges in `Cargo.toml`, exact versions in `Cargo.lock`
+
+Decided by the owner on 16 October 2026, for publishing on crates.io:
+`[workspace.dependencies]` takes caret ranges (`buffa = "0.9.2"`), never
+`=` pins, because an exact pin in a published library conflicts with a
+consumer on any other version. The quarantine then lives in `Cargo.lock`:
+
+- A plain `cargo update` takes the newest version in every range, however
+  fresh. Never run it bare. Move one crate at a time, to a version checked
+  against the quarantine: `cargo update -p <crate> --precise <version>`.
+- Read `git diff Cargo.lock` after any Cargo command that may resolve
+  (`cargo update`, a new dependency, a changed feature): every version that
+  moved must clear the 2 days.
+- The range's lower bound is the version we test with. Raise it when the
+  code needs a newer API, not on every lock bump.

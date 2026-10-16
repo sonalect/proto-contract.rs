@@ -55,6 +55,11 @@
 //! the package's module already has; the message names both proto
 //! elements.
 
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/sonalect/protocontract-buffa.rs/main/assets/logo.svg",
+    html_favicon_url = "https://raw.githubusercontent.com/sonalect/protocontract-buffa.rs/main/assets/logo.svg"
+)]
+
 mod docs;
 mod emit;
 mod error;

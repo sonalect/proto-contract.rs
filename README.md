@@ -1,5 +1,11 @@
 # protocontract-buffa
 
+<img src="https://raw.githubusercontent.com/sonalect/protocontract-buffa.rs/main/assets/logo.svg" alt="protocontract-buffa logo" width="96">
+
+[![crates.io](https://img.shields.io/crates/v/protocontract.svg)](https://crates.io/crates/protocontract)
+[![docs.rs](https://docs.rs/protocontract/badge.svg)](https://docs.rs/protocontract)
+[![License](https://img.shields.io/crates/l/protocontract.svg)](https://github.com/sonalect/protocontract-buffa.rs/blob/main/LICENSE)
+
 Plain Rust traits for protobuf services.
 
 `protoc-gen-protocontract-buffa` turns each protobuf `service` into Rust traits
@@ -301,10 +307,11 @@ caller that branches on it is bound to that implementation.
 
 ### Codes outside the contract
 
-- `protocontract::RuntimeCode` holds the runtime's own codes: `PANICKED` (a
-  panic under `Offload`), `CANNOT_BLOCK` (`Blocking` inside a
-  current-thread runtime), and `CANCELLED` (a blocking call dropped by its
-  runtime).
+- `protocontract::RuntimeCode` holds the runtime's own codes:
+  `RuntimeCode::Panicked` (a panic under `Offload`),
+  `RuntimeCode::CannotBlock` (`Blocking` inside a current-thread runtime),
+  and `RuntimeCode::Cancelled` (a blocking call dropped by its runtime).
+  `Display` prints them as `PANICKED`, `CANNOT_BLOCK`, and `CANCELLED`.
 - A component may have codes of its own, outside any contract: a Rust enum
   that implements `protocontract::ErrorCode` (`to_i32`, `from_i32`, `name`)
   works like a protobuf enum.
@@ -348,7 +355,7 @@ let sync = Blocking::new(service.clone(), handle);
 
 ## Example
 
-[`examples/glossary`](examples/glossary) is a whole contract in use: the
+[`examples/glossary`](https://github.com/sonalect/protocontract-buffa.rs/tree/main/examples/glossary) is a whole contract in use: the
 proto, the generated crate, a provider that implements it, a consumer that
 calls it without knowing the provider, and the application that wires the
 two. `cargo run -p glossary-app` runs it.
@@ -356,12 +363,14 @@ two. `cargo run -p glossary-app` runs it.
 ## Use
 
 Get the plugin from the
-[Releases](https://github.com/sonalect/protocontract-buffa.rs/releases)
-(from v0.1.0 on): static binaries for Linux, macOS, and Windows on amd64
-and arm64, with their sha256 in `checksums-sha256.txt`. Or build it:
+[Releases](https://github.com/sonalect/protocontract-buffa.rs/releases):
+static binaries for Linux, macOS, and Windows on amd64 and arm64, named
+`protoc-gen-protocontract-buffa-<tag>-<os>-<arch>`, with their sha256 in
+`checksums-sha256.txt`. Releases up to v0.2.2 name the plugin
+`protoc-gen-contract-rust`. Or build it from crates.io:
 
 ```bash
-cargo install --locked --git https://github.com/sonalect/protocontract-buffa.rs protoc-gen-protocontract-buffa
+cargo install --locked protoc-gen-protocontract-buffa
 ```
 
 Run it next to `protoc-gen-buffa`, each into its own `out` directory:
@@ -371,11 +380,13 @@ version: v2
 plugins:
   - local: protoc-gen-buffa
     out: src/generated/buffa
+    strategy: all
   - local: protoc-gen-buffa-packaging
     out: src/generated/buffa
     strategy: all
   - local: protoc-gen-protocontract-buffa
     out: src/generated/contract
+    strategy: all
     opt: [buffa_module=crate::proto]
   - local: protoc-gen-buffa-packaging
     out: src/generated/contract
@@ -397,11 +408,11 @@ pub mod traits;
 The crate depends on the runtime with its `tokio` feature, since the
 generated code implements the traits for `Offload` and `Blocking`, and on
 what buffa's output needs (`buffa`, and `buffa-types` for well-known
-types). The runtime is published by git tag:
+types):
 
 ```toml
 [dependencies]
-protocontract = { git = "https://github.com/sonalect/protocontract-buffa.rs", tag = "v0.3.0", features = ["tokio"] }
+protocontract = { version = "0.3", features = ["tokio"] }
 ```
 
 To keep tokio optional, pass `gate_tokio_feature` to the plugin: the
@@ -410,14 +421,14 @@ crate, which turns on the runtime's:
 
 ```toml
 [dependencies]
-protocontract = { git = "https://github.com/sonalect/protocontract-buffa.rs", tag = "v0.3.0" }
+protocontract = "0.3"
 
 [features]
 tokio = ["protocontract/tokio"]
 ```
 
 `protoc-gen-connect-rust` may run on the same protos into the same crate,
-even into the same modules: protocontract-buffa takes no name and no file that
+even into the same modules: the plugin takes no name and no file that
 connect-rust takes, and the run fails if a generated name meets an
 existing one, naming both proto elements.
 
@@ -437,8 +448,10 @@ to `::buffa_types` on their own. Any other parameter fails the run.
 
 ## Status
 
-Under development; the design, its stages, and its decisions are in
-[DESIGN.md](DESIGN.md).
+Before 1.0, a minor version may break the generated code or the runtime;
+[CHANGELOG.md](https://github.com/sonalect/protocontract-buffa.rs/blob/main/CHANGELOG.md) says what changed and what a
+consumer changes. The design, its stages, and its decisions are in
+[DESIGN.md](https://github.com/sonalect/protocontract-buffa.rs/blob/main/DESIGN.md).
 
 The traits are for calls inside one process. Across processes, use
 connect-rust's stubs directly. Validation is not part of the plugin: run
@@ -449,18 +462,32 @@ owned messages where you decide to.
 
 ```bash
 cargo test --workspace
-bazel test //...            # the gate: golden files, clippy, lint, markdown
-bazel run //proto:generate  # refresh the golden files after a plugin change
-
-# a static release binary of the plugin, as the release workflow builds it
-# (RUSTFLAGS unset: it would replace the static flags of .cargo/config.toml)
-env -u RUSTFLAGS cargo build --locked --profile dist --target x86_64-unknown-linux-musl -p protoc-gen-protocontract-buffa
+bazel test //...                        # the gate: golden files, clippy, rustfmt, lint, markdown
+bazel run //proto:generate              # refresh the golden files after a plugin change
+bazel run //examples/glossary:generate  # and the example's generated code
 ```
 
+The release binary of the plugin, as the release workflow builds it:
+
+```bash
+env -u RUSTFLAGS cargo build --locked --profile dist --target <triple> -p protoc-gen-protocontract-buffa
+```
+
+The `dist` profile sets the optimisation (fat LTO, stripped symbols); the
+target makes the binary static, with the flags in `.cargo/config.toml`
+(`RUSTFLAGS` would replace them, so it is unset):
+
+| Platform | Target | Linking |
+| - | - | - |
+| Linux | `x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl` | fully static: musl libc linked in (a static glibc is not supported) |
+| Windows | `x86_64-pc-windows-msvc`, `aarch64-pc-windows-msvc` | C runtime linked in (`+crt-static`): no Visual C++ redistributable |
+| macOS | `x86_64-apple-darwin`, `aarch64-apple-darwin` | system libraries only (Apple supports no static binary) |
+
 An annotated version tag `vX.Y.Z` on `main` runs the release workflow:
-Bazel build and tests on Linux, macOS, and Windows, each on amd64 and
-arm64, then a GitHub Release with the static plugin binary for each
-platform and `checksums-sha256.txt`; the tag's message is the release
+Bazel build and tests and the plugin's static binary on Linux, macOS, and
+Windows, each on amd64 and arm64; the runtime and the generated code built
+and tested with the minimum Rust version; then a GitHub Release with the
+six binaries and `checksums-sha256.txt`. The tag's message is the release
 notes.
 
 ## License

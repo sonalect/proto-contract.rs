@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="protocontract-buffa">
+  <title>protocontract-buffa</title>
+  <rect width="256" height="256" rx="56" fill="#23275e"/>
+  <!-- The contract: a sheet with a folded corner. -->
+  <path d="M74 40h76l42 42v130a12 12 0 0 1-12 12H74a12 12 0 0 1-12-12V52a12 12 0 0 1 12-12z" fill="#ffffff"/>
+  <path d="M150 40v30a12 12 0 0 0 12 12h30z" fill="#c9cdee"/>
+  <!-- Its clauses: the methods of a service. -->
+  <rect x="82" y="98" width="72" height="11" rx="5.5" fill="#23275e"/>
+  <rect x="82" y="122" width="90" height="11" rx="5.5" fill="#23275e" opacity="0.55"/>
+  <rect x="82" y="146" width="56" height="11" rx="5.5" fill="#23275e" opacity="0.55"/>
+  <!-- The seal: both sides agree. -->
+  <circle cx="178" cy="186" r="38" fill="#f74c00" stroke="#ffffff" stroke-width="7"/>
+  <path d="M161 187l12 12 23-26" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

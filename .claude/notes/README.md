@@ -7,7 +7,7 @@ before planning; open a note when its topic comes up.
 | Note | What it holds |
 | - | - |
 | [bazel-utils-catalog.md](bazel-utils-catalog.md) | The plugin's bazel_utils catalog entry: catalogued under the old name `protoc-gen-contract-rust`; the steps for the renamed plugin in bazel_utils and Knowqore |
-| [crates-io-publish.md](crates-io-publish.md) | Publishing `protocontract` and the plugin on crates.io: deferred; what to fix first (exact pins, README links, metadata, docs.rs) and how |
+| [crates-io-publish.md](crates-io-publish.md) | Publishing `protocontract` and the plugin on crates.io with the release after 0.3.0: what is done, the first publish by hand, Trusted Publishing, the social preview |
 
 ## References
 

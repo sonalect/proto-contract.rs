@@ -1,44 +1,39 @@
 # Publishing to crates.io
 
-Deferred by the owner on 16 October 2026 ("next time"). Nothing is
-published; consumers take `protocontract` as a git dependency on a tag.
+The owner decided on 16 October 2026 to publish `protocontract` and
+`protoc-gen-protocontract-buffa` on crates.io with the release after
+0.3.0. Nothing is published yet.
 
-## State (checked 16 October 2026, at 0.3.0)
+## Done (16 October 2026, Unreleased)
 
-- `protocontract` and `protoc-gen-protocontract-buffa` are free names on
-  crates.io.
-- `cargo package -p <crate>` packages and verifies both; `cargo doc`
-  builds `protocontract` with no warning.
-- `rust/golden` and `examples/glossary/*` already have `publish = false`.
+- Caret ranges in `[workspace.dependencies]` instead of `=` pins; the
+  quarantine lives in `Cargo.lock` (`.claude/rules/dependency-quarantine.md`).
+- README: absolute GitHub URLs (crates.io breaks relative ones), the
+  crates.io dependency (`protocontract = "0.3"`) and `cargo install`,
+  badges, the logo (`assets/logo.svg`, by raw GitHub URL).
+- `keywords`, `categories`, `exclude = ["BUILD.bazel"]`, and a copy of
+  `LICENSE` in both packages; `[package.metadata.docs.rs] all-features`
+  for `protocontract`; the logo as rustdoc logo and favicon.
+- `.bazelignore` with `target`: `cargo package` unpacks each crate into
+  `target/package/` with its `BUILD.bazel`, which `//...` picked up.
+- The publish step in `.claude/skills/versioning/SKILL.md`.
 
-## Before the first publish
+## Still to do
 
-1. `protocontract` pins its dependencies exactly (`buffa = "=0.9.2"`,
-   `tokio = "=1.53.3"`, `futures-core = "=0.3.34"`). A published library
-   with exact pins conflicts with a consumer on any other version. The
-   owner decides whether the library takes ranges (`Cargo.lock` keeps our
-   builds exact and under the quarantine); that changes the pinning rule.
-2. README: crates.io breaks relative links (`examples/glossary`,
-   `DESIGN.md`); make them absolute GitHub URLs. Optionally a short README
-   of its own for `protocontract`.
-3. `keywords` (at most 5) and `categories` for both crates.
-4. `protocontract`: `[package.metadata.docs.rs] all-features = true`, so
-   docs.rs shows the `tokio`-gated `Offload` and `Blocking`.
-5. `exclude = ["BUILD.bazel"]` in both packages.
-6. A `.bazelignore` with `target`: `cargo package` unpacks each crate into
-   `target/package/<crate>-<version>/` with its `BUILD.bazel`, and
-   `bazel test //...` then runs those copies as extra packages (seen on
-   16 October 2026: 21 tests instead of 17).
-
-## How
-
-- First publish by hand: crates.io login through GitHub, an API token,
-  `cargo login`, `cargo publish --dry-run`, then `cargo publish -p
-  protocontract` and `-p protoc-gen-protocontract-buffa`. A version can
-  only be yanked, never replaced; the name stays with the account.
-- Afterwards: crates.io Trusted Publishing from the release workflow (no
-  stored token). It is configured on a crate that already exists.
-- docs.rs builds the documentation of every published version by itself;
-  no GitHub Pages site is needed.
+1. **First publish, by the owner** (it needs the crates.io token): log in
+   on crates.io with GitHub, create an API token, `cargo login`, then run
+   step 4 of the versioning skill on the release tag. Both names were free
+   on 16 October 2026. A version can only be yanked, never replaced; the
+   name stays with the account.
+2. **Trusted Publishing** for later releases: configure it on each crate's
+   crates.io settings (repository `sonalect/protocontract-buffa.rs`,
+   workflow `release.yml`); it works only for a crate that exists. Then a
+   `publish` job in the release workflow, after `release`, with
+   `id-token: write` and the crates.io auth action pinned by commit SHA
+   (quarantine), runs `cargo publish --locked` for both crates. Until
+   then the owner publishes by hand.
+3. **Social preview** of the GitHub repository (Settings → General →
+   Social preview, 1280×640 PNG): GitHub has no API for it. The image is
+   rendered from `assets/logo.svg` with the name and a tagline.
 
 **Why:** the list was worked out once with the owner; start from it.

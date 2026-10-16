@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 640" width="1280" height="640">
+  <!-- The GitHub social preview (1280x640). Render to PNG, e.g. `resvg social-preview.svg social-preview.png`, and upload it under Settings, General, Social preview. -->
+  <rect width="1280" height="640" fill="#23275e"/>
+  <image x="96" y="192" width="256" height="256" href="logo.svg"/>
+  <g font-family="Ubuntu, Noto Sans, DejaVu Sans, sans-serif" fill="#ffffff">
+    <text x="400" y="300" font-size="76" font-weight="700">protocontract-buffa</text>
+    <text x="400" y="366" font-size="32" fill="#c9cdee">Plain Rust traits for protobuf services</text>
+    <text x="400" y="416" font-size="32" fill="#c9cdee">over buffa messages — sync and async, in one process</text>
+  </g>
+</svg>

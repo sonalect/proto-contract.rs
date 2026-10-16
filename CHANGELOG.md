@@ -8,6 +8,28 @@ changes to the generated code or the runtime bump the minor.
 
 ## [Unreleased]
 
+### Added
+
+- `protocontract` and `protoc-gen-protocontract-buffa` are ready for
+  crates.io: keywords, categories, the license text in each package, and
+  docs.rs builds `protocontract` with every feature, so it shows `Offload`
+  and `Blocking`. A logo for the README and the rustdoc pages.
+- `bazel test //...` checks the formatting of the hand-written Rust
+  (`//rust:fmt`, rustfmt of the pinned toolchain).
+
+### Changed
+
+- The workspace takes its dependencies as caret ranges instead of exact
+  pins (`buffa = "0.9.2"`, was `"=0.9.2"`), so a consumer of
+  `protocontract` is not held to one version of buffa, futures-core, or
+  tokio. `Cargo.lock` still fixes the versions this repository builds and
+  tests.
+- The README takes `protocontract` from crates.io
+  (`protocontract = "0.3"`) and the plugin with `cargo install`, links to
+  GitHub by absolute URLs, and corrects the names of the runtime's codes
+  (`RuntimeCode::Panicked`, not `PANICKED`), the `strategy: all` of the
+  example `buf.gen.yaml`, and how the static release binaries are built.
+
 ## [0.3.0] - 2026-10-16
 
 ### Changed

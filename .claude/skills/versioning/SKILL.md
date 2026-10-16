@@ -4,7 +4,9 @@ description: >-
   Bump the protocontract-buffa crates and Bazel module versions in lockstep
   (Rust-style 0.x or SemVer after 1.0.0), update CHANGELOG.md, create the
   matching GitHub tag, whose CI workflow tests six platforms and publishes
-  the GitHub Release with the plugin binaries. Use when releasing, tagging, publishing a GitHub release,
+  the GitHub Release with the plugin binaries, then publish both crates on
+  crates.io. Use when releasing, tagging, publishing a GitHub release or a
+  crate,
   bumping version, editing MODULE.bazel or workspace package version, or
   adding a CHANGELOG section.
 ---
@@ -55,6 +57,10 @@ Set the same `MAJOR.MINOR.PATCH` everywhere:
   YYYY-MM-DD`; add the version to `## Links` and the reference definitions
   (`[Unreleased]` compare from the new tag, `[MAJOR.MINOR.PATCH]` release URL)
 
+- `README.md`: the `protocontract = { version = … }` examples name the
+  compatible range, `MAJOR.MINOR` while major is 0 (`"0.3"`), `MAJOR`
+  after; change them only when a release leaves that range.
+
 Refresh `MODULE.bazel.lock` if it changes.
 
 ## Release
@@ -75,6 +81,23 @@ Only when the owner asked to release, and only from `main`:
    it, exactly as `.claude/rules/release-tag.md` says (a file,
    `--cleanup=verbatim`, read back before the push). Do not backfill older
    tags.
+4. When the GitHub Release is published, publish the crates from the
+   tagged commit, runtime first:
+
+   ```bash
+   git checkout vX.Y.Z
+   cargo publish --locked --dry-run -p protocontract
+   cargo publish --locked -p protocontract
+   cargo publish --locked --dry-run -p protoc-gen-protocontract-buffa
+   cargo publish --locked -p protoc-gen-protocontract-buffa
+   git checkout main
+   ```
+
+   The owner runs it: it needs the crates.io token (`cargo login`). A
+   published version can only be yanked, never replaced, so a release with
+   a problem gets a new patch version. The state of the publish (first
+   publish, Trusted Publishing from the workflow) is in
+   `.claude/notes/crates-io-publish.md`.
 
 The tag starts `.github/workflows/release.yml`; nothing else does. It:
 
