@@ -22,8 +22,9 @@ hand.
 - `cargo test --workspace` and
   `cargo clippy --workspace --all-targets --all-features`: the fast loop.
 - `bazel test //... --keep_going --test_output=errors`: the gate before a
-  commit (`commit-after-tests.md`). It also runs `//bazel:lint`
-  (buildifier) and `//bazel:markdown` (markdownlint over every `*.md`,
+  commit (`commit-after-tests.md`). It also runs `//rust:fmt` (rustfmt,
+  as `cargo fmt --check`; `cargo fmt` fixes it), `//bazel:lint`
+  (buildifier), and `//bazel:markdown` (markdownlint over every `*.md`,
   `.claude/` included). `bazel run //bazel:format` fixes BUILD formatting.
 
 ## No sandbox

@@ -1,31 +1,51 @@
 load("@bazel_utils_rust//:rust.bzl", "cargo_audit_test")
-load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test", "rustfmt_test")
 load("//bazel:compat.bzl", "NOT_WINDOWS")
+
+# Every Rust target of the workspace, for clippy and rustfmt.
+RUST_TARGETS = [
+    "//examples/glossary/api",
+    "//examples/glossary/app",
+    "//examples/glossary/app:app_test",
+    "//examples/glossary/consumer",
+    "//examples/glossary/consumer:consumer_test",
+    "//examples/glossary/provider",
+    "//examples/glossary/provider:provider_test",
+    "//rust/protocontract",
+    "//rust/protocontract:protocontract_no_tokio",
+    "//rust/protocontract:protocontract_no_tokio_test",
+    "//rust/protocontract:protocontract_test",
+    "//rust/golden",
+    "//rust/golden:golden_no_tokio",
+    "//rust/golden:bridges_test",
+    "//rust/golden:direct_test",
+    "//rust/golden:streaming_test",
+    "//rust/protoc-gen-protocontract-buffa",
+    "//rust/protoc-gen-protocontract-buffa:lib",
+    "//rust/protoc-gen-protocontract-buffa:lib_test",
+]
 
 rust_clippy_test(
     name = "lint",
     size = "small",
-    targets = [
-        "//examples/glossary/api",
-        "//examples/glossary/app",
-        "//examples/glossary/app:app_test",
-        "//examples/glossary/consumer",
-        "//examples/glossary/consumer:consumer_test",
-        "//examples/glossary/provider",
-        "//examples/glossary/provider:provider_test",
-        "//rust/protocontract",
-        "//rust/protocontract:protocontract_no_tokio",
-        "//rust/protocontract:protocontract_no_tokio_test",
-        "//rust/protocontract:protocontract_test",
-        "//rust/golden",
-        "//rust/golden:golden_no_tokio",
-        "//rust/golden:bridges_test",
-        "//rust/golden:direct_test",
-        "//rust/golden:streaming_test",
-        "//rust/protoc-gen-protocontract-buffa",
-        "//rust/protoc-gen-protocontract-buffa:lib",
-        "//rust/protoc-gen-protocontract-buffa:lib_test",
-    ],
+    targets = RUST_TARGETS,
+)
+
+# Their srcs include generated code (buffa, connect-rust, this plugin),
+# which rustfmt would rewrite and which the generate checks guard instead.
+GENERATED_SRCS = [
+    "//examples/glossary/api",
+    "//rust/golden",
+    "//rust/golden:golden_no_tokio",
+]
+
+# `cargo fmt --check`, with the pinned toolchain's rustfmt. Formatting is
+# the same on every platform, so the Linux and macOS runs check it.
+rustfmt_test(
+    name = "fmt",
+    size = "small",
+    target_compatible_with = NOT_WINDOWS,
+    targets = [t for t in RUST_TARGETS if t not in GENERATED_SRCS],
 )
 
 cargo_audit_test(

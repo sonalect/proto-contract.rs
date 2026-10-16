@@ -7,6 +7,9 @@ RUST_VERSION = "1.99.1"
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
     edition = RUST_EDITION,
+    # rules_rust defaults to a nightly rustfmt; //rust:fmt checks with the
+    # pinned toolchain's, as `cargo fmt` does.
+    rustfmt_version = RUST_VERSION,
     versions = [RUST_VERSION],
 )
 use_repo(rust, "rust_toolchains")
