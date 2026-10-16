@@ -19,7 +19,7 @@ edition = "2024"
 rust-version = "1.92"
 license = "Apache-2.0"
 repository = "https://github.com/sonalect/protocontract-buffa.rs"
-version = "0.2.2"
+version = "0.3.0"
 
 [workspace.dependencies]
 glossary-api = { path = "examples/glossary/api" }

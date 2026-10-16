@@ -399,7 +399,7 @@ types). The runtime is published by git tag:
 
 ```toml
 [dependencies]
-protocontract = { git = "https://github.com/sonalect/protocontract-buffa.rs", tag = "v0.2.2", features = ["tokio"] }
+protocontract = { git = "https://github.com/sonalect/protocontract-buffa.rs", tag = "v0.3.0", features = ["tokio"] }
 ```
 
 To keep tokio optional, pass `gate_tokio_feature` to the plugin: the
@@ -408,7 +408,7 @@ crate, which turns on the runtime's:
 
 ```toml
 [dependencies]
-protocontract = { git = "https://github.com/sonalect/protocontract-buffa.rs", tag = "v0.2.2" }
+protocontract = { git = "https://github.com/sonalect/protocontract-buffa.rs", tag = "v0.3.0" }
 
 [features]
 tokio = ["protocontract/tokio"]
